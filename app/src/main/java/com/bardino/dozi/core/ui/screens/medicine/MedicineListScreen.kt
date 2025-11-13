@@ -57,16 +57,22 @@ fun MedicineListScreen(
             DoziTopBar(
                 title = "İlaçlarım",
                 canNavigateBack = false,
-                backgroundColor = Color.White,
+                backgroundColor = Color.Transparent,
                 actions = {
-                    IconButton(
-                        onClick = { onNavigateToAddMedicine("lookup") }
+                    Surface(
+                        shape = CircleShape,
+                        color = DoziCoralLight.copy(alpha = 0.15f),
+                        modifier = Modifier.padding(end = 8.dp)
                     ) {
-                        Icon(
-                            imageVector = Icons.Default.AddCircleOutline,
-                            contentDescription = "Yeni İlaç Ekle",
-                            tint = DoziCoralLight
-                        )
+                        IconButton(
+                            onClick = { onNavigateToAddMedicine("lookup") }
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.AddCircleOutline,
+                                contentDescription = "Yeni İlaç Ekle",
+                                tint = DoziCoralDark
+                            )
+                        }
                     }
                 }
             )
@@ -76,10 +82,14 @@ fun MedicineListScreen(
                 onClick = { onNavigateToAddMedicine("new") },
                 containerColor = DoziTurquoise,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.shadow(10.dp, RoundedCornerShape(18.dp))
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.shadow(12.dp, RoundedCornerShape(16.dp))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "İlaç Ekle")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "İlaç Ekle",
+                    modifier = Modifier.size(28.dp)
+                )
             }
         },
         containerColor = BackgroundLight
@@ -102,35 +112,69 @@ fun MedicineListScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Üst Bilgi Alanı
+                // Üst Bilgi Alanı - Modern Design
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            brush = Brush.horizontalGradient(
-                                listOf(DoziTurquoise, DoziBlue)
-                            )
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    DoziTurquoise,
+                                    DoziTurquoise.copy(alpha = 0.85f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                         )
-                        .padding(horizontal = 24.dp, vertical = 28.dp)
+                        .padding(horizontal = 24.dp, vertical = 32.dp)
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "Toplam ${medicines.size} ilaç kaydedildi",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = "İlaçlarınızı buradan yönetin ve takip edin.",
-                            color = Color.White.copy(alpha = 0.9f),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "${medicines.size}",
+                                color = Color.White,
+                                style = MaterialTheme.typography.displaySmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "İlaç Kaydedildi",
+                                color = Color.White.copy(alpha = 0.95f),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "İlaçlarınızı yönetin ve takip edin",
+                                color = Color.White.copy(alpha = 0.85f),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        Surface(
+                            shape = CircleShape,
+                            color = Color.White.copy(alpha = 0.2f),
+                            modifier = Modifier.size(72.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Medication,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(20.dp))
 
                 // İlaç Listesi
                 LazyColumn(
@@ -256,60 +300,97 @@ private fun ModernMedicineCard(
     Card(
         onClick = onClick,
         modifier = Modifier
-            .clickable { onMedicineSelected(medicine.name) }
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = DoziTurquoise.copy(alpha = 0.25f)
+            ),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 20.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(12.dp)
-        ) {
-            // Başlık kısmı
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+        Box {
+            // Dekoratif background pattern
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                DoziTurquoise.copy(alpha = 0.8f),
+                                DoziBlue.copy(alpha = 0.6f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    )
+            )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    text = medicine.name,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = DoziTurquoise
-                )
-
-                Icon(
-                    Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = MediumGray,
-                    modifier = Modifier.size(24.dp)
-                )
-            }
-
-            Divider(color = VeryLightGray, thickness = 1.dp)
-
-            // Bilgi Satırları
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(12.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                InfoTag(
-                    Icons.Default.Medication,
-                    medicine.dosage,
-                    DoziBlue
-                )
-                InfoTag(
-                    Icons.Default.Inventory,
-                    "Stok: ${medicine.stock}",
-                    when {
-                        medicine.stock < 5 -> DoziRed
-                        medicine.stock < 10 -> WarningOrange
-                        else -> SuccessGreen
+                // Başlık kısmı
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Text(
+                            text = medicine.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimaryLight
+                        )
+                        Text(
+                            text = medicine.dosage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondaryLight,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
-                )
+
+                    Surface(
+                        shape = CircleShape,
+                        color = DoziTurquoise.copy(alpha = 0.1f)
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = DoziTurquoise,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Bilgi Satırları
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    InfoTag(
+                        Icons.Default.Inventory,
+                        "Stok: ${medicine.stock}",
+                        when {
+                            medicine.stock < 5 -> DoziRed
+                            medicine.stock < 10 -> WarningOrange
+                            else -> SuccessGreen
+                        }
+                    )
+                }
             }
         }
     }
@@ -322,20 +403,26 @@ private fun InfoTag(
     color: Color
 ) {
     Surface(
-        color = color.copy(alpha = 0.1f),
-        shape = RoundedCornerShape(50)
+        color = color.copy(alpha = 0.12f),
+        shape = RoundedCornerShape(12.dp),
+        shadowElevation = 2.dp
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
-            horizontalArrangement = Arrangement.spacedBy(6.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(icon, null, tint = color, modifier = Modifier.size(16.dp))
+            Icon(
+                icon,
+                null,
+                tint = color,
+                modifier = Modifier.size(18.dp)
+            )
             Text(
                 text = text,
                 color = color,
-                style = MaterialTheme.typography.labelMedium,
-                fontWeight = FontWeight.Medium
+                style = MaterialTheme.typography.labelLarge,
+                fontWeight = FontWeight.SemiBold
             )
         }
     }
