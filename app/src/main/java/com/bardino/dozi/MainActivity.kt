@@ -23,6 +23,7 @@ import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.bardino.dozi.core.data.IlacRepository
 import com.bardino.dozi.core.data.OnboardingPreferences
+import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.navigation.NavGraph
 import com.bardino.dozi.notifications.NotificationHelper
 import com.bardino.dozi.core.ui.theme.DoziAppTheme
@@ -33,9 +34,14 @@ import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
 import dagger.hilt.android.AndroidEntryPoint
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
+
+    private val userRepository = UserRepository()
 
     // 🔹 Çoklu izin isteyici (bildirim, kamera, konum)
     private val permissionLauncher =
@@ -75,38 +81,13 @@ class MainActivity : ComponentActivity() {
                                     Toast.LENGTH_SHORT
                                 ).show()
 
-                                // ✅ Firestore kullanıcı kaydı
-                                val db = com.google.firebase.firestore.FirebaseFirestore.getInstance()
-                                val userRef = db.collection("users").document(user.uid)
-
-                                userRef.get().addOnSuccessListener { snapshot ->
-                                    if (!snapshot.exists()) {
-                                        val userData = mapOf(
-                                            "uid" to user.uid,
-                                            "name" to (user.displayName ?: "Bilinmeyen Kullanıcı"),
-                                            "email" to (user.email ?: ""),
-                                            "photoUrl" to (user.photoUrl?.toString() ?: ""),
-                                            "createdAt" to System.currentTimeMillis()
-                                        )
-
-                                        userRef.set(userData)
-                                            .addOnSuccessListener {
-                                                Log.d(
-                                                    "GOOGLE_AUTH",
-                                                    "Firestore kullanıcı oluşturuldu: ${user.email}"
-                                                )
-                                            }
-                                            .addOnFailureListener { e ->
-                                                Log.e(
-                                                    "GOOGLE_AUTH",
-                                                    "Firestore kaydı başarısız: ${e.localizedMessage}"
-                                                )
-                                            }
-                                    } else {
-                                        Log.d(
-                                            "GOOGLE_AUTH",
-                                            "Kullanıcı zaten kayıtlı: ${user.email}"
-                                        )
+                                // ✅ UserRepository ile Firestore kullanıcı kaydı
+                                CoroutineScope(Dispatchers.IO).launch {
+                                    try {
+                                        userRepository.createUserIfNotExists()
+                                        Log.d("GOOGLE_AUTH", "Kullanıcı Firestore'a kaydedildi/güncellendi")
+                                    } catch (e: Exception) {
+                                        Log.e("GOOGLE_AUTH", "Firestore kaydı başarısız: ${e.localizedMessage}")
                                     }
                                 }
                             }
