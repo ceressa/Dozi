@@ -19,6 +19,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.setValue
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.bardino.dozi.core.data.IlacRepository
@@ -42,6 +45,7 @@ import kotlinx.coroutines.launch
 class MainActivity : ComponentActivity() {
 
     private val userRepository = UserRepository()
+    private var currentIntent by mutableStateOf<Intent?>(null)
 
     // 🔹 Çoklu izin isteyici (bildirim, kamera, konum)
     private val permissionLauncher =
@@ -112,14 +116,17 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        currentIntent = intent
 
         setContent {
             DoziAppTheme {
                 val navController = rememberNavController()
 
-                // Deep link navigation'ı handle et
-                androidx.compose.runtime.LaunchedEffect(Unit) {
-                    handleDeepLink(intent, navController)
+                // Deep link navigation'ı handle et (currentIntent değişince tetiklenir)
+                androidx.compose.runtime.LaunchedEffect(currentIntent) {
+                    currentIntent?.let { intent ->
+                        handleDeepLink(intent, navController)
+                    }
                 }
 
                 NavGraph(
@@ -136,6 +143,7 @@ class MainActivity : ComponentActivity() {
         super.onNewIntent(intent)
         setIntent(intent)
         // Intent güncellendiğinde de handle et (bildirimden tıklanınca)
+        currentIntent = intent
     }
 
     private fun handleDeepLink(intent: Intent?, navController: androidx.navigation.NavHostController) {
