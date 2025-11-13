@@ -50,6 +50,14 @@ import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
+// Medicine entry data class
+data class MedicineEntry(
+    val id: Int,
+    var name: String = "",
+    var dosageType: String = "1",
+    var customDosage: String = ""
+)
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -65,9 +73,7 @@ fun AddReminderScreen(
 
     // State'ler
     var step by remember { mutableStateOf(1) }
-    var medicineName by remember { mutableStateOf("") }
-    var dosageType by remember { mutableStateOf("1") } // "1", "0.5", "0.25", "2", "3", "custom"
-    var customDosage by remember { mutableStateOf("") }
+    var medicines by remember { mutableStateOf(listOf(MedicineEntry(id = 0))) }
     var hour by remember { mutableStateOf(8) }
     var minute by remember { mutableStateOf(0) }
     var frequency by remember { mutableStateOf("Her gün") }
@@ -76,12 +82,11 @@ fun AddReminderScreen(
     var startDate by remember { mutableStateOf(System.currentTimeMillis()) } // Başlangıç tarihi
     var showError by remember { mutableStateOf(false) }
     var showSuccess by remember { mutableStateOf(false) }
-    var reminderTitle by remember { mutableStateOf("") }
     val storedMedicines = remember {
         MedicineRepository
             .loadMedicines(context).map { it.name }
     }
-    var showPicker by remember { mutableStateOf(false) }
+    var selectedMedicineIndex by remember { mutableStateOf(-1) }
 
     // Ses kontrolü
     var soundEnabled by remember {
@@ -97,7 +102,12 @@ fun AddReminderScreen(
             ?.savedStateHandle
             ?.get<String>("selectedMedicine")
             ?.let { selectedName ->
-                medicineName = selectedName
+                if (selectedMedicineIndex >= 0 && selectedMedicineIndex < medicines.size) {
+                    medicines = medicines.toMutableList().also {
+                        it[selectedMedicineIndex] = it[selectedMedicineIndex].copy(name = selectedName)
+                    }
+                }
+                selectedMedicineIndex = -1
                 // Kullanıldıktan sonra temizle
                 navController.currentBackStackEntry
                     ?.savedStateHandle
@@ -214,19 +224,12 @@ fun AddReminderScreen(
                     label = "step_transition"
                 ) { currentStep ->
                     when (currentStep) {
-                        1 -> MedicineStep(
-                            medicineName = medicineName,
-                            onNameChange = { medicineName = it },
-                            dosageType = dosageType,
-                            onDosageTypeChange = { dosageType = it },
-                            customDosage = customDosage,
-                            onCustomDosageChange = { customDosage = it },
-                            reminderTitle = reminderTitle,
-                            onReminderTitleChange = { reminderTitle = it },
+                        1 -> MultipleMedicinesStep(
+                            medicines = medicines,
+                            onMedicinesChange = { medicines = it },
                             storedMedicines = storedMedicines,
-                            showPicker = showPicker,
-                            onShowPickerChange = { showPicker = it },
-                            onAddNewMedicine = {
+                            onAddNewMedicine = { index ->
+                                selectedMedicineIndex = index
                                 navController.navigate(Screen.MedicineLookup.route)
                             },
                             showError = showError
@@ -252,10 +255,7 @@ fun AddReminderScreen(
                         )
 
                         4 -> SummaryStep(
-                            medicineName = medicineName,
-                            reminderTitle = reminderTitle,
-                            dosageType = dosageType,
-                            customDosage = customDosage,
+                            medicines = medicines,
                             hour = hour,
                             minute = minute,
                             frequency = frequency,
@@ -272,13 +272,14 @@ fun AddReminderScreen(
             ) {
                 NavigationButtons(
                     step = step,
-                    medicineName = medicineName,
+                    medicineName = medicines.firstOrNull()?.name ?: "",
                     onBack = { step-- },
                     onNext = {
                         when (step) {
                             1 -> {
-                                if (medicineName.isBlank()) showError = true
-                                else {
+                                if (medicines.any { it.name.isBlank() }) {
+                                    showError = true
+                                } else {
                                     showError = false
                                     step++
                                 }
@@ -286,13 +287,9 @@ fun AddReminderScreen(
                             2 -> step++
                             3 -> step++
                             4 -> {
-                                val finalTitle = reminderTitle.ifBlank { medicineName }
-                                val finalDosage = if (dosageType == "custom") customDosage else dosageType
-
-                                // 🗂️ Hatırlatmayı Firestore'a kaydet
-                                saveReminderToFirestore(
-                                    medicineName = medicineName,
-                                    dosage = finalDosage,
+                                // Tüm ilaçları kaydet
+                                saveMedicinesToFirestore(
+                                    medicines = medicines,
                                     hour = hour,
                                     minute = minute,
                                     frequency = frequency,
@@ -306,32 +303,12 @@ fun AddReminderScreen(
                                     onError = {
                                         Toast.makeText(
                                             context,
-                                            "❌ Hatırlatma kaydedilemedi",
+                                            "❌ Hatırlatmalar kaydedilemedi",
                                             Toast.LENGTH_SHORT
                                         ).show()
                                     }
                                 )
-
-                                // 📍 Eğer kullanıcı bir konum seçtiyse geofence ekle
-                                selectedPlace?.let { placeName ->
-                                    val prefs = context.getSharedPreferences("places", Context.MODE_PRIVATE)
-                                    val placeData = prefs.getString(placeName, null)
-                                    placeData?.let {
-                                        val parts = it.split(",")
-                                        if (parts.size >= 2) {
-                                            val lat = parts[0].toDouble()
-                                            val lng = parts[1].toDouble()
-                                            addGeofence(context, placeName, lat, lng)
-                                            Toast.makeText(
-                                                context,
-                                                "📍 $placeName konumu için hatırlatma eklendi",
-                                                Toast.LENGTH_SHORT
-                                            ).show()
-                                        }
-                                    }
-                                }
                             }
-
                         }
                     }
                 )
@@ -341,22 +318,11 @@ fun AddReminderScreen(
 
     if (showSuccess) {
         ReminderSuccessDialog(
-            onAddSameTime = {
-                // Aynı saate başka ilaç ekle - sadece ilaç bilgilerini sıfırla
-                showSuccess = false
-                step = 1
-                medicineName = ""
-                dosageType = "1"
-                customDosage = ""
-                // Saat, sıklık, startDate korunur
-            },
             onAddAnother = {
-                // Farklı saatte ilaç ekle - her şeyi sıfırla
+                // Başka ilaç ekle - her şeyi sıfırla
                 showSuccess = false
                 step = 1
-                medicineName = ""
-                dosageType = "1"
-                customDosage = ""
+                medicines = listOf(MedicineEntry(id = 0))
                 frequency = "Her gün"
                 selectedDates = emptyList()
                 startDate = System.currentTimeMillis()
@@ -469,9 +435,9 @@ private fun AnimatedDoziIcon(step: Int) {
 @Composable
 private fun DoziSpeechBubble(step: Int, soundEnabled: Boolean) {
     val text = when (step) {
-        1 -> "💊 Hangi ilacı hatırlatmamı istersin?"
+        1 -> "💊 Hangi ilaçları eklemek istersin? Birden fazla ilaç ekleyebilirsin!"
         2 -> "🔁 Ne kadar sıklıkla alıyorsun?"
-        3 -> "⏰ Harika! Şimdi ilacın saatini belirleyelim."
+        3 -> "⏰ Harika! Şimdi saati belirleyelim."
         4 -> "✅ Neredeyse bitti! Gözden geçirip kaydedelim."
         else -> ""
     }
@@ -508,147 +474,211 @@ private fun DoziSpeechBubble(step: Int, soundEnabled: Boolean) {
     }
 }
 
-// ADIM 1 - İLAÇ VE DOZAJ
+// ADIM 1 - ÇOKLU İLAÇ EKLEME
 @Composable
-private fun MedicineStep(
-    medicineName: String,
-    onNameChange: (String) -> Unit,
-    dosageType: String,
-    onDosageTypeChange: (String) -> Unit,
-    customDosage: String,
-    onCustomDosageChange: (String) -> Unit,
-    reminderTitle: String,
-    onReminderTitleChange: (String) -> Unit,
+private fun MultipleMedicinesStep(
+    medicines: List<MedicineEntry>,
+    onMedicinesChange: (List<MedicineEntry>) -> Unit,
     storedMedicines: List<String>,
-    showPicker: Boolean,
-    onShowPickerChange: (Boolean) -> Unit,
-    onAddNewMedicine: () -> Unit,
+    onAddNewMedicine: (Int) -> Unit,
     showError: Boolean
 ) {
+    var showPickerForIndex by remember { mutableStateOf(-1) }
+
     Column(
-        modifier = Modifier.fillMaxWidth(),
-        verticalArrangement = Arrangement.spacedBy(20.dp)
+        modifier = Modifier
+            .fillMaxWidth()
+            .verticalScroll(rememberScrollState()),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
-        // Hatırlatma ismi
-        OutlinedTextField(
-            value = reminderTitle,
-            onValueChange = onReminderTitleChange,
-            label = { Text("Hatırlatma İsmi (opsiyonel)", color = TextSecondary) },
-            leadingIcon = { Icon(Icons.Default.Edit, null, tint = DoziBlue) },
-            modifier = Modifier.fillMaxWidth(),
-            singleLine = true,
-            shape = MaterialTheme.shapes.medium,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = DoziBlue,
-                focusedLabelColor = DoziBlue,
-                cursorColor = DoziBlue,
-                unfocusedBorderColor = Gray200,
-                focusedContainerColor = DoziBlue.copy(alpha = 0.05f), // ✅ YENİ
-                unfocusedContainerColor = Color.White // ✅ YENİ
-            )
-        )
-
-        // İlaç seçici
-        MedicinePickerRow(
-            selectedName = medicineName,
-            onSelect = {
-                if (storedMedicines.isNotEmpty()) {
-                    onShowPickerChange(true)
+        medicines.forEachIndexed { index, medicine ->
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = MaterialTheme.shapes.medium,
+                border = if (showError && medicine.name.isBlank()) {
+                    BorderStroke(2.dp, ErrorRed)
                 } else {
-                    onAddNewMedicine()
+                    BorderStroke(1.dp, Gray200)
                 }
-            },
-            onAddNew = onAddNewMedicine
-        )
-
-        // Dozaj seçici - YENİ TASARIM
-        Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Text(
-                "Kaç Adet Alıyorsun?",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-
-            // Hızlı seçenekler
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
-                DosageChip(
-                    label = "1",
-                    isSelected = dosageType == "1",
-                    onClick = { onDosageTypeChange("1") },
-                    modifier = Modifier.weight(1f)
-                )
-                DosageChip(
-                    label = "Yarım",
-                    isSelected = dosageType == "0.5",
-                    onClick = { onDosageTypeChange("0.5") },
-                    modifier = Modifier.weight(1f)
-                )
-                DosageChip(
-                    label = "Çeyrek",
-                    isSelected = dosageType == "0.25",
-                    onClick = { onDosageTypeChange("0.25") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+                Column(
+                    modifier = Modifier.padding(16.dp),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            "İlaç ${index + 1}",
+                            style = MaterialTheme.typography.labelLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = DoziTurquoise
+                        )
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
-            ) {
-                DosageChip(
-                    label = "2",
-                    isSelected = dosageType == "2",
-                    onClick = { onDosageTypeChange("2") },
-                    modifier = Modifier.weight(1f)
-                )
-                DosageChip(
-                    label = "3",
-                    isSelected = dosageType == "3",
-                    onClick = { onDosageTypeChange("3") },
-                    modifier = Modifier.weight(1f)
-                )
-                DosageChip(
-                    label = "Diğer",
-                    isSelected = dosageType == "custom",
-                    onClick = { onDosageTypeChange("custom") },
-                    modifier = Modifier.weight(1f)
-                )
-            }
+                        if (medicines.size > 1) {
+                            IconButton(
+                                onClick = {
+                                    onMedicinesChange(medicines.filterIndexed { i, _ -> i != index })
+                                }
+                            ) {
+                                Icon(
+                                    Icons.Default.Close,
+                                    contentDescription = "Kaldır",
+                                    tint = ErrorRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+                    }
 
-            // Custom dozaj girişi
-            AnimatedVisibility(
-                visible = dosageType == "custom",
-                enter = fadeIn() + expandVertically()
-            ) {
-                OutlinedTextField(
-                    value = customDosage,
-                    onValueChange = onCustomDosageChange,
-                    label = { Text("Adet Girin", color = TextSecondary) },
-                    placeholder = { Text("Örn: 1.5, 4, vb.") },
-                    leadingIcon = { Icon(Icons.Default.Edit, null, tint = DoziTurquoise) },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
-                    shape = MaterialTheme.shapes.medium,
-                    colors = OutlinedTextFieldDefaults.colors(
-                        focusedBorderColor = DoziTurquoise,
-                        focusedLabelColor = DoziTurquoise,
-                        cursorColor = DoziTurquoise,
-                        unfocusedBorderColor = Gray200,
-                        focusedContainerColor = DoziTurquoise.copy(alpha = 0.05f), // ✅ YENİ
-                        unfocusedContainerColor = Color.White // ✅ YENİ
+                    // İlaç seçici
+                    MedicinePickerRow(
+                        selectedName = medicine.name,
+                        onSelect = {
+                            if (storedMedicines.isNotEmpty()) {
+                                showPickerForIndex = index
+                            } else {
+                                onAddNewMedicine(index)
+                            }
+                        },
+                        onAddNew = { onAddNewMedicine(index) }
                     )
-                )
+
+                    // Dozaj seçici
+                    Text(
+                        "Kaç Adet?",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DosageChip(
+                            label = "1",
+                            isSelected = medicine.dosageType == "1",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(dosageType = "1")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        DosageChip(
+                            label = "Yarım",
+                            isSelected = medicine.dosageType == "0.5",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(dosageType = "0.5")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        DosageChip(
+                            label = "2",
+                            isSelected = medicine.dosageType == "2",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(dosageType = "2")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        DosageChip(
+                            label = "Çeyrek",
+                            isSelected = medicine.dosageType == "0.25",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(dosageType = "0.25")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        DosageChip(
+                            label = "3",
+                            isSelected = medicine.dosageType == "3",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(dosageType = "3")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        DosageChip(
+                            label = "Diğer",
+                            isSelected = medicine.dosageType == "custom",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(dosageType = "custom")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    // Custom dozaj girişi
+                    AnimatedVisibility(
+                        visible = medicine.dosageType == "custom",
+                        enter = fadeIn() + expandVertically()
+                    ) {
+                        OutlinedTextField(
+                            value = medicine.customDosage,
+                            onValueChange = { newDosage ->
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(customDosage = newDosage)
+                                })
+                            },
+                            label = { Text("Adet Girin", color = TextSecondary) },
+                            placeholder = { Text("Örn: 1.5, 4, vb.") },
+                            leadingIcon = { Icon(Icons.Default.Edit, null, tint = DoziTurquoise) },
+                            modifier = Modifier.fillMaxWidth(),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Decimal),
+                            shape = MaterialTheme.shapes.medium,
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = DoziTurquoise,
+                                focusedLabelColor = DoziTurquoise,
+                                cursorColor = DoziTurquoise,
+                                unfocusedBorderColor = Gray200,
+                                focusedContainerColor = DoziTurquoise.copy(alpha = 0.05f),
+                                unfocusedContainerColor = Color.White
+                            )
+                        )
+                    }
+                }
             }
+        }
+
+        // + İlaç Ekle butonu
+        OutlinedButton(
+            onClick = {
+                val newId = (medicines.maxOfOrNull { it.id } ?: 0) + 1
+                onMedicinesChange(medicines + MedicineEntry(id = newId))
+            },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            border = BorderStroke(2.dp, DoziTurquoise),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = DoziTurquoise),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("İlaç Ekle", fontWeight = FontWeight.Bold)
         }
 
         // Hata mesajı
         AnimatedVisibility(
-            visible = showError && medicineName.isBlank(),
+            visible = showError && medicines.any { it.name.isBlank() },
             enter = fadeIn() + expandVertically()
         ) {
             Card(
@@ -669,7 +699,7 @@ private fun MedicineStep(
                         modifier = Modifier.size(20.dp)
                     )
                     Text(
-                        "Lütfen ilaç seçin",
+                        "Lütfen tüm ilaçları seçin",
                         color = ErrorRed,
                         style = MaterialTheme.typography.bodySmall
                     )
@@ -678,14 +708,16 @@ private fun MedicineStep(
         }
     }
 
-    if (showPicker) {
+    if (showPickerForIndex >= 0) {
         MedicineBottomSheet(
             items = storedMedicines,
-            onPick = {
-                onNameChange(it)
-                onShowPickerChange(false)
+            onPick = { selectedMedicine ->
+                onMedicinesChange(medicines.toMutableList().also {
+                    it[showPickerForIndex] = it[showPickerForIndex].copy(name = selectedMedicine)
+                })
+                showPickerForIndex = -1
             },
-            onDismiss = { onShowPickerChange(false) }
+            onDismiss = { showPickerForIndex = -1 }
         )
     }
 }
@@ -1183,24 +1215,13 @@ private fun TimeStep(
 // ADIM 4 - ÖZET
 @Composable
 private fun SummaryStep(
-    medicineName: String,
-    reminderTitle: String,
-    dosageType: String,
-    customDosage: String,
+    medicines: List<MedicineEntry>,
     hour: Int,
     minute: Int,
     frequency: String,
     xValue: Int,
     selectedDates: List<String>
 ) {
-    val displayDosage = if (dosageType == "custom") customDosage else dosageType
-    val dosageText = when (dosageType) {
-        "0.5" -> "Yarım adet"
-        "0.25" -> "Çeyrek adet"
-        "custom" -> "$customDosage adet"
-        else -> "$dosageType adet"
-    }
-
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -1222,26 +1243,50 @@ private fun SummaryStep(
                 )
                 Divider(color = Gray200)
 
-                SummaryRow(
-                    Icons.Default.Badge,
-                    "Hatırlatma",
-                    if (reminderTitle.isBlank()) medicineName else reminderTitle,
-                    DoziCoral
+                // İlaçlar
+                Text(
+                    text = "💊 İlaçlar (${medicines.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = DoziTurquoise
                 )
-                if (reminderTitle.isNotBlank()) {
-                    SummaryRow(
-                        Icons.Default.LocalPharmacy,
-                        "İlaç",
-                        medicineName,
-                        DoziTurquoise
-                    )
+
+                medicines.forEachIndexed { index, medicine ->
+                    val dosageText = when (medicine.dosageType) {
+                        "0.5" -> "Yarım adet"
+                        "0.25" -> "Çeyrek adet"
+                        "custom" -> "${medicine.customDosage} adet"
+                        else -> "${medicine.dosageType} adet"
+                    }
+
+                    Surface(
+                        color = DoziTurquoise.copy(alpha = 0.1f),
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween
+                        ) {
+                            Text(
+                                "${index + 1}. ${medicine.name}",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = TextPrimary
+                            )
+                            Text(
+                                dosageText,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = DoziTurquoise,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
                 }
-                SummaryRow(
-                    Icons.Default.Medication,
-                    "Dozaj",
-                    dosageText,
-                    DoziBlue
-                )
+
+                Divider(color = Gray200)
+
                 SummaryRow(
                     Icons.Default.CalendarMonth,
                     "Sıklık",
@@ -1271,7 +1316,7 @@ private fun SummaryStep(
             ) {
                 Icon(Icons.Default.Info, contentDescription = null, tint = DoziBlue)
                 Text(
-                    text = "Her şey hazır! Kaydet butonuna basarak hatırlatmanı aktif edebilirsin.",
+                    text = "Her şey hazır! ${medicines.size} ilaç aynı saatte kaydedilecek.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary
                 )
@@ -1370,7 +1415,6 @@ private fun NavigationButtons(
 // BAŞARI DİYALOĞU
 @Composable
 private fun ReminderSuccessDialog(
-    onAddSameTime: () -> Unit,
     onAddAnother: () -> Unit,
     onFinish: () -> Unit
 ) {
@@ -1400,62 +1444,43 @@ private fun ReminderSuccessDialog(
                     }
                 }
                 Text(
-                    text = "Harika!",
+                    text = "Tamamlandı!",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = SuccessGreen
                 )
                 Text(
-                    text = "Hatırlatman başarıyla kaydedildi!",
+                    text = "İlaçlarınız başarıyla kaydedildi!",
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextPrimary,
                     textAlign = TextAlign.Center
                 )
-                Divider(color = Gray200)
-                Text(
-                    text = "Başka bir ilaç eklemek ister misin?",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                    textAlign = TextAlign.Center
-                )
+
                 Column(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Aynı saate başka ilaç ekle
+                    // Başka ilaç ekle
                     Button(
-                        onClick = onAddSameTime,
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        onClick = onAddAnother,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise),
                         shape = MaterialTheme.shapes.medium
                     ) {
-                        Icon(Icons.Default.Schedule, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Aynı saate başka ilaç", fontWeight = FontWeight.Bold)
-                    }
-
-                    // Farklı saatte ilaç ekle
-                    OutlinedButton(
-                        onClick = onAddAnother,
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
-                        border = BorderStroke(2.dp, SuccessGreen),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SuccessGreen)
-                    ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Farklı saatte ilaç ekle", fontWeight = FontWeight.Bold)
+                        Text("Başka İlaç Ekle", fontWeight = FontWeight.Bold)
                     }
 
                     // Bitir
                     OutlinedButton(
                         onClick = onFinish,
-                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
                         border = BorderStroke(2.dp, Gray200),
                         shape = MaterialTheme.shapes.medium,
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary)
                     ) {
-                        Text("Hayır, teşekkürler", fontWeight = FontWeight.Bold)
+                        Text("Kapat", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1463,10 +1488,9 @@ private fun ReminderSuccessDialog(
     }
 }
 
-// KAYDETME - Firestore
-private fun saveReminderToFirestore(
-    medicineName: String,
-    dosage: String,
+// KAYDETME - Multiple Medicines to Firestore
+private fun saveMedicinesToFirestore(
+    medicines: List<MedicineEntry>,
     hour: Int,
     minute: Int,
     frequency: String,
@@ -1499,35 +1523,46 @@ private fun saveReminderToFirestore(
         else -> 1 // "İstediğim tarihlerde" için önemsiz
     }
 
-    // Medicine nesnesi oluştur
-    val medicine = Medicine(
-        id = "", // Repository tarafından oluşturulacak
-        userId = "", // Repository tarafından oluşturulacak
-        name = medicineName,
-        dosage = "$dosage adet",
-        form = "tablet",
-        times = times,
-        days = days,
-        frequency = frequency,
-        frequencyValue = calculatedFrequencyValue,
-        startDate = startDate, // Kullanıcının seçtiği başlangıç tarihi
-        endDate = null, // Sürekli kullanım
-        stockCount = 0,
-        boxSize = 0,
-        notes = if (frequency == "Her X günde bir") "Her $xValue günde bir" else "",
-        reminderEnabled = true,
-        icon = "💊"
-    )
-
-    // Firestore'a kaydet
+    // Her ilaç için Medicine nesnesi oluştur ve kaydet
     CoroutineScope(Dispatchers.IO).launch {
-        val success = medicineRepository.addMedicine(medicine)
-        if (success) {
-            CoroutineScope(Dispatchers.Main).launch {
-                onSuccess()
+        var allSuccess = true
+
+        medicines.forEach { medicineEntry ->
+            val dosage = if (medicineEntry.dosageType == "custom") {
+                medicineEntry.customDosage
+            } else {
+                medicineEntry.dosageType
             }
-        } else {
-            CoroutineScope(Dispatchers.Main).launch {
+
+            val medicine = Medicine(
+                id = "", // Repository tarafından oluşturulacak
+                userId = "", // Repository tarafından oluşturulacak
+                name = medicineEntry.name,
+                dosage = "$dosage adet",
+                form = "tablet",
+                times = times,
+                days = days,
+                frequency = frequency,
+                frequencyValue = calculatedFrequencyValue,
+                startDate = startDate,
+                endDate = null,
+                stockCount = 0,
+                boxSize = 0,
+                notes = if (frequency == "Her X günde bir") "Her $xValue günde bir" else "",
+                reminderEnabled = true,
+                icon = "💊"
+            )
+
+            val success = medicineRepository.addMedicine(medicine)
+            if (!success) {
+                allSuccess = false
+            }
+        }
+
+        CoroutineScope(Dispatchers.Main).launch {
+            if (allSuccess) {
+                onSuccess()
+            } else {
                 onError()
             }
         }
