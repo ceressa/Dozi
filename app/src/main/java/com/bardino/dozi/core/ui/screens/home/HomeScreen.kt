@@ -273,8 +273,12 @@ fun HomeScreen(
                                         val updated = medicineRepository.getUpcomingMedicines(context)
                                         allUpcomingMedicines = updated
                                         upcomingMedicine = updated.firstOrNull()
+                                        if (upcomingMedicine != null) {
+                                            currentMedicineStatus = MedicineStatus.UPCOMING
+                                        }
                                     }
                                 },
+                                onSnooze = { showSnoozeDialog = true },
                                 onSkip = { medicine ->
                                     playSound(context, R.raw.pekala)
                                     // Durumu kaydet
@@ -1816,6 +1820,7 @@ private fun MultiMedicineCard(
     medicines: List<Pair<Medicine, String>>,
     time: String,
     onTaken: (Medicine) -> Unit,
+    onSnooze: () -> Unit,
     onSkip: (Medicine) -> Unit
 ) {
     Card(
@@ -1881,67 +1886,69 @@ private fun MultiMedicineCard(
 
             // İlaç Listesi
             medicines.forEach { (medicine, _) ->
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(DoziTurquoise.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
-                        .padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = DoziTurquoise.copy(alpha = 0.05f)),
+                    shape = RoundedCornerShape(16.dp),
+                    elevation = CardDefaults.cardElevation(0.dp)
                 ) {
-                    Row(
-                        modifier = Modifier.weight(1f),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
-                        Text(
-                            medicine.icon,
-                            style = MaterialTheme.typography.headlineMedium
-                        )
-                        Column {
-                            Text(
-                                medicine.name,
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = TextPrimaryLight
-                            )
-                            Text(
-                                medicine.dosage,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondaryLight
-                            )
-                        }
-                    }
-
-                    // Butonlar
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        // AL butonu
-                        IconButton(
-                            onClick = { onTaken(medicine) },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(SuccessGreen, CircleShape)
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                Icons.Default.Check,
-                                contentDescription = "Al",
-                                tint = Color.White
+                            Text(
+                                medicine.icon,
+                                style = MaterialTheme.typography.headlineMedium
                             )
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    medicine.name,
+                                    style = MaterialTheme.typography.titleMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimaryLight
+                                )
+                                Text(
+                                    medicine.dosage,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextSecondaryLight
+                                )
+                            }
                         }
 
-                        // ATLA butonu
-                        IconButton(
-                            onClick = { onSkip(medicine) },
-                            modifier = Modifier
-                                .size(40.dp)
-                                .background(ErrorRed.copy(alpha = 0.2f), CircleShape)
+                        // Butonlar
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Close,
-                                contentDescription = "Atla",
-                                tint = ErrorRed
+                            ActionButton(
+                                text = "AL",
+                                icon = Icons.Default.Check,
+                                color = SuccessGreen,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onTaken(medicine) }
+                            )
+
+                            ActionButton(
+                                text = "ERTELE",
+                                icon = Icons.Default.AccessTime,
+                                color = WarningOrange,
+                                modifier = Modifier.weight(1f),
+                                onClick = onSnooze
+                            )
+
+                            ActionButton(
+                                text = "ATLA",
+                                icon = Icons.Default.Close,
+                                color = ErrorRed,
+                                modifier = Modifier.weight(1f),
+                                onClick = { onSkip(medicine) }
                             )
                         }
                     }
