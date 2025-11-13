@@ -50,7 +50,17 @@ class UserRepository(
     suspend fun updateUserField(field: String, value: Any) {
         val currentUser = auth.currentUser ?: return
         val docRef = db.collection("users").document(currentUser.uid)
-        docRef.update(field, value).await()
+
+        // Önce dokümanın var olup olmadığını kontrol et
+        val snapshot = docRef.get().await()
+        if (snapshot.exists()) {
+            // Doküman varsa update et
+            docRef.update(field, value).await()
+        } else {
+            // Doküman yoksa önce oluştur, sonra update et
+            createUserIfNotExists()
+            docRef.update(field, value).await()
+        }
     }
 
     fun signOut() {
