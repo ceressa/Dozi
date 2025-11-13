@@ -16,10 +16,14 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import android.Manifest
+import android.content.pm.PackageManager
+import androidx.core.content.ContextCompat
 import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
+import com.bardino.dozi.notifications.NotificationHelper
 import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -174,6 +178,11 @@ fun SettingsScreen(
                             }
                         }
                     )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    // 🔔 Test Bildirimi Butonu
+                    TestNotificationButton()
                 }
             }
         }
@@ -307,5 +316,65 @@ private fun SettingsSwitch(
                 checkedTrackColor = DoziTurquoise.copy(alpha = 0.5f)
             )
         )
+    }
+}
+
+@Composable
+private fun TestNotificationButton() {
+    val context = LocalContext.current
+
+    Button(
+        onClick = {
+            // Bildirim izni kontrolü
+            val hasPermission = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                ContextCompat.checkSelfPermission(
+                    context,
+                    Manifest.permission.POST_NOTIFICATIONS
+                ) == PackageManager.PERMISSION_GRANTED
+            } else {
+                true // Android 13 altında izin gerekmiyor
+            }
+
+            if (hasPermission) {
+                // Test bildirimi gönder
+                try {
+                    NotificationHelper.showMedicationNotification(
+                        context = context,
+                        medicineName = "Lustral",
+                        dosage = "100mg",
+                        time = "12:00"
+                    )
+                    Toast.makeText(context, "✅ Test bildirimi gönderildi!", Toast.LENGTH_SHORT).show()
+                } catch (e: Exception) {
+                    Toast.makeText(context, "❌ Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+                }
+            } else {
+                Toast.makeText(
+                    context,
+                    "⚠️ Bildirim izni verilmemiş. Lütfen uygulama ayarlarından izin verin.",
+                    Toast.LENGTH_LONG
+                ).show()
+            }
+        },
+        modifier = Modifier.fillMaxWidth(),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = DoziPurple
+        ),
+        elevation = ButtonDefaults.buttonElevation(defaultElevation = 2.dp)
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(8.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                Icons.Default.NotificationsActive,
+                contentDescription = null,
+                modifier = Modifier.size(20.dp)
+            )
+            Text(
+                "Test Bildirimi Gönder",
+                fontWeight = FontWeight.Bold
+            )
+        }
     }
 }
