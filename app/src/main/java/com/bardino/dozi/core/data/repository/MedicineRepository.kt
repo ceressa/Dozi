@@ -1,5 +1,7 @@
 package com.bardino.dozi.core.data.repository
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import com.bardino.dozi.core.data.model.Medicine
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -70,6 +72,7 @@ class MedicineRepository {
     /**
      * Get medicines for today's schedule
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getTodaysMedicines(): List<Medicine> {
         val allMedicines = getAllMedicines()
         val today = System.currentTimeMillis()
@@ -86,11 +89,31 @@ class MedicineRepository {
             when (medicine.frequency) {
                 "Her gün" -> true
 
-                "Gün aşırı", "Haftada bir", "15 günde bir", "Ayda bir", "Her X günde bir" -> {
+                "Gün aşırı" -> {
                     // Başlangıçtan bugüne kaç gün geçti?
                     val daysSinceStart = getDaysBetween(medicine.startDate, today)
-                    // frequencyValue'nun katı mı kontrol et (0, frequencyValue, 2*frequencyValue, ...)
-                    daysSinceStart % medicine.frequencyValue == 0L
+                    (daysSinceStart % 2).toInt() == 0 // Çift günlerde al (0, 2, 4, ...)
+                }
+
+                "Haftada bir" -> {
+                    // Başlangıçtan bugüne kaç hafta geçti?
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    (daysSinceStart % 7).toInt() == 0 // Her 7 günde bir
+                }
+
+                "15 günde bir" -> {
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    (daysSinceStart % 15).toInt() == 0
+                }
+
+                "Ayda bir" -> {
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    (daysSinceStart % 30).toInt() == 0
+                }
+
+                "Her X günde bir" -> {
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    (daysSinceStart % medicine.frequencyValue).toInt() == 0
                 }
 
                 "İstediğim tarihlerde" -> {
@@ -215,6 +238,7 @@ class MedicineRepository {
     /**
      * Get upcoming medicines (rest of today) - excludes taken/skipped
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getUpcomingMedicines(context: android.content.Context): List<Pair<Medicine, String>> {
         val todaysMedicines = getTodaysMedicines()
         val currentHour = java.time.LocalTime.now().hour
@@ -254,19 +278,9 @@ class MedicineRepository {
     }
 
     /**
-     * Helper: Get current date string for status key
-     */
-    private fun getCurrentDateString(): String {
-        val calendar = java.util.Calendar.getInstance()
-        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
-        val month = calendar.get(java.util.Calendar.MONTH) + 1
-        val year = calendar.get(java.util.Calendar.YEAR)
-        return "%02d_%02d_%d".format(day, month, year)
-    }
-
-    /**
      * Helper: Get current day name in Turkish
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     private fun getCurrentDayName(): String {
         val dayOfWeek = java.time.LocalDate.now().dayOfWeek.value
         return when (dayOfWeek) {

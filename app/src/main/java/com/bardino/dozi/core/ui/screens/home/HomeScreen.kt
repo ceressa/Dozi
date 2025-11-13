@@ -289,12 +289,18 @@ fun HomeScreen(
                                         allUpcomingMedicines = updated
                                         upcomingMedicine = updated.firstOrNull()
                                         if (upcomingMedicine != null) {
+
                                             currentMedicineStatus = MedicineStatus.UPCOMING
+
                                             android.util.Log.d("HomeScreen", "Next medicine: ${upcomingMedicine!!.first.name}")
                                         } else {
                                             android.util.Log.d("HomeScreen", "No more medicines")
+
+main
                                         }
+
                                     }
+
                                 },
                                 onSnooze = { showSnoozeDialog = true },
                                 onSkip = { medicine ->
@@ -1927,67 +1933,126 @@ private fun MultiMedicineCard(
             // İlaç Listesi
             medicines.forEach { (medicine, _) ->
                 Card(
+
                     modifier = Modifier.fillMaxWidth(),
+
                     colors = CardDefaults.cardColors(containerColor = DoziTurquoise.copy(alpha = 0.05f)),
+
                     shape = RoundedCornerShape(16.dp),
+
                     elevation = CardDefaults.cardElevation(0.dp)
+
                 ) {
+
                     Column(
+
                         modifier = Modifier
+
                             .fillMaxWidth()
+
                             .padding(16.dp),
+
                         verticalArrangement = Arrangement.spacedBy(12.dp)
+
                     ) {
+
                         Row(
+
                             modifier = Modifier.fillMaxWidth(),
+
                             horizontalArrangement = Arrangement.spacedBy(12.dp),
+
                             verticalAlignment = Alignment.CenterVertically
+
                         ) {
+
                             Text(
+
                                 medicine.icon,
+
                                 style = MaterialTheme.typography.headlineMedium
+
                             )
+
                             Column(modifier = Modifier.weight(1f)) {
+
                                 Text(
+
                                     medicine.name,
+
                                     style = MaterialTheme.typography.titleMedium,
+
                                     fontWeight = FontWeight.Bold,
+
                                     color = TextPrimaryLight
+
                                 )
+
                                 Text(
+
                                     medicine.dosage,
+
                                     style = MaterialTheme.typography.bodyMedium,
+
                                     color = TextSecondaryLight
+
                                 )
+
                             }
+
                         }
 
+
+
                         // Butonlar
+
                         Row(
+
                             modifier = Modifier.fillMaxWidth(),
+
                             horizontalArrangement = Arrangement.spacedBy(8.dp)
+
                         ) {
+
                             ActionButton(
+
                                 text = "AL",
+
                                 icon = Icons.Default.Check,
+
                                 color = SuccessGreen,
+
                                 modifier = Modifier.weight(1f),
+
                                 onClick = { onTaken(medicine) }
+
                             )
 
+
+
                             ActionButton(
+
                                 text = "ERTELE",
-                                icon = Icons.Default.AccessTime,
-                                color = WarningOrange,
-                                modifier = Modifier.weight(1f),
-                                onClick = onSnooze
-                            )
 
-                            ActionButton(
-                                text = "ATLA",
-                                icon = Icons.Default.Close,
-                                color = ErrorRed,
+                                icon = Icons.Default.AccessTime,
+
+                                color = WarningOrange,
+
                                 modifier = Modifier.weight(1f),
+
+                                onClick = onSnooze
+
+                            )
+                            ActionButton(
+
+                                text = "ATLA",
+
+                                icon = Icons.Default.Close,
+
+                                color = ErrorRed,
+
+                                modifier = Modifier.weight(1f),
+
                                 onClick = { onSkip(medicine) }
                             )
                         }
