@@ -341,7 +341,17 @@ fun AddReminderScreen(
 
     if (showSuccess) {
         ReminderSuccessDialog(
+            onAddSameTime = {
+                // Aynı saate başka ilaç ekle - sadece ilaç bilgilerini sıfırla
+                showSuccess = false
+                step = 1
+                medicineName = ""
+                dosageType = "1"
+                customDosage = ""
+                // Saat, sıklık, startDate korunur
+            },
             onAddAnother = {
+                // Farklı saatte ilaç ekle - her şeyi sıfırla
                 showSuccess = false
                 step = 1
                 medicineName = ""
@@ -349,6 +359,9 @@ fun AddReminderScreen(
                 customDosage = ""
                 frequency = "Her gün"
                 selectedDates = emptyList()
+                startDate = System.currentTimeMillis()
+                hour = 8
+                minute = 0
             },
             onFinish = {
                 showSuccess = false
@@ -1356,7 +1369,11 @@ private fun NavigationButtons(
 
 // BAŞARI DİYALOĞU
 @Composable
-private fun ReminderSuccessDialog(onAddAnother: () -> Unit, onFinish: () -> Unit) {
+private fun ReminderSuccessDialog(
+    onAddSameTime: () -> Unit,
+    onAddAnother: () -> Unit,
+    onFinish: () -> Unit
+) {
     Dialog(onDismissRequest = {}) {
         Surface(
             shape = MaterialTheme.shapes.extraLarge,
@@ -1405,16 +1422,32 @@ private fun ReminderSuccessDialog(onAddAnother: () -> Unit, onFinish: () -> Unit
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
+                    // Aynı saate başka ilaç ekle
                     Button(
+                        onClick = onAddSameTime,
+                        modifier = Modifier.fillMaxWidth().height(50.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.Schedule, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Aynı saate başka ilaç", fontWeight = FontWeight.Bold)
+                    }
+
+                    // Farklı saatte ilaç ekle
+                    OutlinedButton(
                         onClick = onAddAnother,
                         modifier = Modifier.fillMaxWidth().height(50.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = SuccessGreen),
-                        shape = MaterialTheme.shapes.medium
+                        border = BorderStroke(2.dp, SuccessGreen),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = SuccessGreen)
                     ) {
                         Icon(Icons.Default.Add, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
-                        Text("Evet, bir tane daha", fontWeight = FontWeight.Bold)
+                        Text("Farklı saatte ilaç ekle", fontWeight = FontWeight.Bold)
                     }
+
+                    // Bitir
                     OutlinedButton(
                         onClick = onFinish,
                         modifier = Modifier.fillMaxWidth().height(50.dp),
