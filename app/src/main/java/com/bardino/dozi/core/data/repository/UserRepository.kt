@@ -15,20 +15,27 @@ class UserRepository(
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getUserData(): User? {
         val user = auth.currentUser ?: return null
-        val doc = db.collection("users").document(user.email!!).get().await()
+        val doc = db.collection("users").document(user.uid).get().await()
         return doc.toObject(User::class.java)
     }
 
     suspend fun createUserIfNotExists() {
         val user = auth.currentUser ?: return
-        val docRef = db.collection("users").document(user.email!!)
+        val docRef = db.collection("users").document(user.uid)
         val snapshot = docRef.get().await()
         if (!snapshot.exists()) {
             val newUser = User(
-                id = user.uid,
+                uid = user.uid,
                 name = user.displayName ?: "",
                 email = user.email ?: "",
-                timezone = "Europe/Istanbul"
+                photoUrl = user.photoUrl?.toString() ?: "",
+                createdAt = System.currentTimeMillis(),
+                timezone = "Europe/Istanbul",
+                language = "tr",
+                planType = "free",
+                vibration = true,
+                theme = "light",
+                onboardingCompleted = false
             )
             docRef.set(newUser).await()
         }
