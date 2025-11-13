@@ -973,10 +973,10 @@ private fun FrequencyOptionCard(
                 Spacer(Modifier.height(12.dp))
 
                 Text(
-                    text = "Başlangıç Tarihi",
+                    text = "📅 Başlangıç Tarihi",
                     style = MaterialTheme.typography.labelLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = DoziTurquoise
                 )
                 Spacer(Modifier.height(8.dp))
 
@@ -987,15 +987,16 @@ private fun FrequencyOptionCard(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    border = BorderStroke(1.dp, SuccessGreen),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SuccessGreen)
+                    border = BorderStroke(2.dp, DoziTurquoise),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = DoziTurquoise)
                 ) {
-                    Icon(Icons.Default.CalendarToday, contentDescription = null)
+                    Icon(Icons.Default.CalendarToday, contentDescription = null, tint = DoziTurquoise)
                     Spacer(Modifier.width(8.dp))
                     val formatter = SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR"))
                     Text(
                         formatter.format(Date(startDate)),
-                        fontWeight = FontWeight.Medium
+                        fontWeight = FontWeight.Bold,
+                        color = DoziTurquoise
                     )
                 }
             }

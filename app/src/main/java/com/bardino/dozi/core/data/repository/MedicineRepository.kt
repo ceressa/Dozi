@@ -213,7 +213,7 @@ class MedicineRepository {
     }
 
     /**
-     * Get upcoming medicines (next 3 hours)
+     * Get upcoming medicines (rest of today)
      */
     suspend fun getUpcomingMedicines(): List<Pair<Medicine, String>> {
         val todaysMedicines = getTodaysMedicines()
@@ -228,8 +228,8 @@ class MedicineRepository {
                 val medicineTime = hour * 60 + minute
                 val currentTime = currentHour * 60 + currentMinute
 
-                // If medicine time is within next 3 hours
-                if (medicineTime > currentTime && medicineTime <= currentTime + 180) {
+                // Bugünün geri kalan tüm ilaçları
+                if (medicineTime >= currentTime) {
                     upcoming.add(Pair(medicine, time))
                 }
             }
