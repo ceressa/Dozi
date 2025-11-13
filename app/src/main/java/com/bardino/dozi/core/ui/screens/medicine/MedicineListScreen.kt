@@ -112,20 +112,20 @@ fun MedicineListScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Üst Bilgi Alanı - Modern Design
+                // Üst Bilgi Alanı
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            brush = Brush.verticalGradient(
+                            brush = Brush.horizontalGradient(
                                 colors = listOf(
                                     DoziTurquoise,
-                                    DoziTurquoise.copy(alpha = 0.85f)
+                                    DoziBlue
                                 )
                             ),
-                            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                            shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
                         )
-                        .padding(horizontal = 24.dp, vertical = 32.dp)
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -133,48 +133,24 @@ fun MedicineListScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = "${medicines.size}",
+                                text = "İlaçlarım",
                                 color = Color.White,
-                                style = MaterialTheme.typography.displaySmall,
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "İlaç Kaydedildi",
-                                color = Color.White.copy(alpha = 0.95f),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "İlaçlarınızı yönetin ve takip edin",
-                                color = Color.White.copy(alpha = 0.85f),
+                                text = "${medicines.size} ilaç kaydedildi",
+                                color = Color.White.copy(alpha = 0.9f),
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                        }
-
-                        Surface(
-                            shape = CircleShape,
-                            color = Color.White.copy(alpha = 0.2f),
-                            modifier = Modifier.size(72.dp)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Medication,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            }
                         }
                     }
                 }
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(16.dp))
 
                 // İlaç Listesi
                 LazyColumn(
@@ -300,14 +276,10 @@ private fun ModernMedicineCard(
     Card(
         onClick = onClick,
         modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(24.dp),
-                spotColor = DoziTurquoise.copy(alpha = 0.25f)
-            ),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box {
             // Dekoratif background pattern
@@ -404,8 +376,7 @@ private fun InfoTag(
 ) {
     Surface(
         color = color.copy(alpha = 0.12f),
-        shape = RoundedCornerShape(12.dp),
-        shadowElevation = 2.dp
+        shape = RoundedCornerShape(12.dp)
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
