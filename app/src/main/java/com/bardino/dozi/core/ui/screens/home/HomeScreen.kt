@@ -199,7 +199,6 @@ fun HomeScreen(
             ) {
                 Spacer(Modifier.height(4.dp))
 
-                // ✅ Takvim (yeni versiyon)
                 HorizontalCalendar(
                     selectedDate = selectedDate,
                     onDateSelected = { date ->
@@ -221,47 +220,32 @@ fun HomeScreen(
                             )
                 ) {
                     if (uiState.currentMedicineStatus == MedicineStatus.UPCOMING && uiState.upcomingMedicine != null) {
-                        // Aynı saatteki tüm ilaçları bul
                         val sameTimeMedicines = uiState.allUpcomingMedicines.filter { it.second == uiState.upcomingMedicine!!.second }
 
                         if (sameTimeMedicines.size == 1) {
-                            // Tek ilaç varsa normal kartı göster
                             CurrentMedicineCard(
                                 medicine = uiState.upcomingMedicine!!.first,
                                 time = uiState.upcomingMedicine!!.second,
                                 snoozeMinutes = uiState.snoozeMinutes,
                                 onTaken = {
                                     playSound(context, R.raw.success)
-                                    viewModel.onMedicineTaken(
-                                        context,
-                                        uiState.upcomingMedicine!!.first,
-                                        uiState.upcomingMedicine!!.second
-                                    )
+                                    viewModel.onMedicineTaken(context, uiState.upcomingMedicine!!.first, uiState.upcomingMedicine!!.second)
                                 },
                                 onSnooze = { viewModel.setShowSnoozeDialog(true) },
                                 onSkip = { viewModel.setShowSkipDialog(true) }
                             )
                         } else {
-                            // Birden fazla ilaç varsa grup kartı göster
                             MultiMedicineCard(
                                 medicines = sameTimeMedicines,
                                 time = uiState.upcomingMedicine!!.second,
                                 onTaken = { medicine ->
                                     playSound(context, R.raw.success)
-                                    viewModel.onMedicineTaken(
-                                        context,
-                                        medicine,
-                                        uiState.upcomingMedicine!!.second
-                                    )
+                                    viewModel.onMedicineTaken(context, medicine, uiState.upcomingMedicine!!.second)
                                 },
                                 onSnooze = { viewModel.setShowSnoozeDialog(true) },
                                 onSkip = { medicine ->
                                     playSound(context, R.raw.pekala)
-                                    viewModel.onMedicineSkipped(
-                                        context,
-                                        medicine,
-                                        uiState.upcomingMedicine!!.second
-                                    )
+                                    viewModel.onMedicineSkipped(context, medicine, uiState.upcomingMedicine!!.second)
                                 }
                             )
                         }
@@ -538,6 +522,7 @@ fun HorizontalCalendar(
     onNavigateToReminders: () -> Unit
 ) {
     val today = LocalDate.now()
+    val context = LocalContext.current
 
     // 🔹 Sadece 7 gün: bugünün 3 gün öncesi ve 3 gün sonrası
     val dates = remember { (-3..3).map { today.plusDays(it.toLong()) } }

@@ -6,21 +6,18 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.bardino.dozi.core.data.model.Medicine
-import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.bardino.dozi.core.data.Medicine
+import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
-import kotlinx.coroutines.launch
 
 @Composable
 fun MedicineDetailScreen(
@@ -29,23 +26,18 @@ fun MedicineDetailScreen(
     onEditMedicine: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val medicineRepository = remember { MedicineRepository() }
-    var medicine by remember { mutableStateOf<Medicine?>(null) }
 
-    LaunchedEffect(medicineId) {
-        try {
-            medicine = medicineRepository.getMedicine(medicineId)
-        } catch (e: Exception) {
-            // Handle error
-        }
+    // Mevcut ilacı yükle
+    val medicine by remember {
+        mutableStateOf(
+            MedicineRepository.getMedicine(context, medicineId) ?: Medicine(
+                id = medicineId,
+                name = "Bilinmiyor",
+                dosage = "-",
+                stock = 0
+            )
+        )
     }
-
-    val currentMedicine = medicine ?: Medicine(
-        id = medicineId,
-        name = "Yükleniyor...",
-        dosage = "-",
-        stockCount = 0
-    )
 
     Scaffold(
         topBar = {
@@ -53,9 +45,10 @@ fun MedicineDetailScreen(
                 title = "İlaç Detayı",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
+                backgroundColor = Color.White,
                 actions = {
                     IconButton(
-                        onClick = { onEditMedicine(currentMedicine.id) },
+                        onClick = { onEditMedicine(medicine.id) },
                         modifier = Modifier
                             .size(46.dp)
                             .background(DoziTurquoise.copy(alpha = 0.1f), CircleShape)
@@ -78,6 +71,7 @@ fun MedicineDetailScreen(
                 .padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // İlaç Bilgileri Kartı
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -88,12 +82,13 @@ fun MedicineDetailScreen(
                     Modifier.padding(20.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    DetailRow("İlaç Adı", currentMedicine.name)
-                    DetailRow("Dozaj", currentMedicine.dosage)
-                    DetailRow("Stok", "${currentMedicine.stockCount} adet")
+                    DetailRow("İlaç Adı", medicine.name)
+                    DetailRow("Dozaj", medicine.dosage)
+                    DetailRow("Stok", "${medicine.stock} adet")
                 }
             }
 
+            // Bilgilendirme Mesajı
             Text(
                 text = "Bu ekran sadece görüntüleme içindir. İlaç bilgilerini düzenlemek için sağ üstteki 'Düzenle' butonuna dokun.",
                 style = MaterialTheme.typography.bodyMedium,

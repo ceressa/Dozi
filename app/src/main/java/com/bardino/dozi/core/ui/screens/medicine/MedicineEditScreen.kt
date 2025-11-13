@@ -1,29 +1,31 @@
 package com.bardino.dozi.core.ui.screens.medicine
 
-import android.Manifest
 import android.content.Context
-import android.content.Intent
 import android.net.Uri
-import android.speech.RecognizerIntent
 import android.widget.Toast
-import androidx.activity.compose.rememberLauncherForActivityResult
-import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.*
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
-import androidx.navigation.NavController
 import com.bardino.dozi.core.data.Ilac
+import com.bardino.dozi.core.data.Medicine
 import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
@@ -33,28 +35,13 @@ import com.google.mlkit.vision.text.latin.TextRecognizerOptions
 import java.io.File
 import java.io.IOException
 import java.util.UUID
-import com.bardino.dozi.core.data.Medicine
-import com.bardino.dozi.core.data.MedicineRepository.loadMedicines
-import com.bardino.dozi.core.data.MedicineRepository.saveMedicine
-import android.app.Activity
-import androidx.activity.result.ActivityResultLauncher
-import androidx.compose.ui.platform.LocalFocusManager
-import androidx.compose.foundation.gestures.detectTapGestures
-import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.foundation.background
-import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.ui.Alignment
-import androidx.compose.ui.draw.shadow
-import androidx.compose.ui.graphics.Color
-
 
 // --------------------------------------------------------------------
-// 🔍 Bellekten İlaç Doğrulama (MedicineRepository üzerinden)
+// 🔍 Bellekten İlaç Doğrulama
 // --------------------------------------------------------------------
 fun verifyMedicine(name: String): Ilac? {
     return MedicineRepository.findByNameOrIngredient(name)
 }
-
 
 // --------------------------------------------------------------------
 // 📷 Geçici fotoğraf dosyası URI'si oluşturur
@@ -99,90 +86,25 @@ private fun processImageFromUri(
 // --------------------------------------------------------------------
 @Composable
 fun MedicineEditScreen(
-    navController: NavController,
     medicineId: String,
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-
-    val existing = remember(medicineId) {
-        if (medicineId == "new") null else
-            MedicineRepository.loadMedicines(context).find { it.id == medicineId }
-    }
     val focusManager = LocalFocusManager.current
 
+    // Mevcut ilaç bilgilerini yükle
+    val existing = MedicineRepository.getMedicine(context, medicineId)
+    var name by remember { mutableStateOf(existing?.name ?: "") }
+    var dosage by remember { mutableStateOf(existing?.dosage ?: "") }
+    var stock by remember { mutableStateOf(existing?.stock?.toString() ?: "0") }
+
+    // Hata durumları
     var nameError by remember { mutableStateOf(false) }
-    var nameEditable by remember { mutableStateOf(false) }
     var dosageError by remember { mutableStateOf(false) }
     var stockError by remember { mutableStateOf(false) }
+
+    // Animasyon
     var isVisible by remember { mutableStateOf(false) }
-    var medicineNameState by remember { mutableStateOf("") }
-    var selectedTimeState by remember { mutableStateOf("") }
-
-    // 🔹 Lookup’tan gelen veriyi al
-    val selectedMedicine =
-        navController.previousBackStackEntry
-            ?.savedStateHandle
-            ?.get<IlacSearchResultParcelable>("selectedMedicine")
-
-    // 💊 Ürün adından dozaj tespiti
-    val dosageFromName = Regex(
-        """\b(\d{1,4}(?:[.,]\d{1,2})?)\s*(mg|ml|µg|mcg|gr|g|iu)\b""",
-        RegexOption.IGNORE_CASE
-    ).find(selectedMedicine?.item?.Product_Name ?: "")
-        ?.value
-
-    // 🔹 Ürün adından stok tespiti
-    val stockFromName = Regex(
-        """\b(\d{1,4})\s*(tablet|kapsül|ampul|flakon|draje|adet|kutu)\b""",
-        RegexOption.IGNORE_CASE
-    ).find(selectedMedicine?.item?.Product_Name ?: "")
-        ?.groupValues?.get(1)
-
-    // 🔹 Form değerleri
-    var name by remember { mutableStateOf(selectedMedicine?.item?.Product_Name ?: existing?.name ?: "") }
-    var dosage by remember {
-        mutableStateOf(dosageFromName ?: selectedMedicine?.dosage ?: existing?.dosage ?: "")
-    }
-    var stock by remember { mutableStateOf(stockFromName ?: existing?.stock?.toString() ?: "") }
-
-    // 🧠 Sesli komutla gelen verileri yakala
-    val suggestedName = navController.previousBackStackEntry
-        ?.savedStateHandle
-        ?.get<String>("suggestedName")
-
-    val preselectedTime = navController.previousBackStackEntry
-        ?.savedStateHandle
-        ?.get<String>("preselectedTime")
-
-    // 🩵 Eğer ekrandaki alanlar boşsa sesli gelen verileri yerleştir
-    if (suggestedName != null && medicineNameState.isBlank()) {
-        medicineNameState = suggestedName
-    }
-
-    if (preselectedTime != null && selectedTimeState.isBlank()) {
-        selectedTimeState = preselectedTime
-    }
-
-    // UI bileşenleri buradan devam eder
-    Column(
-        modifier = Modifier
-            .fillMaxSize()
-            .padding(16.dp)
-    ) {
-        TextField(
-            value = medicineNameState,
-            onValueChange = { medicineNameState = it },
-            label = { Text("İlaç Adı") }
-        )
-
-        TextField(
-            value = selectedTimeState,
-            onValueChange = { selectedTimeState = it },
-            label = { Text("Hatırlatma Saati (HH:mm)") }
-        )
-    }
-
     LaunchedEffect(Unit) { isVisible = true }
 
     Scaffold(
@@ -209,12 +131,13 @@ fun MedicineEditScreen(
                 },
             verticalArrangement = Arrangement.spacedBy(20.dp)
         ) {
+            // Başlık
             AnimatedVisibility(visible = isVisible, enter = fadeIn()) {
                 Text(
                     text = if (medicineId == "new") "✨ Yeni ilaç ekle" else "İlaç bilgilerini düzenle",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = TextPrimaryLight
                 )
             }
 
@@ -243,7 +166,6 @@ fun MedicineEditScreen(
                         ),
                         singleLine = true,
                         isError = nameError,
-                        readOnly = false,
                         placeholder = { Text("İlaç adını girin", color = TextSecondaryLight) }
                     )
 
@@ -327,6 +249,7 @@ fun MedicineEditScreen(
                             val newId = if (medicineId == "new") UUID.randomUUID().toString() else medicineId
                             val updated = Medicine(newId, name.trim(), dosage.trim(), stock.toInt())
 
+                            // İlaç doğrulama
                             val match = MedicineRepository.findByNameOrIngredient(name)
                             if (match != null) {
                                 Toast.makeText(
@@ -359,7 +282,6 @@ fun MedicineEditScreen(
             }
         }
     }
-
 }
 
 // --------------------------------------------------------------------
@@ -376,11 +298,14 @@ private fun extractMedicineInfo(lines: List<String>, mergedRaw: String): Triple<
     val dosageRx = Regex("""(\d{1,4}(?:[.,]\d{1,2})?)\s*(mg|ml|µg|mcg|gr|g|iu)\b""")
     val stockRx = Regex("""(\d{1,3})\s*(tablet|kapsül|ampul|flakon|draje|adet|kutu)\b""")
 
+    val dosage = normLines.firstNotNullOfOrNull { dosageRx.find(it)?.value }
+        ?: dosageRx.find(merged)?.value ?: ""
+    val stock = normLines.firstNotNullOfOrNull { stockRx.find(it)?.groupValues?.get(1) }
+        ?: stockRx.find(merged)?.groupValues?.get(1) ?: ""
 
-    val dosage = normLines.firstNotNullOfOrNull { dosageRx.find(it)?.value } ?: dosageRx.find(merged)?.value ?: ""
-    val stock = normLines.firstNotNullOfOrNull { stockRx.find(it)?.groupValues?.get(1) } ?: stockRx.find(merged)?.groupValues?.get(1) ?: ""
-
-    val nameCandidates = merged.split(" ").filter { it.length > 2 && it !in forbidden && it.any { c -> c.isLetter() } }
+    val nameCandidates = merged.split(" ").filter {
+        it.length > 2 && it !in forbidden && it.any { c -> c.isLetter() }
+    }
     val name = nameCandidates.firstOrNull()?.capitalizeFirst() ?: ""
 
     return Triple(name, dosage, stock)
@@ -389,7 +314,8 @@ private fun extractMedicineInfo(lines: List<String>, mergedRaw: String): Triple<
 // --------------------------------------------------------------------
 // UI Yardımcıları
 // --------------------------------------------------------------------
-private fun String.capitalizeFirst(): String = if (isEmpty()) this else this[0].uppercase() + substring(1)
+private fun String.capitalizeFirst(): String =
+    if (isEmpty()) this else this[0].uppercase() + substring(1)
 
 @Composable
 private fun ErrorCard(message: String) {
@@ -407,19 +333,5 @@ private fun ErrorCard(message: String) {
             color = ErrorRed,
             style = MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Medium)
         )
-    }
-}
-
-
-@Composable
-fun rememberVoiceRecognitionLauncher(
-    onResult: (String) -> Unit
-): ActivityResultLauncher<Intent> {
-    return rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.StartActivityForResult()
-    ) { result ->
-        val data = result.data
-        val spokenText = data?.getStringArrayListExtra(RecognizerIntent.EXTRA_RESULTS)?.firstOrNull()
-        spokenText?.let { onResult(it) }
     }
 }

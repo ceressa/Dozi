@@ -2,11 +2,7 @@ package com.bardino.dozi.core.ui.screens.medicine
 
 import android.widget.Toast
 import androidx.compose.animation.*
-import androidx.compose.animation.core.tween
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Image
-import androidx.compose.foundation.background
-import androidx.compose.foundation.clickable
+import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -29,12 +25,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.bardino.dozi.R
-import com.bardino.dozi.core.ui.theme.*
-import com.bardino.dozi.core.data.model.Medicine
-import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.bardino.dozi.core.data.Medicine
+import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
-import com.bardino.dozi.core.ui.components.EmptyMedicineList
-import kotlinx.coroutines.launch
+import com.bardino.dozi.core.ui.theme.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -45,14 +39,13 @@ fun MedicineListScreen(
     showAddButton: Boolean = true
 ) {
     val context = LocalContext.current
-    val medicineRepository = remember { MedicineRepository() }
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var isVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         isVisible = true
         try {
-            medicines = medicineRepository.getAllMedicines()
+            medicines = MedicineRepository.loadMedicines(context)
         } catch (e: Exception) {
             // Handle error
         }
@@ -108,9 +101,7 @@ fun MedicineListScreen(
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                EmptyMedicineList(onAddMedicine = { onNavigateToAddMedicine("") })
-
-
+                EmptyMedicineState(onAddMedicine = { onNavigateToAddMedicine("new") })
             }
         } else {
             Column(
@@ -276,13 +267,11 @@ fun MedicineListScreen(
 @Composable
 private fun ModernMedicineCard(
     medicine: Medicine,
-    onClick: () -> Unit,
-    onMedicineSelected: (String) -> Unit = {}
+    onClick: () -> Unit
 ) {
     Card(
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth(),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
@@ -361,10 +350,10 @@ private fun ModernMedicineCard(
                 ) {
                     InfoTag(
                         Icons.Default.Inventory,
-                        "Stok: ${medicine.stockCount}",
+                        "Stok: ${medicine.stock}",
                         when {
-                            medicine.stockCount < 5 -> DoziRed
-                            medicine.stockCount < 10 -> WarningOrange
+                            medicine.stock < 5 -> DoziRed
+                            medicine.stock < 10 -> WarningOrange
                             else -> SuccessGreen
                         }
                     )
@@ -417,7 +406,7 @@ private fun EmptyMedicineState(
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.dozi_happy),
+            painter = painterResource(id = R.drawable.dozi),
             contentDescription = null,
             modifier = Modifier.size(140.dp)
         )

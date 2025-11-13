@@ -9,6 +9,7 @@ data class Medicine(
     val id: String,
     val name: String,
     val dosage: String,
+
     val stock: Int
 )
 
