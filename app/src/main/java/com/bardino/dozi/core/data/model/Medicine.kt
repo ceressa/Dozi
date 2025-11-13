@@ -1,0 +1,24 @@
+package com.bardino.dozi.core.data.model
+
+/**
+ * Firestore-compatible Medicine data model
+ * Represents a medicine with its schedule and dosage information
+ */
+data class Medicine(
+    val id: String = "",
+    val userId: String = "",                    // Firebase Auth UID
+    val name: String = "",
+    val dosage: String = "",                    // "1 tablet", "2 kaşık" etc.
+    val form: String = "tablet",                // tablet, kapsül, şurup, damla
+    val times: List<String> = emptyList(),      // ["09:00", "13:00", "21:00"]
+    val days: List<String> = emptyList(),       // ["Pazartesi", "Salı"] or empty for everyday
+    val startDate: Long = 0L,                   // Timestamp
+    val endDate: Long? = null,                  // Null = sürekli kullanım
+    val stockCount: Int = 0,
+    val boxSize: Int = 0,
+    val notes: String = "",
+    val createdAt: Long = System.currentTimeMillis(),
+    val updatedAt: Long = System.currentTimeMillis(),
+    val reminderEnabled: Boolean = true,
+    val icon: String = "💊"                     // Emoji icon for visual display
+)

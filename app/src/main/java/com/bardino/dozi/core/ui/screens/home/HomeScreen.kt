@@ -29,6 +29,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
@@ -44,6 +45,10 @@ import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
 import com.bardino.dozi.R
+import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.data.model.User
+import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.navigation.Screen
 import kotlinx.coroutines.delay
@@ -81,10 +86,35 @@ fun HomeScreen(
     var snoozeMinutes by remember { mutableStateOf(0) }
     var currentMedicineStatus by remember { mutableStateOf<MedicineStatus>(MedicineStatus.UPCOMING) }
     var lastSnoozeTimestamp by remember { mutableStateOf(0L) }
+    var firestoreUser by remember { mutableStateOf<User?>(null) }
+    var todaysMedicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
+    var upcomingMedicine by remember { mutableStateOf<Pair<Medicine, String>?>(null) }
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
+    val userRepository = remember { UserRepository() }
+    val medicineRepository = remember { MedicineRepository() }
+
+    // ✅ Firebase'den kullanıcı verilerini çek
+    LaunchedEffect(Unit) {
+        try {
+            firestoreUser = userRepository.getUserData()
+        } catch (e: Exception) {
+            // Hata durumunda sessizce devam et
+        }
+    }
+
+    // ✅ Firebase'den ilaç verilerini çek
+    LaunchedEffect(Unit) {
+        try {
+            todaysMedicines = medicineRepository.getTodaysMedicines()
+            val upcoming = medicineRepository.getUpcomingMedicines()
+            upcomingMedicine = upcoming.firstOrNull()
+        } catch (e: Exception) {
+            // Hata durumunda sessizce devam et
+        }
+    }
 
     // ✅ İlk açılışta kalan süreyi hesapla
     LaunchedEffect(Unit) {
@@ -149,7 +179,7 @@ fun HomeScreen(
                     else Modifier
                 )
         ) {
-            DoziHeader()
+            DoziHeader(firestoreUser = firestoreUser)
 
             Column(
                 modifier = Modifier
@@ -171,28 +201,40 @@ fun HomeScreen(
 
                 Spacer(Modifier.height(20.dp))
 
-                if (currentMedicineStatus == MedicineStatus.UPCOMING) {
-                    CurrentMedicineCard(
-                        snoozeMinutes = snoozeMinutes,
-                        onTaken = {
-                            playSound(context, R.raw.success)
-                            currentMedicineStatus = MedicineStatus.TAKEN
-                            showSuccessPopup = true
-                            coroutineScope.launch {
-                                delay(2000)
-                                showSuccessPopup = false
-                            }
-                        },
-                        onSnooze = { showSnoozeDialog = true },
-                        onSkip = { showSkipDialog = true }
-                    )
-                } else {
-                    EmptyMedicineCard(currentMedicineStatus)
+                AnimatedVisibility(
+                    visible = true,
+                    enter = fadeIn(animationSpec = tween(600)) +
+                            slideInVertically(
+                                initialOffsetY = { it / 2 },
+                                animationSpec = tween(600, easing = FastOutSlowInEasing)
+                            )
+                ) {
+                    if (currentMedicineStatus == MedicineStatus.UPCOMING && upcomingMedicine != null) {
+                        CurrentMedicineCard(
+                            medicine = upcomingMedicine!!.first,
+                            time = upcomingMedicine!!.second,
+                            snoozeMinutes = snoozeMinutes,
+                            onTaken = {
+                                playSound(context, R.raw.success)
+                                currentMedicineStatus = MedicineStatus.TAKEN
+                                showSuccessPopup = true
+                                coroutineScope.launch {
+                                    delay(2000)
+                                    showSuccessPopup = false
+                                }
+                            },
+                            onSnooze = { showSnoozeDialog = true },
+                            onSkip = { showSkipDialog = true }
+                        )
+                    } else {
+                        EmptyMedicineCard(currentMedicineStatus)
+                    }
                 }
 
                 Spacer(Modifier.height(24.dp))
 
                 TimelineSection(
+                    medicines = todaysMedicines,
                     expanded = timelineExpanded,
                     onToggle = {
                         timelineExpanded = !timelineExpanded
@@ -283,7 +325,7 @@ fun playSound(context: Context, resourceId: Int) {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun DoziHeader() {
+private fun DoziHeader(firestoreUser: User?) {
     val hour = LocalTime.now().hour
     val greeting = remember(hour) {
         when (hour) {
@@ -294,6 +336,23 @@ private fun DoziHeader() {
         }
     }
 
+    // Kullanıcı adını al
+    val userName = firestoreUser?.name?.split(" ")?.firstOrNull() ?: "Arkadaşım"
+    val planType = firestoreUser?.planType ?: "free"
+    val isPremium = planType != "free"
+
+    // ✅ Animated gradient colors
+    val gradientStart by animateColorAsState(
+        targetValue = if (isPremium) Color(0xFFFFB300) else DoziTurquoise.copy(alpha = 0.95f),
+        animationSpec = tween(800, easing = FastOutSlowInEasing),
+        label = "gradientStart"
+    )
+    val gradientEnd by animateColorAsState(
+        targetValue = if (isPremium) Color(0xFFFF6F00) else DoziPurple.copy(alpha = 0.85f),
+        animationSpec = tween(800, easing = FastOutSlowInEasing),
+        label = "gradientEnd"
+    )
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -302,7 +361,7 @@ private fun DoziHeader() {
             .clip(RoundedCornerShape(24.dp))
             .background(
                 Brush.horizontalGradient(
-                    listOf(DoziTurquoise.copy(alpha = 0.95f), DoziPurple.copy(alpha = 0.85f))
+                    listOf(gradientStart, gradientEnd)
                 )
             )
     ) {
@@ -313,13 +372,26 @@ private fun DoziHeader() {
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.SpaceBetween
         ) {
-            Column {
-                Text(
-                    text = greeting,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = Color.White
-                )
+            Column(modifier = Modifier.weight(1f)) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "$greeting, $userName! 👋",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = Color.White
+                    )
+                    if (isPremium) {
+                        Icon(
+                            Icons.Default.Star,
+                            contentDescription = "Premium",
+                            tint = Color(0xFFFFD700),
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
                 Spacer(Modifier.height(2.dp))
                 Text(
                     text = "İlaçlarını düzenli almayı unutma",
@@ -640,6 +712,8 @@ private fun ClickableReminderText(onNavigateToReminders: () -> Unit) {
 
 @Composable
 private fun CurrentMedicineCard(
+    medicine: Medicine,
+    time: String,
     snoozeMinutes: Int,
     onTaken: () -> Unit,
     onSnooze: () -> Unit,
@@ -647,6 +721,18 @@ private fun CurrentMedicineCard(
 ) {
     val context = LocalContext.current
     var remainingSeconds by remember { mutableStateOf(0) }
+
+    // ✅ Pulsing animation for the badge
+    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
+    val pulseScale by infiniteTransition.animateFloat(
+        initialValue = 1f,
+        targetValue = 1.08f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "pulseScale"
+    )
 
     // ✅ snooze_until'e göre kalan süreyi hesapla
     LaunchedEffect(snoozeMinutes) {
@@ -686,7 +772,11 @@ private fun CurrentMedicineCard(
             Surface(
                 color = DoziRed,
                 shape = RoundedCornerShape(14.dp),
-                shadowElevation = 4.dp
+                shadowElevation = 4.dp,
+                modifier = Modifier.graphicsLayer {
+                    scaleX = pulseScale
+                    scaleY = pulseScale
+                }
             ) {
                 Row(
                     modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
@@ -730,7 +820,7 @@ private fun CurrentMedicineCard(
                     modifier = Modifier.size(32.dp)
                 )
                 Text(
-                    "14:00",
+                    time,
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
                     color = DoziRed
@@ -738,14 +828,14 @@ private fun CurrentMedicineCard(
             }
 
             Text(
-                "💊 Aspirin 100mg",
+                "${medicine.icon} ${medicine.name}",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
                 color = TextPrimaryLight
             )
 
             Text(
-                "📦 1 tablet",
+                "📦 ${medicine.dosage}",
                 style = MaterialTheme.typography.titleSmall,
                 color = TextSecondaryLight
             )
@@ -844,9 +934,33 @@ private fun ActionButton(
     modifier: Modifier = Modifier,
     onClick: () -> Unit
 ) {
+    var isPressed by remember { mutableStateOf(false) }
+    val scale by animateFloatAsState(
+        targetValue = if (isPressed) 0.92f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "buttonScale"
+    )
+
     Button(
         onClick = onClick,
-        modifier = modifier.height(54.dp),
+        modifier = modifier
+            .height(54.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .pointerInput(Unit) {
+                detectTapGestures(
+                    onPress = {
+                        isPressed = true
+                        tryAwaitRelease()
+                        isPressed = false
+                    }
+                )
+            },
         colors = ButtonDefaults.buttonColors(containerColor = color),
         shape = RoundedCornerShape(14.dp),
         elevation = ButtonDefaults.buttonElevation(4.dp)
@@ -872,11 +986,22 @@ private fun ActionButton(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun TimelineSection(
+    medicines: List<Medicine>,
     expanded: Boolean,
     onToggle: () -> Unit
 ) {
+    val currentTime = LocalTime.now()
+
+    // Create timeline items from medicines with their times
+    val timelineItems = medicines.flatMap { medicine ->
+        medicine.times.map { time ->
+            Triple(medicine, time, determineTimelineStatus(time, currentTime))
+        }
+    }.sortedBy { it.second }
+
     Column(
         modifier = Modifier
             .fillMaxWidth()
@@ -909,7 +1034,7 @@ private fun TimelineSection(
                     shape = RoundedCornerShape(8.dp)
                 ) {
                     Text(
-                        "3",
+                        timelineItems.size.toString(),
                         modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
                         color = Color.White,
                         fontWeight = FontWeight.Bold,
@@ -931,30 +1056,84 @@ private fun TimelineSection(
             enter = expandVertically() + fadeIn(),
             exit = shrinkVertically() + fadeOut()
         ) {
-            Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-                Spacer(Modifier.height(8.dp))
+            if (timelineItems.isEmpty()) {
+                // Show empty state
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "Bugün için planlanmış ilaç yok",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondaryLight
+                    )
+                }
+            } else {
+                Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
+                    Spacer(Modifier.height(8.dp))
 
-                TimelineItem(
-                    time = "08:00",
-                    medicineName = "Lustral 100mg",
-                    status = TimelineStatus.COMPLETED,
-                    subtitle = "2 saat önce"
-                )
-
-                TimelineItem(
-                    time = "14:00",
-                    medicineName = "Benexol 50mg",
-                    status = TimelineStatus.CURRENT,
-                    subtitle = "ŞİMDİ"
-                )
-
-                TimelineItem(
-                    time = "22:00",
-                    medicineName = "Vitamin D3",
-                    status = TimelineStatus.UPCOMING,
-                    subtitle = "8 saat sonra"
-                )
+                    timelineItems.forEachIndexed { index, (medicine, time, status) ->
+                        AnimatedVisibility(
+                            visible = true,
+                            enter = fadeIn(
+                                animationSpec = tween(
+                                    durationMillis = 400,
+                                    delayMillis = index * 100,
+                                    easing = FastOutSlowInEasing
+                                )
+                            ) + slideInVertically(
+                                animationSpec = tween(
+                                    durationMillis = 400,
+                                    delayMillis = index * 100,
+                                    easing = FastOutSlowInEasing
+                                ),
+                                initialOffsetY = { it / 3 }
+                            )
+                        ) {
+                            TimelineItem(
+                                time = time,
+                                medicineName = "${medicine.icon} ${medicine.name} ${medicine.dosage}",
+                                status = status,
+                                subtitle = getTimeSubtitle(time, status, currentTime)
+                            )
+                        }
+                    }
+                }
             }
+        }
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun determineTimelineStatus(time: String, currentTime: LocalTime): TimelineStatus {
+    val (hour, minute) = time.split(":").map { it.toInt() }
+    val medicineTime = LocalTime.of(hour, minute)
+
+    return when {
+        medicineTime.isBefore(currentTime.minusMinutes(30)) -> TimelineStatus.COMPLETED
+        medicineTime.isAfter(currentTime.plusMinutes(30)) -> TimelineStatus.UPCOMING
+        else -> TimelineStatus.CURRENT
+    }
+}
+
+@RequiresApi(Build.VERSION_CODES.O)
+private fun getTimeSubtitle(time: String, status: TimelineStatus, currentTime: LocalTime): String {
+    val (hour, minute) = time.split(":").map { it.toInt() }
+    val medicineTime = LocalTime.of(hour, minute)
+
+    return when (status) {
+        TimelineStatus.COMPLETED -> {
+            val diff = java.time.Duration.between(medicineTime, currentTime)
+            val hours = diff.toHours()
+            if (hours > 0) "$hours saat önce" else "Az önce"
+        }
+        TimelineStatus.CURRENT -> "ŞİMDİ"
+        TimelineStatus.UPCOMING -> {
+            val diff = java.time.Duration.between(currentTime, medicineTime)
+            val hours = diff.toHours()
+            if (hours > 0) "$hours saat sonra" else "${diff.toMinutes()} dk sonra"
         }
     }
 }
