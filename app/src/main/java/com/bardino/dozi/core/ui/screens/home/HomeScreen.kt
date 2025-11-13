@@ -229,6 +229,14 @@ fun HomeScreen(
                                 playSound(context, R.raw.success)
                                 currentMedicineStatus = MedicineStatus.TAKEN
                                 showSuccessPopup = true
+                                // Durumu kaydet
+                                saveMedicineStatus(
+                                    context,
+                                    upcomingMedicine!!.first.id,
+                                    getCurrentDateString(),
+                                    upcomingMedicine!!.second,
+                                    "taken"
+                                )
                                 coroutineScope.launch {
                                     delay(2000)
                                     showSuccessPopup = false
@@ -247,6 +255,7 @@ fun HomeScreen(
                 TimelineSection(
                     medicines = todaysMedicines,
                     expanded = timelineExpanded,
+                    context = context,
                     onToggle = {
                         timelineExpanded = !timelineExpanded
                         if (timelineExpanded) {
@@ -308,6 +317,7 @@ fun HomeScreen(
 
     // ✅ Dialog'lar
     if (showSkipDialog) {
+        val currentMedicine = upcomingMedicine
         SkipReasonDialog(
             onDismiss = {
                 playSound(context, R.raw.pekala)
@@ -318,6 +328,16 @@ fun HomeScreen(
                 currentMedicineStatus = MedicineStatus.SKIPPED
                 showSkipDialog = false
                 showSkippedPopup = true
+                // Durumu kaydet
+                currentMedicine?.let {
+                    saveMedicineStatus(
+                        context,
+                        it.first.id,
+                        getCurrentDateString(),
+                        it.second,
+                        "skipped"
+                    )
+                }
                 coroutineScope.launch {
                     delay(2000)
                     showSkippedPopup = false
@@ -327,11 +347,23 @@ fun HomeScreen(
     }
 
     if (showSnoozeDialog) {
+        val currentMedicine = upcomingMedicine
         SnoozeDialog(
             onDismiss = { showSnoozeDialog = false },
             onConfirm = { minutes ->
                 snoozeMinutes = minutes
                 showSnoozeDialog = false
+                // Durumu kaydet (ertelenme süresiyle birlikte)
+                currentMedicine?.let {
+                    val snoozeUntil = System.currentTimeMillis() + minutes * 60_000L
+                    saveMedicineStatus(
+                        context,
+                        it.first.id,
+                        getCurrentDateString(),
+                        it.second,
+                        "snoozed_$snoozeUntil"
+                    )
+                }
             }
         )
     }
@@ -346,6 +378,27 @@ fun playSound(context: Context, resourceId: Int) {
     } catch (e: Exception) {
         e.printStackTrace()
     }
+}
+
+// İlaç durumu kaydetme fonksiyonları
+fun saveMedicineStatus(context: Context, medicineId: String, date: String, time: String, status: String) {
+    val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)
+    val key = "dose_${medicineId}_${date}_${time}"
+    prefs.edit().putString(key, status).apply()
+}
+
+fun getMedicineStatus(context: Context, medicineId: String, date: String, time: String): String? {
+    val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)
+    val key = "dose_${medicineId}_${date}_${time}"
+    return prefs.getString(key, null)
+}
+
+fun getCurrentDateString(): String {
+    val calendar = java.util.Calendar.getInstance()
+    val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+    val month = calendar.get(java.util.Calendar.MONTH) + 1
+    val year = calendar.get(java.util.Calendar.YEAR)
+    return "%02d_%02d_%d".format(day, month, year)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -1057,14 +1110,23 @@ private fun ActionButton(
 private fun TimelineSection(
     medicines: List<Medicine>,
     expanded: Boolean,
+    context: Context,
     onToggle: () -> Unit
 ) {
     val currentTime = LocalTime.now()
+    val today = getCurrentDateString()
 
     // Create timeline items from medicines with their times
     val timelineItems = medicines.flatMap { medicine ->
         medicine.times.map { time ->
-            Triple(medicine, time, determineTimelineStatus(time, currentTime))
+            val savedStatus = getMedicineStatus(context, medicine.id, today, time)
+            val status = when {
+                savedStatus == "taken" -> TimelineStatus.TAKEN
+                savedStatus == "skipped" -> TimelineStatus.SKIPPED
+                savedStatus?.startsWith("snoozed_") == true -> TimelineStatus.SNOOZED
+                else -> determineTimelineStatus(time, currentTime)
+            }
+            Triple(medicine, time, status to savedStatus)
         }
     }.sortedBy { it.second }
 
@@ -1161,8 +1223,9 @@ private fun TimelineSection(
                             TimelineItem(
                                 time = time,
                                 medicineName = "${medicine.icon} ${medicine.name} ${medicine.dosage}",
-                                status = status,
-                                subtitle = getTimeSubtitle(time, status, currentTime)
+                                status = status.first,
+                                savedStatus = status.second,
+                                currentTime = currentTime
                             )
                         }
                     }
@@ -1184,40 +1247,57 @@ private fun determineTimelineStatus(time: String, currentTime: LocalTime): Timel
     }
 }
 
-@RequiresApi(Build.VERSION_CODES.O)
-private fun getTimeSubtitle(time: String, status: TimelineStatus, currentTime: LocalTime): String {
-    val (hour, minute) = time.split(":").map { it.toInt() }
-    val medicineTime = LocalTime.of(hour, minute)
-
-    return when (status) {
-        TimelineStatus.COMPLETED -> {
-            val diff = java.time.Duration.between(medicineTime, currentTime)
-            val hours = diff.toHours()
-            if (hours > 0) "$hours saat önce" else "Az önce"
-        }
-        TimelineStatus.CURRENT -> "ŞİMDİ"
-        TimelineStatus.UPCOMING -> {
-            val diff = java.time.Duration.between(currentTime, medicineTime)
-            val hours = diff.toHours()
-            if (hours > 0) "$hours saat sonra" else "${diff.toMinutes()} dk sonra"
-        }
-    }
-}
-
 enum class TimelineStatus {
-    COMPLETED, CURRENT, UPCOMING
+    COMPLETED, CURRENT, UPCOMING, TAKEN, SKIPPED, SNOOZED
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun TimelineItem(
     time: String,
     medicineName: String,
     status: TimelineStatus,
-    subtitle: String
+    savedStatus: String?,
+    currentTime: LocalTime
 ) {
+    val subtitle = when (status) {
+        TimelineStatus.TAKEN -> "✅ Alındı"
+        TimelineStatus.SKIPPED -> "⏭️ Atlandı"
+        TimelineStatus.SNOOZED -> {
+            val snoozeUntil = savedStatus?.substringAfter("snoozed_")?.toLongOrNull()
+            if (snoozeUntil != null && snoozeUntil > System.currentTimeMillis()) {
+                val remainingMs = snoozeUntil - System.currentTimeMillis()
+                val remainingMin = (remainingMs / 60_000).toInt()
+                "⏰ $remainingMin dk ertelendi"
+            } else {
+                "⏰ Ertelendi"
+            }
+        }
+        else -> {
+            val (hour, minute) = time.split(":").map { it.toInt() }
+            val medicineTime = LocalTime.of(hour, minute)
+            when (status) {
+                TimelineStatus.COMPLETED -> {
+                    val diff = java.time.Duration.between(medicineTime, currentTime)
+                    val hours = diff.toHours()
+                    if (hours > 0) "$hours saat önce" else "Az önce"
+                }
+                TimelineStatus.CURRENT -> "ŞİMDİ"
+                TimelineStatus.UPCOMING -> {
+                    val diff = java.time.Duration.between(currentTime, medicineTime)
+                    val hours = diff.toHours()
+                    if (hours > 0) "$hours saat sonra" else "${diff.toMinutes()} dk sonra"
+                }
+                else -> ""
+            }
+        }
+    }
     Card(
         colors = CardDefaults.cardColors(
             containerColor = when (status) {
+                TimelineStatus.TAKEN -> SuccessGreen.copy(alpha = 0.1f)
+                TimelineStatus.SKIPPED -> ErrorRed.copy(alpha = 0.1f)
+                TimelineStatus.SNOOZED -> WarningOrange.copy(alpha = 0.1f)
                 TimelineStatus.COMPLETED -> Color.White
                 TimelineStatus.CURRENT -> DoziCoralLight.copy(alpha = 0.15f)
                 TimelineStatus.UPCOMING -> Color.White
@@ -1227,9 +1307,13 @@ private fun TimelineItem(
         border = BorderStroke(
             width = when (status) {
                 TimelineStatus.CURRENT -> 2.dp
+                TimelineStatus.TAKEN, TimelineStatus.SKIPPED, TimelineStatus.SNOOZED -> 2.dp
                 else -> 1.dp
             },
             color = when (status) {
+                TimelineStatus.TAKEN -> SuccessGreen
+                TimelineStatus.SKIPPED -> ErrorRed
+                TimelineStatus.SNOOZED -> WarningOrange
                 TimelineStatus.COMPLETED -> DoziTurquoise.copy(alpha = 0.4f)
                 TimelineStatus.CURRENT -> DoziRed
                 TimelineStatus.UPCOMING -> VeryLightGray
@@ -1255,6 +1339,9 @@ private fun TimelineItem(
                         .clip(CircleShape)
                         .background(
                             when (status) {
+                                TimelineStatus.TAKEN -> SuccessGreen
+                                TimelineStatus.SKIPPED -> ErrorRed
+                                TimelineStatus.SNOOZED -> WarningOrange
                                 TimelineStatus.COMPLETED -> DoziTurquoise
                                 TimelineStatus.CURRENT -> DoziRed
                                 TimelineStatus.UPCOMING -> LightGray
@@ -1273,6 +1360,9 @@ private fun TimelineItem(
                         subtitle,
                         style = MaterialTheme.typography.bodySmall,
                         color = when (status) {
+                            TimelineStatus.TAKEN -> SuccessGreen
+                            TimelineStatus.SKIPPED -> ErrorRed
+                            TimelineStatus.SNOOZED -> WarningOrange
                             TimelineStatus.CURRENT -> DoziRed
                             else -> TextSecondaryLight
                         },
