@@ -110,20 +110,20 @@ fun ReminderListScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Üst Bilgi Alanı - Modern Design
+                // Üst Bilgi Alanı
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            brush = Brush.verticalGradient(
+                            brush = Brush.horizontalGradient(
                                 colors = listOf(
                                     DoziBlue,
-                                    DoziBlue.copy(alpha = 0.85f)
+                                    DoziTurquoise
                                 )
                             ),
-                            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
+                            shape = RoundedCornerShape(bottomStart = 24.dp, bottomEnd = 24.dp)
                         )
-                        .padding(horizontal = 24.dp, vertical = 32.dp)
+                        .padding(horizontal = 20.dp, vertical = 18.dp)
                 ) {
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -131,48 +131,24 @@ fun ReminderListScreen(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Column(
-                            verticalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.weight(1f)
+                            verticalArrangement = Arrangement.spacedBy(4.dp)
                         ) {
                             Text(
-                                text = "${medicines.size}",
+                                text = "Hatırlatmalarınız",
                                 color = Color.White,
-                                style = MaterialTheme.typography.displaySmall,
+                                style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold
                             )
                             Text(
-                                text = "Aktif Hatırlatma",
-                                color = Color.White.copy(alpha = 0.95f),
-                                style = MaterialTheme.typography.titleMedium,
-                                fontWeight = FontWeight.Medium
-                            )
-                            Text(
-                                text = "İlaçlarınızı zamanında almayı unutmayın",
-                                color = Color.White.copy(alpha = 0.85f),
+                                text = "${medicines.size} aktif hatırlatma",
+                                color = Color.White.copy(alpha = 0.9f),
                                 style = MaterialTheme.typography.bodyMedium
                             )
-                        }
-
-                        androidx.compose.material3.Surface(
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                            color = Color.White.copy(alpha = 0.2f),
-                            modifier = Modifier.size(72.dp)
-                        ) {
-                            Box(
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Notifications,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(40.dp)
-                                )
-                            }
                         }
                     }
                 }
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(16.dp))
 
                 // Hatırlatma Listesi
                 LazyColumn(
@@ -211,14 +187,10 @@ private fun MedicineCard(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth()
-            .shadow(
-                elevation = 8.dp,
-                shape = RoundedCornerShape(24.dp),
-                spotColor = DoziBlue.copy(alpha = 0.25f)
-            ),
+            .fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White)
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box {
             // Dekoratif top border
@@ -358,8 +330,7 @@ private fun MedicineCard(
         ) {
             androidx.compose.material3.Surface(
                 shape = RoundedCornerShape(28.dp),
-                color = Color.White,
-                shadowElevation = 16.dp
+                color = Color.White
             ) {
                 Column(
                     modifier = Modifier
@@ -467,7 +438,6 @@ private fun InfoTag(
     androidx.compose.material3.Surface(
         color = color.copy(alpha = 0.12f),
         shape = RoundedCornerShape(12.dp),
-        shadowElevation = 2.dp,
         modifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier
     ) {
         Row(
