@@ -135,15 +135,31 @@ fun NavGraph(
             composable(Screen.ReminderList.route) {
                 ReminderListScreen(
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToAddReminder = { navController.navigate(Screen.AddReminder.route) }
+                    onNavigateToAddReminder = { navController.navigate(Screen.AddReminder.route) },
+                    onNavigateToEditReminder = { medicineId ->
+                        navController.navigate(Screen.EditReminder.createRoute(medicineId))
+                    }
                 )
             }
 
             // ➕ Hatırlatıcı Ekle
             composable(Screen.AddReminder.route) {
                 AddReminderScreen(
-                    navController = navController,   // ✅ eklendi
+                    navController = navController,
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // ✏️ Hatırlatıcı Düzenle
+            composable(
+                route = Screen.EditReminder.route,
+                arguments = listOf(navArgument("medicineId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val medicineId = backStackEntry.arguments?.getString("medicineId") ?: ""
+                AddReminderScreen(
+                    navController = navController,
+                    onNavigateBack = { navController.popBackStack() },
+                    medicineId = medicineId  // Edit mode aktif
                 )
             }
 
