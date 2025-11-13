@@ -31,9 +31,10 @@ import androidx.compose.ui.window.Dialog
 import com.bardino.dozi.R
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.core.data.model.Medicine
-import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.components.EmptyMedicineList
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -44,12 +45,17 @@ fun MedicineListScreen(
     showAddButton: Boolean = true
 ) {
     val context = LocalContext.current
-    var medicines by remember { mutableStateOf(MedicineRepository.loadMedicines(context)) }
+    val medicineRepository = remember { MedicineRepository() }
+    var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var isVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         isVisible = true
-        medicines = MedicineRepository.loadMedicines(context)
+        try {
+            medicines = medicineRepository.getAllMedicines()
+        } catch (e: Exception) {
+            // Handle error
+        }
     }
 
     Scaffold(
