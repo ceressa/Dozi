@@ -249,9 +249,7 @@ private fun ProfileHeader(
             Surface(
                 modifier = Modifier.size(120.dp),
                 color = Color.White,
-                shape = CircleShape,
-                tonalElevation = if (isPremium) 12.dp else 8.dp,
-                shadowElevation = if (isPremium) 16.dp else 8.dp
+                shape = CircleShape
             ) {
                 Box(
                     contentAlignment = Alignment.Center,
@@ -303,8 +301,7 @@ private fun ProfileHeader(
             Surface(
                 shape = RoundedCornerShape(24.dp),
                 color = Color.White.copy(alpha = if (isPremium) 0.3f else 0.2f),
-                modifier = Modifier.padding(top = 4.dp),
-                tonalElevation = 4.dp
+                modifier = Modifier.padding(top = 4.dp)
             ) {
                 Text(
                     text = planText,
@@ -326,8 +323,7 @@ fun GoogleSignInButton(onClick: () -> Unit) {
             .fillMaxWidth(0.8f)
             .height(52.dp),
         shape = RoundedCornerShape(50),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.White),
-        elevation = ButtonDefaults.buttonElevation(defaultElevation = 3.dp)
+        colors = ButtonDefaults.buttonColors(containerColor = Color.White)
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_google),
@@ -357,10 +353,6 @@ fun ColoredDebugButton(label: String, bgColor: Color, onClick: () -> Unit) {
             containerColor = bgColor,
             contentColor = Color.White,
             disabledContainerColor = bgColor.copy(alpha = 0.4f)
-        ),
-        elevation = ButtonDefaults.buttonElevation(
-            defaultElevation = 3.dp,
-            pressedElevation = 6.dp
         )
     ) {
         Text(
@@ -385,11 +377,7 @@ private fun MenuCard(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = 2.dp,
-            pressedElevation = 6.dp
-        )
+        colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Row(
             modifier = Modifier
@@ -402,8 +390,7 @@ private fun MenuCard(
             Surface(
                 modifier = Modifier.size(52.dp),
                 shape = RoundedCornerShape(14.dp),
-                color = color.copy(alpha = 0.12f),
-                shadowElevation = 2.dp
+                color = color.copy(alpha = 0.12f)
             ) {
                 Box(contentAlignment = Alignment.Center) {
                     Icon(

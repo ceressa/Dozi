@@ -60,6 +60,13 @@
             </intent-filter>
         </activity>
 
+        <!-- ⏰ Erteleme Dialog Activity -->
+        <activity
+            android:name=".notifications.SnoozePromptActivity"
+            android:exported="false"
+            android:theme="@style/Theme.DoziApp"
+            android:launchMode="singleTask" />
+
         <!-- 🗺️ Google Maps API anahtarı -->
         <meta-data
             android:name="com.google.android.geo.API_KEY"
