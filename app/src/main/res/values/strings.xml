@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">Dozi</string>
+    <string name="google_maps_key">AIzaSyCSA3WHzsgIpeU5_2bftPjx-vC0IedbtJ0</string>
+
+    <!-- 🔑 Google Sign-In Web Client ID -->
+    <string name="default_web_client_id">
+    393677078355-trhl42cu4dmv3skmrmi78oss701pg7k6.apps.googleusercontent.com
+</string>
+
+</resources>

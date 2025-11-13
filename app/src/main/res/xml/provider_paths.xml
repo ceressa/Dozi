@@ -1,0 +1,7 @@
+<?xml version="1.0" encoding="utf-8"?>
+<paths>
+    <!-- ⚙️ Geçici kamera fotoğrafları için cache dizini -->
+    <cache-path
+        name="cache_images"
+        path="." />
+</paths>

@@ -1,0 +1,72 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="horizontal"
+    android:padding="12dp"
+    android:gravity="center_vertical"
+    android:background="@drawable/dozi_notification_bg">
+
+    <!-- İkon Konteyneri -->
+    <FrameLayout
+        android:layout_width="52dp"
+        android:layout_height="52dp"
+        android:background="@drawable/dozi_icon_bg">
+
+        <ImageView
+            android:id="@+id/dozi_icon"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:src="@drawable/dozi"
+            android:contentDescription="Dozi"
+            android:padding="6dp"
+            android:scaleType="centerCrop" />
+    </FrameLayout>
+
+    <!-- Metin İçeriği -->
+    <LinearLayout
+        android:layout_width="0dp"
+        android:layout_height="wrap_content"
+        android:layout_weight="1"
+        android:orientation="vertical"
+        android:layout_marginStart="12dp"
+        android:layout_marginEnd="8dp">
+
+        <TextView
+            android:id="@+id/dozi_title"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="💧 Dozi Hatırlatıyor"
+            android:textColor="@android:color/white"
+            android:textSize="16sp"
+            android:textStyle="bold"
+            android:fontFamily="sans-serif-medium"
+            android:shadowColor="#60000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="3" />
+
+        <TextView
+            android:id="@+id/dozi_message"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="İlaç zamanı! 💊"
+            android:textColor="#F0F4F8"
+            android:textSize="13sp"
+            android:layout_marginTop="3dp"
+            android:shadowColor="#60000000"
+            android:shadowDx="0"
+            android:shadowDy="1"
+            android:shadowRadius="2" />
+    </LinearLayout>
+
+    <!-- Sağ İkon -->
+    <ImageView
+        android:layout_width="20dp"
+        android:layout_height="20dp"
+        android:src="@android:drawable/ic_menu_info_details"
+        android:alpha="0.9"
+        android:contentDescription="Detaylar"
+        app:tint="@android:color/white" />
+</LinearLayout>

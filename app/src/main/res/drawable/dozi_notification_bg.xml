@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="rectangle">
+
+    <!-- Canlı ve çekici gradyan -->
+    <gradient
+        android:type="linear"
+        android:startColor="#26C6DA"
+        android:centerColor="#42A5F5"
+        android:endColor="#EC407A"
+        android:angle="120" />
+
+    <!-- Yuvarlatılmış köşeler -->
+    <corners android:radius="16dp" />
+
+    <!-- Hafif gölge efekti için stroke -->
+    <stroke
+        android:width="2dp"
+        android:color="#40FFFFFF" />
+</shape>

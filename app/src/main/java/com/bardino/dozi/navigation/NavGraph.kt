@@ -1,0 +1,250 @@
+package com.bardino.dozi.navigation
+
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.material3.Scaffold
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
+import androidx.compose.ui.platform.LocalContext
+import androidx.navigation.NavHostController
+import androidx.navigation.NavType
+import androidx.navigation.compose.NavHost
+import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
+import androidx.navigation.navArgument
+import com.bardino.dozi.core.data.OnboardingPreferences
+import com.bardino.dozi.core.ui.components.DoziBottomBar
+import com.bardino.dozi.core.ui.screens.home.HomeScreen
+import com.bardino.dozi.core.ui.screens.medicine.MedicineDetailScreen
+import com.bardino.dozi.core.ui.screens.medicine.MedicineEditScreen
+import com.bardino.dozi.core.ui.screens.medicine.MedicineListScreen
+import com.bardino.dozi.core.ui.screens.medicine.MedicineLookupScreen
+import com.bardino.dozi.core.ui.screens.premium.PremiumScreen
+import com.bardino.dozi.core.ui.screens.profile.LocationsScreen
+import com.bardino.dozi.core.ui.screens.reminder.AddReminderScreen
+import com.bardino.dozi.core.ui.screens.reminder.ReminderListScreen
+import com.bardino.dozi.core.ui.screens.profile.ProfileScreen
+import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
+import com.bardino.dozi.onboarding.screens.OnboardingIntroScreen
+import com.bardino.dozi.onboarding.screens.OnboardingMedicineScreen
+import com.bardino.dozi.onboarding.screens.OnboardingNameScreen
+import com.bardino.dozi.onboarding.screens.OnboardingPremiumScreen
+import com.bardino.dozi.onboarding.screens.OnboardingReminderScreen
+import com.bardino.dozi.onboarding.screens.OnboardingWelcomeScreen
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+fun NavGraph(
+    navController: NavHostController,
+    onGoogleSignInClick: () -> Unit,
+    startDestination: String = Screen.Home.route
+) {
+    val bottomBarRoutes = setOf(
+        Screen.Home.route,
+        Screen.MedicineList.route,
+        Screen.ReminderList.route,
+        Screen.Profile.route
+    )
+    val context = LocalContext.current
+
+    val navBackStackEntry by navController.currentBackStackEntryAsState()
+    val currentRoute = navBackStackEntry?.destination?.route
+
+    Scaffold(
+        bottomBar = {
+            if (currentRoute in bottomBarRoutes) {
+                DoziBottomBar(
+                    currentRoute = currentRoute,
+                    onNavigate = { route ->
+                        if (route != currentRoute) {
+                            navController.navigate(route) {
+                                popUpTo(Screen.Home.route) {
+                                    saveState = true // ✅ State'i koru
+                                }
+                                launchSingleTop = true
+                                restoreState = true // ✅ State'i geri yükle
+                            }
+                        }
+                    }
+                )
+            }
+        }
+    ) { padding ->
+        NavHost(
+            navController = navController,
+            startDestination = startDestination
+        ) {
+
+            // 🏠 Ana Sayfa
+            composable(Screen.Home.route) {
+                HomeScreen(
+                    navController = navController,
+                    contentPadding = padding,
+                    onNavigateToMedicines = { navController.navigate(Screen.MedicineList.route) },
+                    onNavigateToReminders = { navController.navigate(Screen.ReminderList.route) },
+                    onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
+                )
+            }
+
+            // 💊 İlaç Listesi
+            composable(Screen.MedicineList.route) {
+                MedicineListScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToDetail = { id ->
+                        navController.navigate(Screen.MedicineDetail.createRoute(id))
+                    },
+                    onNavigateToAddMedicine = {
+                        navController.navigate(Screen.MedicineLookup.route)
+                    }
+                )
+            }
+
+
+            // 💊 İlaç Detayı
+            composable(
+                route = Screen.MedicineDetail.route,
+                arguments = listOf(navArgument("medicineId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("medicineId").orEmpty()
+                MedicineDetailScreen(
+                    medicineId = id,
+                    onNavigateBack = { navController.popBackStack() },
+                    onEditMedicine = { medicineId ->
+                        navController.navigate(Screen.MedicineEdit.createRoute(medicineId))
+                    }
+                )
+            }
+
+            // 🧾 İlaç Düzenleme
+            composable(
+                route = Screen.MedicineEdit.route,
+                arguments = listOf(navArgument("id") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val id = backStackEntry.arguments?.getString("id") ?: ""
+                MedicineEditScreen(
+                    navController = navController,
+                    medicineId = id,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // ⏰ Hatırlatıcı Listesi
+            composable(Screen.ReminderList.route) {
+                ReminderListScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAddReminder = { navController.navigate(Screen.AddReminder.route) }
+                )
+            }
+
+            // ➕ Hatırlatıcı Ekle
+            composable(Screen.AddReminder.route) {
+                AddReminderScreen(
+                    navController = navController,   // ✅ eklendi
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // 👤 Profil
+            composable(Screen.Profile.route) {
+                ProfileScreen(
+                    onNavigateToLocations = { navController.navigate(Screen.Locations.route) },
+                    onGoogleSignInClick = onGoogleSignInClick // 🔹 MainActivity’den gelen fonksiyon aktarılıyor
+                )
+            }
+
+
+            // 🌟 Premium Sayfası
+            composable(Screen.Premium.route) {
+                PremiumScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onPurchase = { planType ->
+                        // burada satın alma işlemini veya yönlendirmeyi yapabilirsin
+                    }
+                )
+            }
+
+            // 🔍 İlaç Arama Ekranı
+            composable(Screen.MedicineLookup.route) {
+                MedicineLookupScreen(
+                    navController = navController,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // Onboarding akışı
+            composable(Screen.OnboardingWelcome.route) {
+                OnboardingWelcomeScreen(
+                    onStartTour = { navController.navigate(Screen.OnboardingIntro.route) },
+                    onSkip = {
+                        OnboardingPreferences.skipOnboarding(context)
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.OnboardingIntro.route) {
+                OnboardingIntroScreen(
+                    onNext = { navController.navigate(Screen.OnboardingMedicine.route) }
+                )
+            }
+
+            composable(Screen.OnboardingMedicine.route) {
+                OnboardingMedicineScreen(
+                    navController = navController,
+                    onNext = { navController.navigate(Screen.OnboardingName.route) }
+                )
+            }
+
+            composable(Screen.OnboardingName.route) {
+                OnboardingNameScreen(
+                    onNext = { name ->
+                        OnboardingPreferences.saveUserName(context, name)
+                        navController.navigate(Screen.OnboardingReminder.route)
+                    }
+                )
+            }
+
+            composable(Screen.OnboardingReminder.route) {
+                OnboardingReminderScreen(
+                    navController = navController,
+                    onNext = { navController.navigate(Screen.OnboardingHomeTour.route) }
+                )
+            }
+
+            composable(Screen.OnboardingHomeTour.route) {
+                OnboardingHomeTourScreen(
+                    navController = navController,
+                    onNext = { navController.navigate(Screen.OnboardingPremium.route) },
+                    onNavigateToMedicines = {},
+                    onNavigateToReminders = {},
+                    onNavigateToProfile = {}
+                )
+            }
+
+            composable(Screen.OnboardingPremium.route) {
+                OnboardingPremiumScreen(
+                    onGoogleSignIn = {
+                        // TODO: Google Sign-In implementation
+                        OnboardingPreferences.setFirstTimeComplete(context)
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
+                        }
+                    },
+                    onSkip = {
+                        OnboardingPreferences.setFirstTimeComplete(context)
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            composable(Screen.Locations.route) {
+                LocationsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+
+        }
+    }
+}

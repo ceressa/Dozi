@@ -1,0 +1,51 @@
+package com.bardino.dozi.core.data
+
+import android.content.Context
+
+// 🔎 JSON'daki resmi ilaç veritabanında arama yapan sınıf
+object IlacJsonRepository {
+
+    /**
+     * Uygulama açıldığında MedicineRepository.initialize() çağrıldığı için
+     * burada ilaclar.json tekrar okunmaz.
+     */
+    fun search(context: Context, query: String): List<IlacSearchResult> {
+        // Eğer cache henüz hazır değilse, güvenlik için initialize et
+        if (!MedicineRepository.isInitialized()) {
+            MedicineRepository.initialize(context)
+        }
+
+        val clean = query.trim().lowercase()
+        val ilaclar = MedicineRepository.ilaclarCache ?: emptyList()
+
+        return ilaclar
+            .filter {
+                it.Product_Name?.lowercase()?.contains(clean) == true ||
+                        it.Active_Ingredient?.lowercase()?.contains(clean) == true
+            }
+            .take(50) // 💡 sadece ilk 50 sonucu getir
+            .map { IlacSearchResult(it) }
+    }
+
+    fun searchByBarcode(context: Context, barcode: String): Ilac? {
+        // Cache hazır değilse initialize et
+        if (!MedicineRepository.isInitialized()) {
+            MedicineRepository.initialize(context)
+        }
+
+        // Cache'teki ilaç listesini al
+        val ilacList = MedicineRepository.ilaclarCache ?: emptyList()
+        val cleanBarcode = barcode.trim()
+
+        // Barkoda göre arama yap
+        return ilacList.firstOrNull { it.barcode == cleanBarcode }
+    }
+
+
+}
+
+// 🔹 Arama sonucu modeli
+data class IlacSearchResult(
+    val item: Ilac,
+    val dosage: String? = null
+)
