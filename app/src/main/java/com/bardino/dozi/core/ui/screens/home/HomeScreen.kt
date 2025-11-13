@@ -236,6 +236,7 @@ fun HomeScreen(
                                     playSound(context, R.raw.success)
                                     currentMedicineStatus = MedicineStatus.TAKEN
                                     showSuccessPopup = true
+                                    android.util.Log.d("HomeScreen", "CurrentMedicineCard: Taking medicine ${upcomingMedicine!!.first.name}")
                                     // Durumu kaydet
                                     saveMedicineStatus(
                                         context,
@@ -244,8 +245,20 @@ fun HomeScreen(
                                         upcomingMedicine!!.second,
                                         "taken"
                                     )
+                                    // Liste'yi güncelle
                                     coroutineScope.launch {
-                                        delay(2000)
+                                        delay(100)
+                                        val updated = medicineRepository.getUpcomingMedicines(context)
+                                        android.util.Log.d("HomeScreen", "CurrentMedicineCard: Updated count: ${updated.size}")
+                                        allUpcomingMedicines = updated
+                                        upcomingMedicine = updated.firstOrNull()
+                                        if (upcomingMedicine != null) {
+                                            currentMedicineStatus = MedicineStatus.UPCOMING
+                                            android.util.Log.d("HomeScreen", "Next medicine: ${upcomingMedicine!!.first.name}")
+                                        } else {
+                                            android.util.Log.d("HomeScreen", "No more medicines")
+                                        }
+                                        delay(1500)
                                         showSuccessPopup = false
                                     }
                                 },
@@ -259,6 +272,7 @@ fun HomeScreen(
                                 time = upcomingMedicine!!.second,
                                 onTaken = { medicine ->
                                     playSound(context, R.raw.success)
+                                    android.util.Log.d("HomeScreen", "MultiMedicineCard: Taking medicine ${medicine.name}")
                                     // Durumu kaydet
                                     saveMedicineStatus(
                                         context,
@@ -269,14 +283,20 @@ fun HomeScreen(
                                     )
                                     // Liste'yi güncelle
                                     coroutineScope.launch {
-                                        delay(500)
+                                        delay(100) // Kısa delay - status kaydetme işlemi senkron artık
                                         val updated = medicineRepository.getUpcomingMedicines(context)
+                                        android.util.Log.d("HomeScreen", "Updated medicines count: ${updated.size}")
                                         allUpcomingMedicines = updated
                                         upcomingMedicine = updated.firstOrNull()
                                         if (upcomingMedicine != null) {
 
                                             currentMedicineStatus = MedicineStatus.UPCOMING
 
+                                            android.util.Log.d("HomeScreen", "Next medicine: ${upcomingMedicine!!.first.name}")
+                                        } else {
+                                            android.util.Log.d("HomeScreen", "No more medicines")
+
+main
                                         }
 
                                     }
@@ -285,6 +305,7 @@ fun HomeScreen(
                                 onSnooze = { showSnoozeDialog = true },
                                 onSkip = { medicine ->
                                     playSound(context, R.raw.pekala)
+                                    android.util.Log.d("HomeScreen", "MultiMedicineCard: Skipping medicine ${medicine.name}")
                                     // Durumu kaydet
                                     saveMedicineStatus(
                                         context,
@@ -295,10 +316,17 @@ fun HomeScreen(
                                     )
                                     // Liste'yi güncelle
                                     coroutineScope.launch {
-                                        delay(500)
+                                        delay(100) // Kısa delay - status kaydetme işlemi senkron artık
                                         val updated = medicineRepository.getUpcomingMedicines(context)
+                                        android.util.Log.d("HomeScreen", "Updated medicines count after skip: ${updated.size}")
                                         allUpcomingMedicines = updated
                                         upcomingMedicine = updated.firstOrNull()
+                                        if (upcomingMedicine != null) {
+                                            currentMedicineStatus = MedicineStatus.UPCOMING
+                                            android.util.Log.d("HomeScreen", "Next medicine: ${upcomingMedicine!!.first.name}")
+                                        } else {
+                                            android.util.Log.d("HomeScreen", "No more medicines")
+                                        }
                                     }
                                 }
                             )
@@ -389,6 +417,7 @@ fun HomeScreen(
                 currentMedicineStatus = MedicineStatus.SKIPPED
                 showSkipDialog = false
                 showSkippedPopup = true
+                android.util.Log.d("HomeScreen", "SkipDialog: Skipping medicine")
                 // Durumu kaydet
                 currentMedicine?.let {
                     saveMedicineStatus(
@@ -399,8 +428,20 @@ fun HomeScreen(
                         "skipped"
                     )
                 }
+                // Liste'yi güncelle
                 coroutineScope.launch {
-                    delay(2000)
+                    delay(100)
+                    val updated = medicineRepository.getUpcomingMedicines(context)
+                    android.util.Log.d("HomeScreen", "SkipDialog: Updated count: ${updated.size}")
+                    allUpcomingMedicines = updated
+                    upcomingMedicine = updated.firstOrNull()
+                    if (upcomingMedicine != null) {
+                        currentMedicineStatus = MedicineStatus.UPCOMING
+                        android.util.Log.d("HomeScreen", "Next medicine: ${upcomingMedicine!!.first.name}")
+                    } else {
+                        android.util.Log.d("HomeScreen", "No more medicines")
+                    }
+                    delay(1500)
                     showSkippedPopup = false
                 }
             }
@@ -445,7 +486,8 @@ fun playSound(context: Context, resourceId: Int) {
 fun saveMedicineStatus(context: Context, medicineId: String, date: String, time: String, status: String) {
     val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)
     val key = "dose_${medicineId}_${date}_${time}"
-    prefs.edit().putString(key, status).apply()
+    prefs.edit().putString(key, status).commit() // commit() senkron, hemen kaydet
+    android.util.Log.d("HomeScreen", "Status saved: $key = $status")
 }
 
 fun getMedicineStatus(context: Context, medicineId: String, date: String, time: String): String? {
