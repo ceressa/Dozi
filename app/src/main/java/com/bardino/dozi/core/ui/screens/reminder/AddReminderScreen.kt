@@ -1377,13 +1377,11 @@ private fun saveReminderToFirestore(
     // Zamanları hesapla
     val times = listOf("%02d:%02d".format(hour, minute))
 
-    // Günleri hesapla
-    val days = when (frequency) {
-        "Her gün" -> emptyList() // Boş liste = her gün
-        "Gün aşırı" -> emptyList() // TODO: Gün aşırı mantığı eklenecek
-        "Haftada bir" -> emptyList() // TODO: Haftalık mantık
-        "İstediğim tarihlerde" -> selectedDates
-        else -> emptyList()
+    // Günleri hesapla - "İstediğim tarihlerde" için tarihleri kullan
+    val days = if (frequency == "İstediğim tarihlerde") {
+        selectedDates
+    } else {
+        emptyList() // Diğer sıklıklar için frequency field'ı kullanılacak
     }
 
     // Medicine nesnesi oluştur
@@ -1395,11 +1393,13 @@ private fun saveReminderToFirestore(
         form = "tablet",
         times = times,
         days = days,
+        frequency = frequency,
+        frequencyValue = xValue,
         startDate = System.currentTimeMillis(),
         endDate = null, // Sürekli kullanım
         stockCount = 0,
         boxSize = 0,
-        notes = "Sıklık: $frequency",
+        notes = if (frequency == "Her X günde bir") "Her $xValue günde bir" else "",
         reminderEnabled = true,
         icon = "💊"
     )
