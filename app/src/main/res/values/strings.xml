@@ -7,4 +7,7 @@
     393677078355-trhl42cu4dmv3skmrmi78oss701pg7k6.apps.googleusercontent.com
 </string>
 
+    <!-- 🔔 Firebase Cloud Messaging -->
+    <string name="default_notification_channel_id">dozi_med_channel</string>
+
 </resources>

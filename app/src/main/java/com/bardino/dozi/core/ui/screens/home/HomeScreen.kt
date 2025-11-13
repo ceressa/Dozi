@@ -22,6 +22,9 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.runtime.getValue
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -66,10 +69,6 @@ data class MedicineRecord(
     val status: MedicineStatus
 )
 
-enum class MedicineStatus {
-    TAKEN, SKIPPED, PLANNED, UPCOMING, NONE
-}
-
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun HomeScreen(
@@ -77,99 +76,32 @@ fun HomeScreen(
     contentPadding: PaddingValues = PaddingValues(),
     onNavigateToMedicines: () -> Unit,
     onNavigateToReminders: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    viewModel: HomeViewModel = viewModel()
 ) {
-    var showSkipDialog by remember { mutableStateOf(false) }
-    var showSnoozeDialog by remember { mutableStateOf(false) }
-    var showSuccessPopup by remember { mutableStateOf(false) }
-    var showSkippedPopup by remember { mutableStateOf(false) }
+    // ✅ ViewModel'den state'leri al
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
+
+    // Local UI state'leri (sadece UI için)
     var timelineExpanded by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
-    var snoozeMinutes by remember { mutableStateOf(0) }
-    var currentMedicineStatus by remember { mutableStateOf<MedicineStatus>(MedicineStatus.UPCOMING) }
-    var lastSnoozeTimestamp by remember { mutableStateOf(0L) }
-    var firestoreUser by remember { mutableStateOf<User?>(null) }
-    var todaysMedicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
-    var upcomingMedicine by remember { mutableStateOf<Pair<Medicine, String>?>(null) }
-    var allUpcomingMedicines by remember { mutableStateOf<List<Pair<Medicine, String>>>(emptyList()) }
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
     val context = LocalContext.current
-    val userRepository = remember { UserRepository() }
-    val medicineRepository = remember { MedicineRepository() }
 
-    // ✅ Firebase'den kullanıcı verilerini sürekli dinle
-    LaunchedEffect(Unit) {
-        while (true) {
-            try {
-                val userData = userRepository.getUserData()
-                if (userData != null) {
-                    firestoreUser = userData
-                }
-            } catch (e: Exception) {
-                // Hata durumunda sessizce devam et
-            }
-            delay(2000) // Her 2 saniyede bir kontrol et
-        }
+    // ✅ Context gerektiren ViewModel fonksiyonlarını çağır
+    LaunchedEffect(context) {
+        viewModel.refreshMedicines(context)
+        viewModel.loadSnoozeStateFromContext(context)
+        viewModel.startSnoozeTimerWithContext(context)
     }
 
-    // ✅ Firebase'den ilaç verilerini sürekli dinle
-    LaunchedEffect(Unit) {
+    // ✅ Periyodik ilaç güncelleme (context gerektiğinde)
+    LaunchedEffect(context) {
         while (true) {
-            try {
-                todaysMedicines = medicineRepository.getTodaysMedicines()
-                val upcoming = medicineRepository.getUpcomingMedicines(context)
-                allUpcomingMedicines = upcoming
-                upcomingMedicine = upcoming.firstOrNull()
-            } catch (e: Exception) {
-                // Hata durumunda sessizce devam et
-            }
-            delay(3000) // Her 3 saniyede bir kontrol et
-        }
-    }
-
-    // ✅ İlk açılışta kalan süreyi hesapla
-    LaunchedEffect(Unit) {
-        val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
-        val snoozeUntil = prefs.getLong("snooze_until", 0)
-        val timestamp = prefs.getLong("snooze_timestamp", 0)
-
-        if (snoozeUntil > System.currentTimeMillis()) {
-            val remainingMillis = snoozeUntil - System.currentTimeMillis()
-            val remainingMinutes = (remainingMillis / 60_000).toInt() + 1
-            snoozeMinutes = remainingMinutes
-            lastSnoozeTimestamp = timestamp
-        } else if (snoozeUntil > 0) {
-            prefs.edit()
-                .remove("snooze_minutes")
-                .remove("snooze_until")
-                .remove("snooze_timestamp")
-                .apply()
-        }
-    }
-
-    // ✅ Süreyi düzenli kontrol et
-    LaunchedEffect(Unit) {
-        while (true) {
-            delay(1000)
-            val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
-            val snoozeUntil = prefs.getLong("snooze_until", 0)
-            val timestamp = prefs.getLong("snooze_timestamp", 0)
-
-            if (timestamp > lastSnoozeTimestamp && snoozeUntil > System.currentTimeMillis()) {
-                val remainingMillis = snoozeUntil - System.currentTimeMillis()
-                snoozeMinutes = (remainingMillis / 60_000).toInt() + 1
-                lastSnoozeTimestamp = timestamp
-            } else if (snoozeUntil > 0 && snoozeUntil <= System.currentTimeMillis()) {
-                snoozeMinutes = 0
-                lastSnoozeTimestamp = 0
-                prefs.edit()
-                    .remove("snooze_minutes")
-                    .remove("snooze_until")
-                    .remove("snooze_timestamp")
-                    .apply()
-            }
+            delay(3000)
+            viewModel.refreshMedicines(context)
         }
     }
 
@@ -188,11 +120,11 @@ fun HomeScreen(
                 )
                 .padding(contentPadding)
                 .then(
-                    if (showSuccessPopup || showSkippedPopup) Modifier.blur(10.dp)
+                    if (uiState.showSuccessPopup || uiState.showSkippedPopup) Modifier.blur(10.dp)
                     else Modifier
                 )
         ) {
-            DoziHeader(firestoreUser = firestoreUser)
+            DoziHeader(firestoreUser = uiState.user)
 
             Column(
                 modifier = Modifier
@@ -222,9 +154,9 @@ fun HomeScreen(
                                 animationSpec = tween(600, easing = FastOutSlowInEasing)
                             )
                 ) {
-                    if (currentMedicineStatus == MedicineStatus.UPCOMING && upcomingMedicine != null) {
+                    if (uiState.currentMedicineStatus == MedicineStatus.UPCOMING && uiState.upcomingMedicine != null) {
                         // Aynı saatteki tüm ilaçları bul
-                        val sameTimeMedicines = allUpcomingMedicines.filter { it.second == upcomingMedicine!!.second }
+                        val sameTimeMedicines = uiState.allUpcomingMedicines.filter { it.second == uiState.upcomingMedicine!!.second }
 
                         if (sameTimeMedicines.size == 1) {
                             // Tek ilaç varsa normal kartı göster
@@ -333,8 +265,8 @@ main
                         }
                     } else {
                         EmptyMedicineCard(
-                            currentMedicineStatus = currentMedicineStatus,
-                            nextMedicine = allUpcomingMedicines.firstOrNull()
+                            currentMedicineStatus = uiState.currentMedicineStatus,
+                            nextMedicine = uiState.allUpcomingMedicines.firstOrNull()
                         )
                     }
                 }
@@ -342,7 +274,7 @@ main
                 Spacer(Modifier.height(24.dp))
 
                 TimelineSection(
-                    medicines = todaysMedicines,
+                    medicines = uiState.todaysMedicines,
                     expanded = timelineExpanded,
                     context = context,
                     onToggle = {
@@ -362,8 +294,8 @@ main
             }
         }
 
-        // ✅ Popup’lar
-        if (showSuccessPopup) {
+        // ✅ Popup'lar
+        if (uiState.showSuccessPopup) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -376,7 +308,7 @@ main
             }
         }
 
-        if (showSkippedPopup) {
+        if (uiState.showSkippedPopup) {
             Box(
                 modifier = Modifier.fillMaxSize(),
                 contentAlignment = Alignment.Center
@@ -404,67 +336,30 @@ main
         }
     }
 
-    // ✅ Dialog'lar
-    if (showSkipDialog) {
-        val currentMedicine = upcomingMedicine
+    // ✅ Dialog'lar (ViewModel ile entegre)
+    if (uiState.showSkipDialog) {
+        val currentMedicine = uiState.upcomingMedicine
         SkipReasonDialog(
             onDismiss = {
                 playSound(context, R.raw.pekala)
-                showSkipDialog = false
+                viewModel.setShowSkipDialog(false)
             },
             onConfirm = { reason ->
                 playSound(context, R.raw.pekala)
-                currentMedicineStatus = MedicineStatus.SKIPPED
-                showSkipDialog = false
-                showSkippedPopup = true
-                android.util.Log.d("HomeScreen", "SkipDialog: Skipping medicine")
-                // Durumu kaydet
                 currentMedicine?.let {
-                    saveMedicineStatus(
-                        context,
-                        it.first.id,
-                        getCurrentDateString(),
-                        it.second,
-                        "skipped"
-                    )
-                }
-                // Liste'yi güncelle
-                coroutineScope.launch {
-                    delay(100)
-                    val updated = medicineRepository.getUpcomingMedicines(context)
-                    android.util.Log.d("HomeScreen", "SkipDialog: Updated count: ${updated.size}")
-                    allUpcomingMedicines = updated
-                    upcomingMedicine = updated.firstOrNull()
-                    if (upcomingMedicine != null) {
-                        currentMedicineStatus = MedicineStatus.UPCOMING
-                        android.util.Log.d("HomeScreen", "Next medicine: ${upcomingMedicine!!.first.name}")
-                    } else {
-                        android.util.Log.d("HomeScreen", "No more medicines")
-                    }
-                    delay(1500)
-                    showSkippedPopup = false
+                    viewModel.onMedicineSkipped(context, it.first, it.second)
                 }
             }
         )
     }
 
-    if (showSnoozeDialog) {
-        val currentMedicine = upcomingMedicine
+    if (uiState.showSnoozeDialog) {
+        val currentMedicine = uiState.upcomingMedicine
         SnoozeDialog(
-            onDismiss = { showSnoozeDialog = false },
+            onDismiss = { viewModel.setShowSnoozeDialog(false) },
             onConfirm = { minutes ->
-                snoozeMinutes = minutes
-                showSnoozeDialog = false
-                // Durumu kaydet (ertelenme süresiyle birlikte)
                 currentMedicine?.let {
-                    val snoozeUntil = System.currentTimeMillis() + minutes * 60_000L
-                    saveMedicineStatus(
-                        context,
-                        it.first.id,
-                        getCurrentDateString(),
-                        it.second,
-                        "snoozed_$snoozeUntil"
-                    )
+                    viewModel.onMedicineSnoozed(context, it.first, it.second, minutes)
                 }
             }
         )
