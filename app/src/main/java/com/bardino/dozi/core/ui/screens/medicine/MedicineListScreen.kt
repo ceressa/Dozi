@@ -30,7 +30,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.bardino.dozi.R
 import com.bardino.dozi.core.ui.theme.*
-import com.bardino.dozi.core.data.Medicine
+import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.components.EmptyMedicineList

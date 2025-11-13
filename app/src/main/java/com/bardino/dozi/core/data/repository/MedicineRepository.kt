@@ -162,6 +162,13 @@ class MedicineRepository {
     }
 
     /**
+     * Get a single medicine by ID (alias for compatibility)
+     */
+    suspend fun getMedicineById(medicineId: String): Medicine? {
+        return getMedicine(medicineId)
+    }
+
+    /**
      * Add a new medicine
      */
     suspend fun addMedicine(medicine: Medicine): Boolean {
