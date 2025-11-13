@@ -501,7 +501,7 @@ fun getCurrentDateString(): String {
     val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
     val month = calendar.get(java.util.Calendar.MONTH) + 1
     val year = calendar.get(java.util.Calendar.YEAR)
-    return "%02d_%02d_%d".format(day, month, year)
+    return "%02d/%02d/%d".format(day, month, year)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
