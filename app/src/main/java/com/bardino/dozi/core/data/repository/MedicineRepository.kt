@@ -73,18 +73,76 @@ class MedicineRepository {
     suspend fun getTodaysMedicines(): List<Medicine> {
         val allMedicines = getAllMedicines()
         val today = System.currentTimeMillis()
+        val todayDateString = getCurrentDateString() // "dd/MM/yyyy" format
 
         return allMedicines.filter { medicine ->
             // Check if medicine is active today
             val isActive = medicine.startDate <= today &&
                           (medicine.endDate == null || medicine.endDate >= today)
 
-            // Check if today is included in the days list (if specified)
-            val isDayIncluded = medicine.days.isEmpty() ||
-                              medicine.days.contains(getCurrentDayName())
+            if (!isActive || !medicine.reminderEnabled) return@filter false
 
-            isActive && isDayIncluded && medicine.reminderEnabled
+            // Check frequency-based schedule
+            when (medicine.frequency) {
+                "Her gün" -> true
+
+                "Gün aşırı" -> {
+                    // Başlangıçtan bugüne kaç gün geçti?
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    daysSinceStart % 2 == 0 // Çift günlerde al (0, 2, 4, ...)
+                }
+
+                "Haftada bir" -> {
+                    // Başlangıçtan bugüne kaç hafta geçti?
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    daysSinceStart % 7 == 0 // Her 7 günde bir
+                }
+
+                "15 günde bir" -> {
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    daysSinceStart % 15 == 0
+                }
+
+                "Ayda bir" -> {
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    daysSinceStart % 30 == 0
+                }
+
+                "Her X günde bir" -> {
+                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
+                    daysSinceStart % medicine.frequencyValue == 0
+                }
+
+                "İstediğim tarihlerde" -> {
+                    // Seçilen tarihler listesinde bugün var mı?
+                    medicine.days.contains(todayDateString)
+                }
+
+                else -> {
+                    // Eski sistem ile uyumluluk: days listesine bak
+                    medicine.days.isEmpty() || medicine.days.contains(getCurrentDayName())
+                }
+            }
         }
+    }
+
+    /**
+     * Helper: Calculate days between two timestamps
+     */
+    private fun getDaysBetween(startMillis: Long, endMillis: Long): Long {
+        val millisecondsPerDay = 24 * 60 * 60 * 1000
+        return (endMillis - startMillis) / millisecondsPerDay
+    }
+
+    /**
+     * Helper: Get current date in dd/MM/yyyy format
+     */
+    private fun getCurrentDateString(): String {
+        val calendar = java.util.Calendar.getInstance()
+        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+        val month = calendar.get(java.util.Calendar.MONTH) + 1
+        val year = calendar.get(java.util.Calendar.YEAR)
+        return "%02d/%02d/%d".format(day, month, year)
     }
 
     /**

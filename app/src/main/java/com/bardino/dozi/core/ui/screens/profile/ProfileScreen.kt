@@ -100,7 +100,29 @@ fun ProfileScreen(
         // Login olmuşsa Profil ekranını göster
         Scaffold(
             topBar = {
-                DoziTopBar(title = "Profil", canNavigateBack = false, backgroundColor = Color.White)
+                DoziTopBar(
+                    title = "Profil",
+                    canNavigateBack = false,
+                    backgroundColor = Color.White,
+                    actions = {
+                        IconButton(
+                            onClick = {
+                                auth.signOut()
+                                GoogleSignIn.getClient(
+                                    context,
+                                    GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
+                                ).signOut()
+                                Toast.makeText(context, "Çıkış yapıldı", Toast.LENGTH_SHORT).show()
+                            }
+                        ) {
+                            Icon(
+                                Icons.Filled.Logout,
+                                contentDescription = "Çıkış Yap",
+                                tint = DoziCoralDark
+                            )
+                        }
+                    }
+                )
             },
             containerColor = BackgroundLight
         ) { padding ->
@@ -177,43 +199,6 @@ fun ProfileScreen(
                         desc = "Versiyon bilgisi ve lisanslar",
                         color = TextSecondary,
                         onClick = onNavigateToAbout
-                    )
-                }
-
-                Spacer(modifier = Modifier.height(24.dp))
-
-                // Çıkış Yap Butonu
-                OutlinedButton(
-                    onClick = {
-                        auth.signOut()
-                        GoogleSignIn.getClient(
-                            context,
-                            GoogleSignInOptions.Builder(GoogleSignInOptions.DEFAULT_SIGN_IN).build()
-                        ).signOut()
-                        Toast.makeText(context, "Çıkış yapıldı", Toast.LENGTH_SHORT).show()
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp)
-                        .height(50.dp),
-                    shape = RoundedCornerShape(12.dp),
-                    colors = ButtonDefaults.outlinedButtonColors(
-                        contentColor = Color(0xFFE53935)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        Color(0xFFE53935)
-                    )
-                ) {
-                    Icon(
-                        Icons.Filled.Logout,
-                        contentDescription = null,
-                        modifier = Modifier.size(20.dp)
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        "Çıkış Yap",
-                        fontWeight = FontWeight.SemiBold
                     )
                 }
 

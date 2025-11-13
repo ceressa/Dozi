@@ -12,6 +12,8 @@ data class Medicine(
     val form: String = "tablet",                // tablet, kapsül, şurup, damla
     val times: List<String> = emptyList(),      // ["09:00", "13:00", "21:00"]
     val days: List<String> = emptyList(),       // ["Pazartesi", "Salı"] or empty for everyday
+    val frequency: String = "Her gün",          // "Her gün", "Gün aşırı", "Haftada bir", "Her X günde bir", "İstediğim tarihlerde"
+    val frequencyValue: Int = 1,                // X value for "Her X günde bir"
     val startDate: Long = 0L,                   // Timestamp
     val endDate: Long? = null,                  // Null = sürekli kullanım
     val stockCount: Int = 0,
