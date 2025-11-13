@@ -64,6 +64,71 @@ import java.time.LocalTime
 import java.time.format.TextStyle
 import java.util.*
 
+// Helper function: Get medicine status for a specific date
+fun getMedicineStatusForDate(context: Context, date: LocalDate, medicines: List<Medicine>): MedicineStatus {
+    val dateString = "%02d/%02d/%d".format(date.dayOfMonth, date.monthValue, date.year)
+    val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)
+
+    var hasTaken = false
+    var hasSkipped = false
+    var hasUpcoming = false
+
+    medicines.forEach { medicine ->
+        medicine.times.forEach { time ->
+            val key = "dose_${medicine.id}_${dateString}_$time"
+            val status = prefs.getString(key, null)
+
+            when {
+                status == "taken" -> hasTaken = true
+                status?.startsWith("skipped") == true -> hasSkipped = true
+                status == null && date >= LocalDate.now() -> hasUpcoming = true
+            }
+        }
+    }
+
+    return when {
+        hasTaken && !hasSkipped -> MedicineStatus.TAKEN
+        hasSkipped && !hasTaken -> MedicineStatus.SKIPPED
+        hasTaken && hasSkipped -> MedicineStatus.TAKEN // Partially taken
+        hasUpcoming -> if (date == LocalDate.now()) MedicineStatus.UPCOMING else MedicineStatus.PLANNED
+        else -> MedicineStatus.NONE
+    }
+}
+
+// Helper function: Get medicine records for a specific date
+fun getMedicineRecordsForDate(context: Context, date: LocalDate, medicines: List<Medicine>): List<MedicineRecord> {
+    val dateString = "%02d/%02d/%d".format(date.dayOfMonth, date.monthValue, date.year)
+    val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)
+
+    val records = mutableListOf<MedicineRecord>()
+
+    medicines.forEach { medicine ->
+        medicine.times.forEach { time ->
+            val key = "dose_${medicine.id}_${dateString}_$time"
+            val statusValue = prefs.getString(key, null)
+
+            val status = when {
+                statusValue == "taken" -> MedicineStatus.TAKEN
+                statusValue?.startsWith("skipped") == true -> MedicineStatus.SKIPPED
+                statusValue?.startsWith("snoozed") == true -> MedicineStatus.UPCOMING
+                date == LocalDate.now() -> MedicineStatus.UPCOMING
+                date > LocalDate.now() -> MedicineStatus.PLANNED
+                else -> MedicineStatus.NONE
+            }
+
+            if (status != MedicineStatus.NONE) {
+                records.add(MedicineRecord(
+                    time = time,
+                    name = "${medicine.name} ${medicine.dosage}",
+                    status = status
+                ))
+            }
+        }
+    }
+
+    return records.sortedBy { it.time }
+}
+
 data class MedicineRecord(
     val time: String,
     val name: String,
@@ -477,19 +542,27 @@ fun HorizontalCalendar(
     // 🔹 Sadece 7 gün: bugünün 3 gün öncesi ve 3 gün sonrası
     val dates = remember { (-3..3).map { today.plusDays(it.toLong()) } }
 
-    // 🔹 Bugünün listede ortada olması için başlangıç index’i 3
+    // 🔹 Bugünün listede ortada olması için başlangıç index'i 3
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = 3)
     val coroutineScope = rememberCoroutineScope()
 
-    // 🔹 Örnek statü verisi
-    val dayStatuses = remember {
-        mapOf(
-            today.minusDays(2) to MedicineStatus.TAKEN,
-            today.minusDays(1) to MedicineStatus.SKIPPED,
-            today to MedicineStatus.UPCOMING,
-            today.plusDays(1) to MedicineStatus.PLANNED,
-            today.plusDays(2) to MedicineStatus.NONE
-        )
+    // 🔹 Medicines listesini Firebase'den al
+    val medicineRepository = remember { MedicineRepository() }
+    var allMedicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
+
+    LaunchedEffect(Unit) {
+        try {
+            allMedicines = medicineRepository.getAllMedicines()
+        } catch (e: Exception) {
+            // Hata durumunda boş liste
+        }
+    }
+
+    // 🔹 Gerçek statü verisi - SharedPreferences'tan hesapla
+    val dayStatuses = remember(allMedicines) {
+        dates.associateWith { date ->
+            getMedicineStatusForDate(context, date, allMedicines)
+        }
     }
 
     var expandedDate by remember { mutableStateOf<LocalDate?>(null) }
@@ -571,7 +644,9 @@ fun HorizontalCalendar(
                 CalendarExpandedContent(
                     date = date,
                     status = status,
-                    onNavigateToReminders = onNavigateToReminders
+                    onNavigateToReminders = onNavigateToReminders,
+                    context = context,
+                    allMedicines = allMedicines
                 )
             }
         }
@@ -642,14 +717,14 @@ private fun CalendarDayCircle(
 private fun CalendarExpandedContent(
     date: LocalDate,
     status: MedicineStatus,
-    onNavigateToReminders: () -> Unit
+    onNavigateToReminders: () -> Unit,
+    context: Context,
+    allMedicines: List<Medicine>
 ) {
     val dayLabel = "${date.dayOfMonth} ${date.month.getDisplayName(TextStyle.FULL, Locale("tr", "TR"))}"
-    val medicines = listOf(
-        MedicineRecord("08:00", "Lustral 100mg", MedicineStatus.TAKEN),
-        MedicineRecord("14:00", "Benexol 50mg", MedicineStatus.SKIPPED),
-        MedicineRecord("22:00", "Vitamin D3 20mg", MedicineStatus.UPCOMING)
-    )
+    val medicines = remember(date, allMedicines) {
+        getMedicineRecordsForDate(context, date, allMedicines)
+    }
 
     val character = when (status) {
         MedicineStatus.TAKEN -> R.drawable.dozi_happy
