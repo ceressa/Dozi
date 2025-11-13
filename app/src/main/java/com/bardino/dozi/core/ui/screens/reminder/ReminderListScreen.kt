@@ -20,21 +20,15 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
+import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.components.EmptyReminderList
 import com.bardino.dozi.core.ui.theme.*
-
-data class ReminderItem(
-    val id: String,
-    val reminderTitle: String?,
-    val medicineName: String,
-    val dosage: String, // ✅ String olarak (1, 0.5, 0.25, 2, 3, custom value)
-    val hour: Int,
-    val minute: Int,
-    val frequency: String,
-    val xValue: Int,
-    val selectedDates: List<String>
-)
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -43,10 +37,22 @@ fun ReminderListScreen(
     onNavigateToAddReminder: () -> Unit
 ) {
     val context = LocalContext.current
-    var reminders by remember { mutableStateOf(loadReminders(context)) }
+    val medicineRepository = remember { MedicineRepository() }
+    var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var isVisible by remember { mutableStateOf(false) }
 
-    LaunchedEffect(Unit) { isVisible = true }
+    // Firebase'den ilaçları sürekli dinle
+    LaunchedEffect(Unit) {
+        isVisible = true
+        while (true) {
+            try {
+                medicines = medicineRepository.getAllMedicines()
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+            delay(3000) // Her 3 saniyede bir yenile
+        }
+    }
 
     Scaffold(
         topBar = {
@@ -70,7 +76,7 @@ fun ReminderListScreen(
         containerColor = BackgroundLight
     ) { padding ->
 
-        if (reminders.isEmpty()) {
+        if (medicines.isEmpty()) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
@@ -100,7 +106,7 @@ fun ReminderListScreen(
                         verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
                         Text(
-                            text = "💡 Toplam ${reminders.size} hatırlatma",
+                            text = "💡 Toplam ${medicines.size} hatırlatma",
                             color = Color.White,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.SemiBold
@@ -120,16 +126,17 @@ fun ReminderListScreen(
                     contentPadding = PaddingValues(horizontal = 20.dp, vertical = 12.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    items(reminders, key = { it.id }) { reminder ->
+                    items(medicines, key = { it.id }) { medicine ->
                         AnimatedVisibility(
                             visible = isVisible,
                             enter = fadeIn() + slideInVertically(initialOffsetY = { 40 })
                         ) {
-                            ReminderCard(
-                                reminder = reminder,
+                            MedicineCard(
+                                medicine = medicine,
                                 onDelete = {
-                                    deleteReminder(context, reminder.id)
-                                    reminders = loadReminders(context)
+                                    CoroutineScope(Dispatchers.IO).launch {
+                                        medicineRepository.deleteMedicine(medicine.id)
+                                    }
                                 }
                             )
                         }
@@ -143,8 +150,8 @@ fun ReminderListScreen(
 }
 
 @Composable
-private fun ReminderCard(
-    reminder: ReminderItem,
+private fun MedicineCard(
+    medicine: Medicine,
     onDelete: () -> Unit
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
@@ -170,20 +177,17 @@ private fun ReminderCard(
             ) {
                 Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        text = reminder.reminderTitle?.takeIf { it.isNotBlank() }
-                            ?: reminder.medicineName,
+                        text = "${medicine.icon} ${medicine.name}",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
                         color = DoziTurquoise
                     )
-                    if (reminder.reminderTitle?.isNotBlank() == true) {
-                        Spacer(Modifier.height(4.dp))
-                        Text(
-                            text = reminder.medicineName,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
-                        )
-                    }
+                    Spacer(Modifier.height(4.dp))
+                    Text(
+                        text = medicine.dosage,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
                 }
 
                 IconButton(onClick = { showDeleteDialog = true }) {
@@ -200,27 +204,27 @@ private fun ReminderCard(
             // Bilgi satırları
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
             ) {
-                // Dozaj
-                InfoTag(
-                    icon = Icons.Default.Medication,
-                    text = formatDosage(reminder.dosage),
-                    color = DoziCoral
-                )
-
-                // Saat
-                InfoTag(
-                    icon = Icons.Default.Schedule,
-                    text = "%02d:%02d".format(reminder.hour, reminder.minute),
-                    color = DoziBlue
-                )
+                // Saatler
+                medicine.times.forEach { time ->
+                    InfoTag(
+                        icon = Icons.Default.Schedule,
+                        text = time,
+                        color = DoziBlue
+                    )
+                }
             }
 
             // Sıklık bilgisi
             InfoTag(
                 icon = Icons.Default.CalendarMonth,
-                text = formatFrequency(reminder.frequency, reminder.xValue, reminder.selectedDates),
+                text = when (medicine.frequency) {
+                    "Her X günde bir" -> "Her ${medicine.frequencyValue} günde bir"
+                    "İstediğim tarihlerde" -> "${medicine.days.size} tarih seçildi"
+                    else -> medicine.frequency
+                },
                 color = SuccessGreen,
                 fullWidth = true
             )
@@ -247,7 +251,7 @@ private fun ReminderCard(
             },
             text = {
                 Text(
-                    "${reminder.reminderTitle?.takeIf { it.isNotBlank() } ?: reminder.medicineName} hatırlatmasını silmek istediğinize emin misiniz?",
+                    "${medicine.name} hatırlatmasını silmek istediğinize emin misiniz?",
                     color = TextSecondary
                 )
             },
@@ -307,57 +311,4 @@ private fun InfoTag(
             )
         }
     }
-}
-
-// ✅ Dozaj formatı
-private fun formatDosage(dosage: String): String {
-    return when (dosage) {
-        "0.5" -> "Yarım adet"
-        "0.25" -> "Çeyrek adet"
-        "1" -> "1 adet"
-        "2" -> "2 adet"
-        "3" -> "3 adet"
-        else -> "$dosage adet"
-    }
-}
-
-// ✅ Sıklık formatı
-private fun formatFrequency(frequency: String, xValue: Int, dates: List<String>): String {
-    return when (frequency) {
-        "Her X günde bir" -> "Her $xValue günde bir"
-        "İstediğim tarihlerde" -> "${dates.size} tarih seçildi"
-        else -> frequency
-    }
-}
-
-// 🧠 SharedPreferences yükleme
-private fun loadReminders(context: Context): List<ReminderItem> {
-    val prefs = context.getSharedPreferences("reminders", Context.MODE_PRIVATE)
-    return prefs.all.mapNotNull { (key, value) ->
-        try {
-            val parts = value.toString().split("|").associate {
-                val (k, v) = it.split("=", limit = 2)
-                k to v
-            }
-            ReminderItem(
-                id = key,
-                reminderTitle = parts["reminderTitle"]?.takeIf { it.isNotBlank() },
-                medicineName = parts["medicineName"] ?: "",
-                dosage = parts["dosage"] ?: "1", // ✅ String olarak
-                hour = parts["hour"]?.toIntOrNull() ?: 0,
-                minute = parts["minute"]?.toIntOrNull() ?: 0,
-                frequency = parts["frequency"] ?: "Her gün",
-                xValue = parts["xValue"]?.toIntOrNull() ?: 2,
-                selectedDates = parts["dates"]?.split(",")?.filter { it.isNotBlank() } ?: emptyList()
-            )
-        } catch (e: Exception) {
-            e.printStackTrace()
-            null
-        }
-    }.sortedByDescending { it.id }
-}
-
-private fun deleteReminder(context: Context, id: String) {
-    val prefs = context.getSharedPreferences("reminders", Context.MODE_PRIVATE)
-    prefs.edit().remove(id).apply()
 }
