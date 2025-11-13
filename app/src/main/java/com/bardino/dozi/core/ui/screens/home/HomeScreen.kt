@@ -98,23 +98,32 @@ fun HomeScreen(
     val userRepository = remember { UserRepository() }
     val medicineRepository = remember { MedicineRepository() }
 
-    // ✅ Firebase'den kullanıcı verilerini çek
+    // ✅ Firebase'den kullanıcı verilerini sürekli dinle
     LaunchedEffect(Unit) {
-        try {
-            firestoreUser = userRepository.getUserData()
-        } catch (e: Exception) {
-            // Hata durumunda sessizce devam et
+        while (true) {
+            try {
+                val userData = userRepository.getUserData()
+                if (userData != null) {
+                    firestoreUser = userData
+                }
+            } catch (e: Exception) {
+                // Hata durumunda sessizce devam et
+            }
+            delay(2000) // Her 2 saniyede bir kontrol et
         }
     }
 
-    // ✅ Firebase'den ilaç verilerini çek
+    // ✅ Firebase'den ilaç verilerini sürekli dinle
     LaunchedEffect(Unit) {
-        try {
-            todaysMedicines = medicineRepository.getTodaysMedicines()
-            val upcoming = medicineRepository.getUpcomingMedicines()
-            upcomingMedicine = upcoming.firstOrNull()
-        } catch (e: Exception) {
-            // Hata durumunda sessizce devam et
+        while (true) {
+            try {
+                todaysMedicines = medicineRepository.getTodaysMedicines()
+                val upcoming = medicineRepository.getUpcomingMedicines()
+                upcomingMedicine = upcoming.firstOrNull()
+            } catch (e: Exception) {
+                // Hata durumunda sessizce devam et
+            }
+            delay(3000) // Her 3 saniyede bir kontrol et
         }
     }
 
@@ -394,7 +403,7 @@ private fun DoziHeader(firestoreUser: User?) {
                                 ) {
                                     append(userName)
                                 }
-                                append("! 👋")
+                                append("!")
                             },
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
@@ -403,7 +412,7 @@ private fun DoziHeader(firestoreUser: User?) {
                         )
                     } else {
                         Text(
-                            text = "$greeting, $userName! 👋",
+                            text = "$greeting, $userName!",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White
