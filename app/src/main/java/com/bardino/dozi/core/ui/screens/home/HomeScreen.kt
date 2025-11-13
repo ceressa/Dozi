@@ -1824,6 +1824,7 @@ private fun MultiMedicineCard(
     medicines: List<Pair<Medicine, String>>,
     time: String,
     onTaken: (Medicine) -> Unit,
+    onSnooze: () -> Unit,
     onSkip: (Medicine) -> Unit
 ) {
     Card(
