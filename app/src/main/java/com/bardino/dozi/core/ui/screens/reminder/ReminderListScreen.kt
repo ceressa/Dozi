@@ -59,14 +59,20 @@ fun ReminderListScreen(
             DoziTopBar(
                 title = "Hatırlatmalarım",
                 canNavigateBack = false,
-                backgroundColor = Color.White,
+                backgroundColor = Color.Transparent,
                 actions = {
-                    IconButton(onClick = onNavigateToAddReminder) {
-                        Icon(
-                            Icons.Default.Add,
-                            contentDescription = "Yeni Hatırlatma",
-                            tint = DoziCoralDark
-                        )
+                    Surface(
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        color = DoziCoralDark.copy(alpha = 0.15f),
+                        modifier = Modifier.padding(end = 8.dp)
+                    ) {
+                        IconButton(onClick = onNavigateToAddReminder) {
+                            Icon(
+                                Icons.Default.AddCircleOutline,
+                                contentDescription = "Yeni Hatırlatma",
+                                tint = DoziCoralDark
+                            )
+                        }
                     }
                 }
             )
@@ -76,10 +82,14 @@ fun ReminderListScreen(
                 onClick = onNavigateToAddReminder,
                 containerColor = DoziTurquoise,
                 contentColor = Color.White,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier.shadow(10.dp, RoundedCornerShape(18.dp))
+                shape = RoundedCornerShape(16.dp),
+                modifier = Modifier.shadow(12.dp, RoundedCornerShape(16.dp))
             ) {
-                Icon(Icons.Default.Add, contentDescription = "Yeni Hatırlatma")
+                Icon(
+                    Icons.Default.Add,
+                    contentDescription = "Yeni Hatırlatma",
+                    modifier = Modifier.size(28.dp)
+                )
             }
         },
         containerColor = BackgroundLight
@@ -100,35 +110,69 @@ fun ReminderListScreen(
                     .fillMaxSize()
                     .padding(padding)
             ) {
-                // Üst Bilgi Alanı
+                // Üst Bilgi Alanı - Modern Design
                 Box(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
-                            brush = Brush.horizontalGradient(
-                                listOf(DoziBlue, DoziTurquoise)
-                            )
+                            brush = Brush.verticalGradient(
+                                colors = listOf(
+                                    DoziBlue,
+                                    DoziBlue.copy(alpha = 0.85f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(bottomStart = 32.dp, bottomEnd = 32.dp)
                         )
-                        .padding(horizontal = 24.dp, vertical = 28.dp)
+                        .padding(horizontal = 24.dp, vertical = 32.dp)
                 ) {
-                    Column(
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Text(
-                            text = "💡 Toplam ${medicines.size} hatırlatma",
-                            color = Color.White,
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.SemiBold
-                        )
-                        Text(
-                            text = "İlaçlarınızı zamanında almanız için hatırlatmalar burada.",
-                            color = Color.White.copy(alpha = 0.9f),
-                            style = MaterialTheme.typography.bodyMedium
-                        )
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(8.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Text(
+                                text = "${medicines.size}",
+                                color = Color.White,
+                                style = MaterialTheme.typography.displaySmall,
+                                fontWeight = FontWeight.Bold
+                            )
+                            Text(
+                                text = "Aktif Hatırlatma",
+                                color = Color.White.copy(alpha = 0.95f),
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Medium
+                            )
+                            Text(
+                                text = "İlaçlarınızı zamanında almayı unutmayın",
+                                color = Color.White.copy(alpha = 0.85f),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+
+                        androidx.compose.material3.Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = Color.White.copy(alpha = 0.2f),
+                            modifier = Modifier.size(72.dp)
+                        ) {
+                            Box(
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Notifications,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(40.dp)
+                                )
+                            }
+                        }
                     }
                 }
 
-                Spacer(Modifier.height(16.dp))
+                Spacer(Modifier.height(20.dp))
 
                 // Hatırlatma Listesi
                 LazyColumn(
@@ -168,124 +212,248 @@ private fun MedicineCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .shadow(6.dp, RoundedCornerShape(20.dp)),
-        shape = RoundedCornerShape(20.dp),
+            .shadow(
+                elevation = 8.dp,
+                shape = RoundedCornerShape(24.dp),
+                spotColor = DoziBlue.copy(alpha = 0.25f)
+            ),
+        shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(20.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
-        ) {
-            // Başlık satırı
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    Text(
-                        text = "${medicine.icon} ${medicine.name}",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = DoziTurquoise
+        Box {
+            // Dekoratif top border
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                DoziBlue.copy(alpha = 0.8f),
+                                DoziTurquoise.copy(alpha = 0.6f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
                     )
-                    Spacer(Modifier.height(4.dp))
-                    Text(
-                        text = medicine.dosage,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
-                    )
-                }
-
-                IconButton(onClick = { showDeleteDialog = true }) {
-                    Icon(
-                        Icons.Default.Delete,
-                        contentDescription = "Sil",
-                        tint = ErrorRed
-                    )
-                }
-            }
-
-            Divider(color = Gray200, thickness = 1.dp)
-
-            // Bilgi satırları
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                // Saatler
-                medicine.times.forEach { time ->
-                    InfoTag(
-                        icon = Icons.Default.Schedule,
-                        text = time,
-                        color = DoziBlue
-                    )
-                }
-            }
-
-            // Sıklık bilgisi
-            InfoTag(
-                icon = Icons.Default.CalendarMonth,
-                text = when (medicine.frequency) {
-                    "Her X günde bir" -> "Her ${medicine.frequencyValue} günde bir"
-                    "İstediğim tarihlerde" -> "${medicine.days.size} tarih seçildi"
-                    else -> medicine.frequency
-                },
-                color = SuccessGreen,
-                fullWidth = true
             )
+
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 8.dp)
+                    .padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Başlık satırı
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
+                ) {
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        ) {
+                            androidx.compose.material3.Surface(
+                                shape = androidx.compose.foundation.shape.CircleShape,
+                                color = DoziTurquoise.copy(alpha = 0.15f),
+                                modifier = Modifier.size(40.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Text(
+                                        text = medicine.icon,
+                                        style = MaterialTheme.typography.titleMedium
+                                    )
+                                }
+                            }
+
+                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                                Text(
+                                    text = medicine.name,
+                                    style = MaterialTheme.typography.titleLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = TextPrimaryLight
+                                )
+                                Text(
+                                    text = medicine.dosage,
+                                    style = MaterialTheme.typography.bodyMedium,
+                                    color = TextSecondaryLight,
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    androidx.compose.material3.Surface(
+                        shape = androidx.compose.foundation.shape.CircleShape,
+                        color = ErrorRed.copy(alpha = 0.1f)
+                    ) {
+                        IconButton(onClick = { showDeleteDialog = true }) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = "Sil",
+                                tint = ErrorRed,
+                                modifier = Modifier.size(20.dp)
+                            )
+                        }
+                    }
+                }
+
+                // Saatler - Horizontal scroll eğer çok fazlaysa
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    medicine.times.take(3).forEach { time ->
+                        InfoTag(
+                            icon = Icons.Default.Schedule,
+                            text = time,
+                            color = DoziBlue
+                        )
+                    }
+                    if (medicine.times.size > 3) {
+                        androidx.compose.material3.Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = DoziBlue.copy(alpha = 0.12f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(8.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Text(
+                                    text = "+${medicine.times.size - 3}",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = DoziBlue
+                                )
+                            }
+                        }
+                    }
+                }
+
+                // Sıklık bilgisi
+                InfoTag(
+                    icon = Icons.Default.CalendarMonth,
+                    text = when (medicine.frequency) {
+                        "Her X günde bir" -> "Her ${medicine.frequencyValue} günde bir"
+                        "İstediğim tarihlerde" -> "${medicine.days.size} tarih seçildi"
+                        else -> medicine.frequency
+                    },
+                    color = SuccessGreen,
+                    fullWidth = true
+                )
+            }
         }
     }
 
-    // Silme onay dialogu
+    // Modern Silme Onay Dialogu
     if (showDeleteDialog) {
-        AlertDialog(
-            onDismissRequest = { showDeleteDialog = false },
-            icon = {
-                Icon(
-                    Icons.Default.Warning,
-                    contentDescription = null,
-                    tint = ErrorRed,
-                    modifier = Modifier.size(48.dp)
-                )
-            },
-            title = {
-                Text(
-                    "Hatırlatmayı Sil?",
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Text(
-                    "${medicine.name} hatırlatmasını silmek istediğinize emin misiniz?",
-                    color = TextSecondary
-                )
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onDelete()
-                        showDeleteDialog = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
+        androidx.compose.ui.window.Dialog(
+            onDismissRequest = { showDeleteDialog = false }
+        ) {
+            androidx.compose.material3.Surface(
+                shape = RoundedCornerShape(28.dp),
+                color = Color.White,
+                shadowElevation = 16.dp
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(32.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(24.dp)
                 ) {
-                    Icon(Icons.Default.Delete, contentDescription = null)
-                    Spacer(Modifier.width(8.dp))
-                    Text("Sil", fontWeight = FontWeight.Bold)
-                }
-            },
-            dismissButton = {
-                OutlinedButton(
-                    onClick = { showDeleteDialog = false },
-                    border = BorderStroke(1.dp, Gray200)
-                ) {
-                    Text("İptal", color = TextSecondary, fontWeight = FontWeight.Medium)
+                    // Icon
+                    androidx.compose.material3.Surface(
+                        modifier = Modifier.size(80.dp),
+                        color = ErrorRed.copy(alpha = 0.15f),
+                        shape = androidx.compose.foundation.shape.CircleShape
+                    ) {
+                        Box(contentAlignment = Alignment.Center) {
+                            Icon(
+                                Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = ErrorRed,
+                                modifier = Modifier.size(44.dp)
+                            )
+                        }
+                    }
+
+                    // Başlık ve Açıklama
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Text(
+                            text = "Hatırlatmayı Sil?",
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimaryLight
+                        )
+
+                        Text(
+                            text = "${medicine.name} için ayarlanan hatırlatmayı silmek istediğinize emin misiniz?",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = TextSecondaryLight,
+                            textAlign = androidx.compose.ui.text.style.TextAlign.Center
+                        )
+                    }
+
+                    // Butonlar
+                    Column(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                onDelete()
+                                showDeleteDialog = false
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = ErrorRed
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Delete,
+                                contentDescription = null,
+                                modifier = Modifier.size(22.dp)
+                            )
+                            Spacer(Modifier.width(10.dp))
+                            Text(
+                                "Evet, Sil",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+
+                        OutlinedButton(
+                            onClick = { showDeleteDialog = false },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(56.dp),
+                            shape = RoundedCornerShape(16.dp),
+                            border = BorderStroke(2.dp, Gray200)
+                        ) {
+                            Text(
+                                "İptal",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextSecondaryLight
+                            )
+                        }
+                    }
                 }
             }
-        )
+        }
     }
 }
 
@@ -296,13 +464,14 @@ private fun InfoTag(
     color: Color,
     fullWidth: Boolean = false
 ) {
-    Surface(
+    androidx.compose.material3.Surface(
         color = color.copy(alpha = 0.12f),
         shape = RoundedCornerShape(12.dp),
+        shadowElevation = 2.dp,
         modifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier
     ) {
         Row(
-            modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+            modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
             horizontalArrangement = Arrangement.spacedBy(8.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
