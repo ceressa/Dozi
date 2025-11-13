@@ -1,0 +1,327 @@
+From 93e7a3a85bbe699d97257bbe4aba294be8c9390b Mon Sep 17 00:00:00 2001
+From: Claude <noreply@anthropic.com>
+Date: Thu, 13 Nov 2025 14:51:51 +0000
+Subject: [PATCH] Fix: HomeScreen UI improvements and data accuracy
+
+Changes:
+- Fixed MultiMedicineCard design with proper AL/ATLA buttons (like CurrentMedicineCard)
+- Fixed status persistence: medicines now disappear after being taken/skipped
+- Added upcomingMedicine list updates after taking or skipping medicines
+- Fixed calendar to show real data instead of dummy data
+- Added calculateDayStatus() function to determine daily medicine status
+- Added isMedicineValidForDate() function to check if medicine is valid for a specific date
+- Calendar colors now change based on actual medicine status:
+  - TAKEN (green): All medicines taken
+  - SKIPPED (red): Medicines skipped
+  - UPCOMING (blue): Current day with pending medicines
+  - PLANNED (gray): Future days
+  - NONE: No medicines scheduled
+- Improved user experience with proper state management
+---
+ .../dozi/core/ui/screens/home/HomeScreen.kt   | 234 +++++++++++++-----
+ 1 file changed, 170 insertions(+), 64 deletions(-)
+
+diff --git a/app/src/main/java/com/bardino/dozi/core/ui/screens/home/HomeScreen.kt b/app/src/main/java/com/bardino/dozi/core/ui/screens/home/HomeScreen.kt
+index 989e261..e41fe7e 100644
+--- a/app/src/main/java/com/bardino/dozi/core/ui/screens/home/HomeScreen.kt
++++ b/app/src/main/java/com/bardino/dozi/core/ui/screens/home/HomeScreen.kt
+@@ -204,6 +204,8 @@ fun HomeScreen(
+                 // ✅ Takvim (yeni versiyon)
+                 HorizontalCalendar(
+                     selectedDate = selectedDate,
++                    todaysMedicines = todaysMedicines,
++                    context = context,
+                     onDateSelected = { date ->
+                         selectedDate = if (selectedDate == date) null else date
+                     },
+@@ -244,8 +246,16 @@ fun HomeScreen(
+                                         upcomingMedicine!!.second,
+                                         "taken"
+                                     )
++                                    // Liste'yi güncelle
+                                     coroutineScope.launch {
+-                                        delay(2000)
++                                        delay(500)
++                                        val updated = medicineRepository.getUpcomingMedicines(context)
++                                        allUpcomingMedicines = updated
++                                        upcomingMedicine = updated.firstOrNull()
++                                        if (upcomingMedicine != null) {
++                                            currentMedicineStatus = MedicineStatus.UPCOMING
++                                        }
++                                        delay(1500)
+                                         showSuccessPopup = false
+                                     }
+                                 },
+@@ -391,8 +401,16 @@ fun HomeScreen(
+                         "skipped"
+                     )
+                 }
++                // Liste'yi güncelle
+                 coroutineScope.launch {
+-                    delay(2000)
++                    delay(500)
++                    val updated = medicineRepository.getUpcomingMedicines(context)
++                    allUpcomingMedicines = updated
++                    upcomingMedicine = updated.firstOrNull()
++                    if (upcomingMedicine != null) {
++                        currentMedicineStatus = MedicineStatus.UPCOMING
++                    }
++                    delay(1500)
+                     showSkippedPopup = false
+                 }
+             }
+@@ -446,6 +464,102 @@ fun getMedicineStatus(context: Context, medicineId: String, date: String, time:
+     return prefs.getString(key, null)
+ }
+ 
++@RequiresApi(Build.VERSION_CODES.O)
++fun calculateDayStatus(date: LocalDate, medicines: List<Medicine>, context: Context): MedicineStatus {
++    val today = LocalDate.now()
++
++    // Gelecek tarihler için PLANNED
++    if (date.isAfter(today)) {
++        return MedicineStatus.PLANNED
++    }
++
++    // Geçmiş ve bugün için statusları kontrol et
++    val dateString = "%02d_%02d_%d".format(date.dayOfMonth, date.monthValue, date.year)
++
++    var takenCount = 0
++    var skippedCount = 0
++    var totalCount = 0
++
++    medicines.forEach { medicine ->
++        medicine.times.forEach { time ->
++            // Bu ilacın bu tarih için geçerli olup olmadığını kontrol et
++            if (isMedicineValidForDate(medicine, date)) {
++                totalCount++
++                val status = getMedicineStatus(context, medicine.id, dateString, time)
++                when (status) {
++                    "taken" -> takenCount++
++                    "skipped" -> skippedCount++
++                }
++            }
++        }
++    }
++
++    if (totalCount == 0) return MedicineStatus.NONE
++
++    // Tüm ilaçlar alındıysa TAKEN
++    if (takenCount == totalCount) return MedicineStatus.TAKEN
++
++    // En az bir ilaç atlandıysa ve hiç alınmadıysa SKIPPED
++    if (skippedCount > 0 && takenCount == 0) return MedicineStatus.SKIPPED
++
++    // Bugün ve henüz hiçbir işlem yapılmadıysa UPCOMING
++    if (date.isEqual(today) && takenCount == 0 && skippedCount == 0) return MedicineStatus.UPCOMING
++
++    // Karma durum - bazıları alındı bazıları atlandı
++    if (takenCount > 0) return MedicineStatus.TAKEN
++
++    return MedicineStatus.NONE
++}
++
++@RequiresApi(Build.VERSION_CODES.O)
++fun isMedicineValidForDate(medicine: Medicine, date: LocalDate): Boolean {
++    // startDate kontrolü
++    val startLocalDate = java.time.Instant.ofEpochMilli(medicine.startDate)
++        .atZone(java.time.ZoneId.systemDefault())
++        .toLocalDate()
++
++    if (date.isBefore(startLocalDate)) return false
++
++    // endDate kontrolü
++    medicine.endDate?.let { endDate ->
++        val endLocalDate = java.time.Instant.ofEpochMilli(endDate)
++            .atZone(java.time.ZoneId.systemDefault())
++            .toLocalDate()
++        if (date.isAfter(endLocalDate)) return false
++    }
++
++    // Frequency kontrolü
++    when (medicine.frequency) {
++        "Her gün" -> return true
++        "Gün aşırı" -> {
++            val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
++            return daysBetween % 2 == 0L
++        }
++        "Haftada bir" -> {
++            val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
++            return daysBetween % 7 == 0L
++        }
++        "15 günde bir" -> {
++            val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
++            return daysBetween % 15 == 0L
++        }
++        "Ayda bir" -> {
++            val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
++            return daysBetween % 30 == 0L
++        }
++        "Her X günde bir" -> {
++            val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
++            return daysBetween % medicine.frequencyValue == 0L
++        }
++        "İstediğim tarihlerde" -> {
++            val dateFormatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
++            val dateString = date.format(dateFormatter)
++            return medicine.days.contains(dateString)
++        }
++        else -> return false
++    }
++}
++
+ fun getCurrentDateString(): String {
+     val calendar = java.util.Calendar.getInstance()
+     val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+@@ -587,6 +701,8 @@ private fun DoziHeader(firestoreUser: User?) {
+ @Composable
+ fun HorizontalCalendar(
+     selectedDate: LocalDate?,
++    todaysMedicines: List<Medicine>,
++    context: Context,
+     onDateSelected: (LocalDate) -> Unit,
+     onNavigateToReminders: () -> Unit
+ ) {
+@@ -595,19 +711,15 @@ fun HorizontalCalendar(
+     // 🔹 Sadece 7 gün: bugünün 3 gün öncesi ve 3 gün sonrası
+     val dates = remember { (-3..3).map { today.plusDays(it.toLong()) } }
+ 
+-    // 🔹 Bugünün listede ortada olması için başlangıç index’i 3
++    // 🔹 Bugünün listede ortada olması için başlangıç index'i 3
+     val listState = rememberLazyListState(initialFirstVisibleItemIndex = 3)
+     val coroutineScope = rememberCoroutineScope()
+ 
+-    // 🔹 Örnek statü verisi
+-    val dayStatuses = remember {
+-        mapOf(
+-            today.minusDays(2) to MedicineStatus.TAKEN,
+-            today.minusDays(1) to MedicineStatus.SKIPPED,
+-            today to MedicineStatus.UPCOMING,
+-            today.plusDays(1) to MedicineStatus.PLANNED,
+-            today.plusDays(2) to MedicineStatus.NONE
+-        )
++    // 🔹 Gerçek statü verisini hesapla
++    val dayStatuses = remember(todaysMedicines, context) {
++        dates.associateWith { date ->
++            calculateDayStatus(date, todaysMedicines, context)
++        }
+     }
+ 
+     var expandedDate by remember { mutableStateOf<LocalDate?>(null) }
+@@ -1881,67 +1993,61 @@ private fun MultiMedicineCard(
+ 
+             // İlaç Listesi
+             medicines.forEach { (medicine, _) ->
+-                Row(
+-                    modifier = Modifier
+-                        .fillMaxWidth()
+-                        .background(DoziTurquoise.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+-                        .padding(16.dp),
+-                    horizontalArrangement = Arrangement.SpaceBetween,
+-                    verticalAlignment = Alignment.CenterVertically
++                Card(
++                    modifier = Modifier.fillMaxWidth(),
++                    colors = CardDefaults.cardColors(containerColor = DoziTurquoise.copy(alpha = 0.05f)),
++                    shape = RoundedCornerShape(16.dp),
++                    elevation = CardDefaults.cardElevation(0.dp)
+                 ) {
+-                    Row(
+-                        modifier = Modifier.weight(1f),
+-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+-                        verticalAlignment = Alignment.CenterVertically
++                    Column(
++                        modifier = Modifier
++                            .fillMaxWidth()
++                            .padding(16.dp),
++                        verticalArrangement = Arrangement.spacedBy(12.dp)
+                     ) {
+-                        Text(
+-                            medicine.icon,
+-                            style = MaterialTheme.typography.headlineMedium
+-                        )
+-                        Column {
+-                            Text(
+-                                medicine.name,
+-                                style = MaterialTheme.typography.titleMedium,
+-                                fontWeight = FontWeight.Bold,
+-                                color = TextPrimaryLight
+-                            )
++                        Row(
++                            modifier = Modifier.fillMaxWidth(),
++                            horizontalArrangement = Arrangement.spacedBy(12.dp),
++                            verticalAlignment = Alignment.CenterVertically
++                        ) {
+                             Text(
+-                                medicine.dosage,
+-                                style = MaterialTheme.typography.bodyMedium,
+-                                color = TextSecondaryLight
++                                medicine.icon,
++                                style = MaterialTheme.typography.headlineMedium
+                             )
++                            Column(modifier = Modifier.weight(1f)) {
++                                Text(
++                                    medicine.name,
++                                    style = MaterialTheme.typography.titleMedium,
++                                    fontWeight = FontWeight.Bold,
++                                    color = TextPrimaryLight
++                                )
++                                Text(
++                                    medicine.dosage,
++                                    style = MaterialTheme.typography.bodyMedium,
++                                    color = TextSecondaryLight
++                                )
++                            }
+                         }
+-                    }
+ 
+-                    // Butonlar
+-                    Row(
+-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+-                    ) {
+-                        // AL butonu
+-                        IconButton(
+-                            onClick = { onTaken(medicine) },
+-                            modifier = Modifier
+-                                .size(40.dp)
+-                                .background(SuccessGreen, CircleShape)
++                        // Butonlar
++                        Row(
++                            modifier = Modifier.fillMaxWidth(),
++                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                         ) {
+-                            Icon(
+-                                Icons.Default.Check,
+-                                contentDescription = "Al",
+-                                tint = Color.White
++                            ActionButton(
++                                text = "AL",
++                                icon = Icons.Default.Check,
++                                color = SuccessGreen,
++                                modifier = Modifier.weight(1f),
++                                onClick = { onTaken(medicine) }
+                             )
+-                        }
+ 
+-                        // ATLA butonu
+-                        IconButton(
+-                            onClick = { onSkip(medicine) },
+-                            modifier = Modifier
+-                                .size(40.dp)
+-                                .background(ErrorRed.copy(alpha = 0.2f), CircleShape)
+-                        ) {
+-                            Icon(
+-                                Icons.Default.Close,
+-                                contentDescription = "Atla",
+-                                tint = ErrorRed
++                            ActionButton(
++                                text = "ATLA",
++                                icon = Icons.Default.Close,
++                                color = ErrorRed,
++                                modifier = Modifier.weight(1f),
++                                onClick = { onSkip(medicine) }
+                             )
+                         }
+                     }
+-- 
+2.43.0
+
