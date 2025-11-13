@@ -58,8 +58,17 @@ fun ReminderListScreen(
         topBar = {
             DoziTopBar(
                 title = "Hatırlatmalarım",
-                canNavigateBack = false, // ✅ Ana sayfalardan biri olduğu için false
-                backgroundColor = Color.White
+                canNavigateBack = false,
+                backgroundColor = Color.White,
+                actions = {
+                    IconButton(onClick = onNavigateToAddReminder) {
+                        Icon(
+                            Icons.Default.Add,
+                            contentDescription = "Yeni Hatırlatma",
+                            tint = DoziCoralDark
+                        )
+                    }
+                }
             )
         },
         floatingActionButton = {
