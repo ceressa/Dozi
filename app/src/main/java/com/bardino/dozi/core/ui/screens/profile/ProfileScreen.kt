@@ -37,6 +37,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import com.bardino.dozi.R
+import com.bardino.dozi.core.data.model.User
+import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.screens.login.LoginScreen
 import com.bardino.dozi.core.ui.theme.*
@@ -54,16 +56,36 @@ import kotlinx.coroutines.launch
 @Composable
 fun ProfileScreen(
     onNavigateToLocations: () -> Unit = {},
+    onNavigateToPremium: () -> Unit = {},
+    onNavigateToSettings: () -> Unit = {},
+    onNavigateToNotifications: () -> Unit = {},
+    onNavigateToAbout: () -> Unit = {},
     onGoogleSignInClick: () -> Unit
 ) {
     val context = LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
+    val userRepository = remember { UserRepository() }
+    val scope = rememberCoroutineScope()
+
     var currentUser by remember { mutableStateOf(auth.currentUser) }
+    var firestoreUser by remember { mutableStateOf<User?>(null) }
 
     // 🔹 Firebase Auth Listener — kullanıcı durumu değiştiğinde UI'ı günceller
     DisposableEffect(Unit) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             currentUser = firebaseAuth.currentUser
+            // Kullanıcı girişi yaptığında Firestore'dan verileri çek
+            if (firebaseAuth.currentUser != null) {
+                scope.launch {
+                    try {
+                        firestoreUser = userRepository.getUserData()
+                    } catch (e: Exception) {
+                        Log.e("ProfileScreen", "Firestore veri çekme hatası: ${e.message}")
+                    }
+                }
+            } else {
+                firestoreUser = null
+            }
         }
         auth.addAuthStateListener(listener)
         onDispose { auth.removeAuthStateListener(listener) }
@@ -89,7 +111,10 @@ fun ProfileScreen(
                     .verticalScroll(rememberScrollState())
             ) {
                 // Profil Header
-                ProfileHeader(currentUser = currentUser)
+                ProfileHeader(
+                    currentUser = currentUser,
+                    firestoreUser = firestoreUser
+                )
 
                 Spacer(modifier = Modifier.height(24.dp))
 
@@ -106,7 +131,7 @@ fun ProfileScreen(
                         title = "Premium'a Geç",
                         desc = "Tüm özelliklerin kilidini aç",
                         color = Color(0xFFFFB300),
-                        onClick = { /* TODO: Premium'a yönlendir */ }
+                        onClick = onNavigateToPremium
                     )
 
                     // Ayarlar
@@ -115,7 +140,7 @@ fun ProfileScreen(
                         title = "Ayarlar",
                         desc = "Uygulama tercihlerini düzenle",
                         color = DoziBlue,
-                        onClick = { /* TODO: Ayarlara yönlendir */ }
+                        onClick = onNavigateToSettings
                     )
 
                     // Bildirimler
@@ -124,7 +149,7 @@ fun ProfileScreen(
                         title = "Bildirim Ayarları",
                         desc = "Hatırlatmaları yönet",
                         color = DoziTurquoise,
-                        onClick = { /* TODO: Bildirim ayarlarına yönlendir */ }
+                        onClick = onNavigateToNotifications
                     )
 
                     // Konum/Eczaneler
@@ -151,7 +176,7 @@ fun ProfileScreen(
                         title = "Hakkında",
                         desc = "Versiyon bilgisi ve lisanslar",
                         color = TextSecondary,
-                        onClick = { /* TODO: Hakkında sayfasına yönlendir */ }
+                        onClick = onNavigateToAbout
                     )
                 }
 
@@ -201,7 +226,10 @@ fun ProfileScreen(
 
 // Profil Header Composable
 @Composable
-private fun ProfileHeader(currentUser: FirebaseUser?) {
+private fun ProfileHeader(
+    currentUser: FirebaseUser?,
+    firestoreUser: User?
+) {
     Box(
         modifier = Modifier
             .fillMaxWidth()
@@ -254,6 +282,14 @@ private fun ProfileHeader(currentUser: FirebaseUser?) {
             )
 
             // Plan Badge
+            val planType = firestoreUser?.planType ?: "free"
+            val planText = when (planType) {
+                "premium" -> "Premium Plan"
+                "pro" -> "Pro Plan"
+                else -> "Ücretsiz Plan"
+            }
+            val planColor = if (planType == "free") Color(0xFFFFB300) else Color(0xFFFFD700)
+
             Surface(
                 shape = RoundedCornerShape(20.dp),
                 color = Color.White.copy(alpha = 0.2f),
@@ -267,11 +303,11 @@ private fun ProfileHeader(currentUser: FirebaseUser?) {
                     Icon(
                         Icons.Filled.Star,
                         contentDescription = null,
-                        tint = Color(0xFFFFB300),
+                        tint = planColor,
                         modifier = Modifier.size(16.dp)
                     )
                     Text(
-                        text = "Ücretsiz Plan",
+                        text = planText,
                         style = MaterialTheme.typography.labelMedium,
                         color = Color.White,
                         fontWeight = FontWeight.Medium

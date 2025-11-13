@@ -41,6 +41,18 @@ class UserRepository(
         }
     }
 
+    suspend fun updateUser(user: User) {
+        val currentUser = auth.currentUser ?: return
+        val docRef = db.collection("users").document(currentUser.uid)
+        docRef.set(user).await()
+    }
+
+    suspend fun updateUserField(field: String, value: Any) {
+        val currentUser = auth.currentUser ?: return
+        val docRef = db.collection("users").document(currentUser.uid)
+        docRef.update(field, value).await()
+    }
+
     fun signOut() {
         auth.signOut()
     }
