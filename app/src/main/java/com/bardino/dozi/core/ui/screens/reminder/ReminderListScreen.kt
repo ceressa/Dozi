@@ -34,7 +34,8 @@ import kotlinx.coroutines.launch
 @Composable
 fun ReminderListScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToAddReminder: () -> Unit
+    onNavigateToAddReminder: () -> Unit,
+    onNavigateToEditReminder: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
     val medicineRepository = remember { MedicineRepository() }
@@ -166,6 +167,9 @@ fun ReminderListScreen(
                                     CoroutineScope(Dispatchers.IO).launch {
                                         medicineRepository.deleteMedicine(medicine.id)
                                     }
+                                },
+                                onEdit = {
+                                    onNavigateToEditReminder(medicine.id)
                                 }
                             )
                         }
@@ -181,7 +185,8 @@ fun ReminderListScreen(
 @Composable
 private fun MedicineCard(
     medicine: Medicine,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onEdit: () -> Unit = {}
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -260,17 +265,38 @@ private fun MedicineCard(
                         }
                     }
 
-                    androidx.compose.material3.Surface(
-                        shape = androidx.compose.foundation.shape.CircleShape,
-                        color = ErrorRed.copy(alpha = 0.1f)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        IconButton(onClick = { showDeleteDialog = true }) {
-                            Icon(
-                                Icons.Default.Delete,
-                                contentDescription = "Sil",
-                                tint = ErrorRed,
-                                modifier = Modifier.size(20.dp)
-                            )
+                        // Edit butonu
+                        androidx.compose.material3.Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = DoziBlue.copy(alpha = 0.1f)
+                        ) {
+                            IconButton(onClick = onEdit) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Düzenle",
+                                    tint = DoziBlue,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        // Delete butonu
+                        androidx.compose.material3.Surface(
+                            shape = androidx.compose.foundation.shape.CircleShape,
+                            color = ErrorRed.copy(alpha = 0.1f)
+                        ) {
+                            IconButton(onClick = { showDeleteDialog = true }) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Sil",
+                                    tint = ErrorRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }

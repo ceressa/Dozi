@@ -355,10 +355,10 @@ private fun ModernMedicineCard(
                 ) {
                     InfoTag(
                         Icons.Default.Inventory,
-                        "Stok: ${medicine.stock}",
+                        "Stok: ${medicine.stockCount}",
                         when {
-                            medicine.stock < 5 -> DoziRed
-                            medicine.stock < 10 -> WarningOrange
+                            medicine.stockCount < 5 -> DoziRed
+                            medicine.stockCount < 10 -> WarningOrange
                             else -> SuccessGreen
                         }
                     )

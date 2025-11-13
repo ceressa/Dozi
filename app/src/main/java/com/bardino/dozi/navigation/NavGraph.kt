@@ -135,14 +135,42 @@ fun NavGraph(
             composable(Screen.ReminderList.route) {
                 ReminderListScreen(
                     onNavigateBack = { navController.popBackStack() },
-                    onNavigateToAddReminder = { navController.navigate(Screen.AddReminder.route) }
+                    onNavigateToAddReminder = { navController.navigate(Screen.AddReminder.route) },
+                    onNavigateToEditReminder = { medicineId ->
+                        navController.navigate(Screen.EditReminder.createRoute(medicineId))
+                    }
                 )
             }
 
             // ➕ Hatırlatıcı Ekle
             composable(Screen.AddReminder.route) {
                 AddReminderScreen(
-                    navController = navController,   // ✅ eklendi
+                    navController = navController,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // ✏️ Hatırlatıcı Düzenle
+            composable(
+                route = Screen.EditReminder.route,
+                arguments = listOf(navArgument("medicineId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val medicineId = backStackEntry.arguments?.getString("medicineId") ?: ""
+                AddReminderScreen(
+                    navController = navController,
+                    onNavigateBack = { navController.popBackStack() },
+                    medicineId = medicineId  // Edit mode aktif
+                )
+            }
+
+            // 💊 İlaç Aksiyonu (Bildirimden)
+            composable(
+                route = Screen.MedicationAction.route,
+                arguments = listOf(navArgument("time") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val time = backStackEntry.arguments?.getString("time") ?: ""
+                com.bardino.dozi.core.ui.screens.medication.MedicationActionScreen(
+                    time = time,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

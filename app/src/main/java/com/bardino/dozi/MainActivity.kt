@@ -117,11 +117,42 @@ class MainActivity : ComponentActivity() {
             DoziAppTheme {
                 val navController = rememberNavController()
 
+                // Deep link navigation'ı handle et
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    handleDeepLink(intent, navController)
+                }
+
                 NavGraph(
                     navController = navController,
                     startDestination = Screen.Home.route,
                     onGoogleSignInClick = { signInWithGoogle() } // 🔹 artık burada tanımlı
                 )
+            }
+        }
+    }
+
+    @RequiresApi(Build.VERSION_CODES.O)
+    override fun onNewIntent(intent: Intent) {
+        super.onNewIntent(intent)
+        setIntent(intent)
+        // Intent güncellendiğinde de handle et (bildirimden tıklanınca)
+    }
+
+    private fun handleDeepLink(intent: Intent?, navController: androidx.navigation.NavHostController) {
+        val navigationRoute = intent?.getStringExtra("navigation_route")
+        if (!navigationRoute.isNullOrEmpty()) {
+            Log.d("MainActivity", "Deep link detected: $navigationRoute")
+            try {
+                navController.navigate(navigationRoute) {
+                    // Ana sayfayı stack'te tut
+                    popUpTo(Screen.Home.route) {
+                        saveState = true
+                    }
+                    launchSingleTop = true
+                    restoreState = true
+                }
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Navigation failed: ${e.message}")
             }
         }
     }
