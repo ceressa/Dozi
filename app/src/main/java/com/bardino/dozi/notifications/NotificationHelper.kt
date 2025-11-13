@@ -38,11 +38,13 @@ object NotificationHelper {
         createDoziChannel(context)
         val nm = NotificationManagerCompat.from(context)
 
-        // MainActivity'e dönüş
+        // MedicationActionScreen'e yönlendir (zamanı parametre olarak gönder)
         val contentIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                // Deep link için navigation route ekle
+                putExtra("navigation_route", "medication_action/$time")
             },
             PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
         )
@@ -55,28 +57,18 @@ object NotificationHelper {
         // Dozi large icon
         val largeIcon = BitmapFactory.decodeResource(context.resources, R.drawable.dozi)
 
-        // 🎨 Modern notification style - No custom views
-        val bigTextContent = buildString {
-            append("💊 $medicineName ilacını alma vakti geldi.\n\n")
-            if (dosage.isNotEmpty()) {
-                append("📦 Doz: $dosage\n")
-            }
-            append("⏰ Saat: $time\n\n")
-            append("Aşağıdaki butonları kullanarak işlem yapabilirsin.")
-        }
-
-        // Bildirim oluştur - Modern style
+        // 🎨 Kısa ve öz bildirim metni
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
-            .setSmallIcon(R.drawable.ic_notification_pill) // ✅ Yeni basit ikon
+            .setSmallIcon(R.drawable.ic_notification_pill)
             .setColor(Color.parseColor("#26C6DA"))
-            .setLargeIcon(largeIcon) // Dozi karakteri burada
-            .setContentTitle("💧 İlaç Zamanı!")
-            .setContentText("$medicineName - $time")
+            .setLargeIcon(largeIcon)
+            .setContentTitle("💊 İlaç Hatırlatması")
+            .setContentText("$time • Hatırlatmalarınızı görüntüleyin")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText(bigTextContent)
-                    .setBigContentTitle("💧 Dozi Hatırlatıyor")
-                    .setSummaryText("İlaç Takibi")
+                    .bigText("⏰ Saat: $time\n\n📋 İlaçlarınızı almayı unutmayın. Detayları görmek için dokunun.")
+                    .setBigContentTitle("💊 İlaç Hatırlatması")
+                    .setSummaryText("Dozi")
             )
             .setAutoCancel(false) // Butonlarla kontrol ediyoruz
             .setPriority(NotificationCompat.PRIORITY_HIGH)

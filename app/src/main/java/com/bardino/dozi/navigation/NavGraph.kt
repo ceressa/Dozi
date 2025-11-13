@@ -147,6 +147,18 @@ fun NavGraph(
                 )
             }
 
+            // 💊 İlaç Aksiyonu (Bildirimden)
+            composable(
+                route = Screen.MedicationAction.route,
+                arguments = listOf(navArgument("time") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val time = backStackEntry.arguments?.getString("time") ?: ""
+                com.bardino.dozi.core.ui.screens.medication.MedicationActionScreen(
+                    time = time,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
             // 👤 Profil
             composable(Screen.Profile.route) {
                 ProfileScreen(
