@@ -213,12 +213,13 @@ class MedicineRepository {
     }
 
     /**
-     * Get upcoming medicines (rest of today)
+     * Get upcoming medicines (rest of today) - excludes taken/skipped
      */
-    suspend fun getUpcomingMedicines(): List<Pair<Medicine, String>> {
+    suspend fun getUpcomingMedicines(context: android.content.Context): List<Pair<Medicine, String>> {
         val todaysMedicines = getTodaysMedicines()
         val currentHour = java.time.LocalTime.now().hour
         val currentMinute = java.time.LocalTime.now().minute
+        val today = getCurrentDateString()
 
         val upcoming = mutableListOf<Pair<Medicine, String>>()
 
@@ -230,12 +231,37 @@ class MedicineRepository {
 
                 // Bugünün geri kalan tüm ilaçları
                 if (medicineTime >= currentTime) {
-                    upcoming.add(Pair(medicine, time))
+                    // Status kontrolü yap
+                    val status = getMedicineStatus(context, medicine.id, today, time)
+                    // Sadece alınmamış veya atlanmamış ilaçları ekle
+                    if (status != "taken" && status != "skipped") {
+                        upcoming.add(Pair(medicine, time))
+                    }
                 }
             }
         }
 
         return upcoming.sortedBy { it.second }
+    }
+
+    /**
+     * Helper: Get medicine status from SharedPreferences
+     */
+    private fun getMedicineStatus(context: android.content.Context, medicineId: String, date: String, time: String): String? {
+        val prefs = context.getSharedPreferences("medicine_status", android.content.Context.MODE_PRIVATE)
+        val key = "dose_${medicineId}_${date}_${time}"
+        return prefs.getString(key, null)
+    }
+
+    /**
+     * Helper: Get current date string for status key
+     */
+    private fun getCurrentDateString(): String {
+        val calendar = java.util.Calendar.getInstance()
+        val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
+        val month = calendar.get(java.util.Calendar.MONTH) + 1
+        val year = calendar.get(java.util.Calendar.YEAR)
+        return "%02d_%02d_%d".format(day, month, year)
     }
 
     /**

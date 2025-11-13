@@ -91,6 +91,7 @@ fun HomeScreen(
     var firestoreUser by remember { mutableStateOf<User?>(null) }
     var todaysMedicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var upcomingMedicine by remember { mutableStateOf<Pair<Medicine, String>?>(null) }
+    var allUpcomingMedicines by remember { mutableStateOf<List<Pair<Medicine, String>>>(emptyList()) }
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
@@ -118,7 +119,8 @@ fun HomeScreen(
         while (true) {
             try {
                 todaysMedicines = medicineRepository.getTodaysMedicines()
-                val upcoming = medicineRepository.getUpcomingMedicines()
+                val upcoming = medicineRepository.getUpcomingMedicines(context)
+                allUpcomingMedicines = upcoming
                 upcomingMedicine = upcoming.firstOrNull()
             } catch (e: Exception) {
                 // Hata durumunda sessizce devam et
@@ -221,32 +223,83 @@ fun HomeScreen(
                             )
                 ) {
                     if (currentMedicineStatus == MedicineStatus.UPCOMING && upcomingMedicine != null) {
-                        CurrentMedicineCard(
-                            medicine = upcomingMedicine!!.first,
-                            time = upcomingMedicine!!.second,
-                            snoozeMinutes = snoozeMinutes,
-                            onTaken = {
-                                playSound(context, R.raw.success)
-                                currentMedicineStatus = MedicineStatus.TAKEN
-                                showSuccessPopup = true
-                                // Durumu kaydet
-                                saveMedicineStatus(
-                                    context,
-                                    upcomingMedicine!!.first.id,
-                                    getCurrentDateString(),
-                                    upcomingMedicine!!.second,
-                                    "taken"
-                                )
-                                coroutineScope.launch {
-                                    delay(2000)
-                                    showSuccessPopup = false
+                        // Aynı saatteki tüm ilaçları bul
+                        val sameTimeMedicines = allUpcomingMedicines.filter { it.second == upcomingMedicine!!.second }
+
+                        if (sameTimeMedicines.size == 1) {
+                            // Tek ilaç varsa normal kartı göster
+                            CurrentMedicineCard(
+                                medicine = upcomingMedicine!!.first,
+                                time = upcomingMedicine!!.second,
+                                snoozeMinutes = snoozeMinutes,
+                                onTaken = {
+                                    playSound(context, R.raw.success)
+                                    currentMedicineStatus = MedicineStatus.TAKEN
+                                    showSuccessPopup = true
+                                    // Durumu kaydet
+                                    saveMedicineStatus(
+                                        context,
+                                        upcomingMedicine!!.first.id,
+                                        getCurrentDateString(),
+                                        upcomingMedicine!!.second,
+                                        "taken"
+                                    )
+                                    coroutineScope.launch {
+                                        delay(2000)
+                                        showSuccessPopup = false
+                                    }
+                                },
+                                onSnooze = { showSnoozeDialog = true },
+                                onSkip = { showSkipDialog = true }
+                            )
+                        } else {
+                            // Birden fazla ilaç varsa grup kartı göster
+                            MultiMedicineCard(
+                                medicines = sameTimeMedicines,
+                                time = upcomingMedicine!!.second,
+                                onTaken = { medicine ->
+                                    playSound(context, R.raw.success)
+                                    // Durumu kaydet
+                                    saveMedicineStatus(
+                                        context,
+                                        medicine.id,
+                                        getCurrentDateString(),
+                                        upcomingMedicine!!.second,
+                                        "taken"
+                                    )
+                                    // Liste'yi güncelle
+                                    coroutineScope.launch {
+                                        delay(500)
+                                        val updated = medicineRepository.getUpcomingMedicines(context)
+                                        allUpcomingMedicines = updated
+                                        upcomingMedicine = updated.firstOrNull()
+                                    }
+                                },
+                                onSkip = { medicine ->
+                                    playSound(context, R.raw.pekala)
+                                    // Durumu kaydet
+                                    saveMedicineStatus(
+                                        context,
+                                        medicine.id,
+                                        getCurrentDateString(),
+                                        upcomingMedicine!!.second,
+                                        "skipped"
+                                    )
+                                    // Liste'yi güncelle
+                                    coroutineScope.launch {
+                                        delay(500)
+                                        val updated = medicineRepository.getUpcomingMedicines(context)
+                                        allUpcomingMedicines = updated
+                                        upcomingMedicine = updated.firstOrNull()
+                                    }
                                 }
-                            },
-                            onSnooze = { showSnoozeDialog = true },
-                            onSkip = { showSkipDialog = true }
-                        )
+                            )
+                        }
                     } else {
-                        EmptyMedicineCard(currentMedicineStatus)
+                        EmptyMedicineCard(
+                            currentMedicineStatus = currentMedicineStatus,
+                            nextMedicine = allUpcomingMedicines.firstOrNull()
+                        )
                     }
                 }
 
@@ -997,7 +1050,10 @@ private fun CurrentMedicineCard(
 }
 
 @Composable
-private fun EmptyMedicineCard(status: MedicineStatus) {
+private fun EmptyMedicineCard(
+    currentMedicineStatus: MedicineStatus,
+    nextMedicine: Pair<Medicine, String>?
+) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1020,7 +1076,7 @@ private fun EmptyMedicineCard(status: MedicineStatus) {
             )
 
             Text(
-                when (status) {
+                when (currentMedicineStatus) {
                     MedicineStatus.TAKEN -> "Harika! İlacını aldın"
                     MedicineStatus.SKIPPED -> "Bugün için başka ilaç yok"
                     else -> "Henüz ilaç zamanı değil"
@@ -1031,16 +1087,61 @@ private fun EmptyMedicineCard(status: MedicineStatus) {
                 textAlign = TextAlign.Center
             )
 
-            Text(
-                when (status) {
-                    MedicineStatus.TAKEN -> "Sağlığınla ilgilendiğin için teşekkürler!"
-                    MedicineStatus.SKIPPED -> "Yarın için planlanmış ilaçların var"
-                    else -> "Vakti gelince seni uyaracağım"
-                },
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondaryLight,
-                textAlign = TextAlign.Center
-            )
+            // Sıradaki hatırlatmayı göster
+            if (nextMedicine != null && currentMedicineStatus != MedicineStatus.TAKEN && currentMedicineStatus != MedicineStatus.SKIPPED) {
+                Spacer(Modifier.height(8.dp))
+                Surface(
+                    color = DoziTurquoise.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Text(
+                            "Sıradaki Hatırlatma",
+                            style = MaterialTheme.typography.labelMedium,
+                            color = DoziTurquoise,
+                            fontWeight = FontWeight.Bold
+                        )
+                        Text(
+                            "${nextMedicine.first.icon} ${nextMedicine.first.name}",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = TextPrimaryLight
+                        )
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = DoziTurquoise,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                nextMedicine.second,
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = DoziTurquoise,
+                                fontWeight = FontWeight.Bold
+                            )
+                        }
+                    }
+                }
+            } else {
+                Text(
+                    when (currentMedicineStatus) {
+                        MedicineStatus.TAKEN -> "Sağlığınla ilgilendiğin için teşekkürler!"
+                        MedicineStatus.SKIPPED -> "Yarın için planlanmış ilaçların var"
+                        else -> "Vakti gelince seni uyaracağım"
+                    },
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondaryLight,
+                    textAlign = TextAlign.Center
+                )
+            }
         }
     }
 }
@@ -1703,6 +1804,146 @@ private fun EditNameDialog(
                         Icon(Icons.Default.Check, contentDescription = null)
                         Spacer(Modifier.width(8.dp))
                         Text("Kaydet", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+// MultiMedicineCard - Aynı saatte birden fazla ilaç olduğunda
+@Composable
+private fun MultiMedicineCard(
+    medicines: List<Pair<Medicine, String>>,
+    time: String,
+    onTaken: (Medicine) -> Unit,
+    onSkip: (Medicine) -> Unit
+) {
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(8.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Header
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column {
+                    Text(
+                        "İlaç Zamanı",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryLight
+                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = DoziTurquoise,
+                            modifier = Modifier.size(18.dp)
+                        )
+                        Text(
+                            time,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = DoziTurquoise
+                        )
+                    }
+                }
+                Surface(
+                    color = DoziCoral.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        "${medicines.size} ilaç",
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = DoziCoral
+                    )
+                }
+            }
+
+            Divider(color = Gray200)
+
+            // İlaç Listesi
+            medicines.forEach { (medicine, _) ->
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(DoziTurquoise.copy(alpha = 0.05f), RoundedCornerShape(16.dp))
+                        .padding(16.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Row(
+                        modifier = Modifier.weight(1f),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            medicine.icon,
+                            style = MaterialTheme.typography.headlineMedium
+                        )
+                        Column {
+                            Text(
+                                medicine.name,
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = TextPrimaryLight
+                            )
+                            Text(
+                                medicine.dosage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondaryLight
+                            )
+                        }
+                    }
+
+                    // Butonlar
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // AL butonu
+                        IconButton(
+                            onClick = { onTaken(medicine) },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(SuccessGreen, CircleShape)
+                        ) {
+                            Icon(
+                                Icons.Default.Check,
+                                contentDescription = "Al",
+                                tint = Color.White
+                            )
+                        }
+
+                        // ATLA butonu
+                        IconButton(
+                            onClick = { onSkip(medicine) },
+                            modifier = Modifier
+                                .size(40.dp)
+                                .background(ErrorRed.copy(alpha = 0.2f), CircleShape)
+                        ) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Atla",
+                                tint = ErrorRed
+                            )
+                        }
                     }
                 }
             }
