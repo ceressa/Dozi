@@ -32,4 +32,9 @@ sealed class Screen(val route: String) {
     object NotificationSettings : Screen("notification_settings")
     object About : Screen("about")
 
+    // Medication Action (from notification)
+    object MedicationAction : Screen("medication_action/{time}") {
+        fun createRoute(time: String) = "medication_action/$time"
+    }
+
 }

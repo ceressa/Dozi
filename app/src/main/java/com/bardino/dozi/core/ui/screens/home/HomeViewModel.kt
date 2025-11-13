@@ -222,6 +222,17 @@ class HomeViewModel(
             // Durumu kaydet
             saveMedicineStatus(context, medicine.id, getCurrentDateString(), time, "taken")
 
+            // Stok azalt (eğer stok > 0 ise)
+            if (medicine.stockCount > 0) {
+                try {
+                    val newStockCount = medicine.stockCount - 1
+                    medicineRepository.updateMedicineField(medicine.id, "stockCount", newStockCount)
+                    android.util.Log.d("HomeViewModel", "Stock decreased: ${medicine.name} -> $newStockCount")
+                } catch (e: Exception) {
+                    android.util.Log.e("HomeViewModel", "Failed to decrease stock", e)
+                }
+            }
+
             // Success popup göster
             _uiState.update { it.copy(showSuccessPopup = true) }
 

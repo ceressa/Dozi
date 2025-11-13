@@ -80,7 +80,7 @@ fun MedicineDetailScreen(
                 ) {
                     DetailRow("İlaç Adı", medicine.name)
                     DetailRow("Dozaj", medicine.dosage)
-                    DetailRow("Stok", "${medicine.stock} adet")
+                    DetailRow("Stok", "${medicine.stockCount} adet")
                 }
             }
 
