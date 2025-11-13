@@ -21,9 +21,12 @@ import com.bardino.dozi.core.ui.screens.medicine.MedicineListScreen
 import com.bardino.dozi.core.ui.screens.medicine.MedicineLookupScreen
 import com.bardino.dozi.core.ui.screens.premium.PremiumScreen
 import com.bardino.dozi.core.ui.screens.profile.LocationsScreen
+import com.bardino.dozi.core.ui.screens.profile.ProfileScreen
 import com.bardino.dozi.core.ui.screens.reminder.AddReminderScreen
 import com.bardino.dozi.core.ui.screens.reminder.ReminderListScreen
-import com.bardino.dozi.core.ui.screens.profile.ProfileScreen
+import com.bardino.dozi.core.ui.screens.settings.AboutScreen
+import com.bardino.dozi.core.ui.screens.settings.NotificationSettingsScreen
+import com.bardino.dozi.core.ui.screens.settings.SettingsScreen
 import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
 import com.bardino.dozi.onboarding.screens.OnboardingIntroScreen
 import com.bardino.dozi.onboarding.screens.OnboardingMedicineScreen
@@ -148,7 +151,11 @@ fun NavGraph(
             composable(Screen.Profile.route) {
                 ProfileScreen(
                     onNavigateToLocations = { navController.navigate(Screen.Locations.route) },
-                    onGoogleSignInClick = onGoogleSignInClick // 🔹 MainActivity’den gelen fonksiyon aktarılıyor
+                    onNavigateToPremium = { navController.navigate(Screen.Premium.route) },
+                    onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
+                    onNavigateToNotifications = { navController.navigate(Screen.NotificationSettings.route) },
+                    onNavigateToAbout = { navController.navigate(Screen.About.route) },
+                    onGoogleSignInClick = onGoogleSignInClick
                 )
             }
 
@@ -243,6 +250,21 @@ fun NavGraph(
 
             composable(Screen.Locations.route) {
                 LocationsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+
+            // ⚙️ Ayarlar
+            composable(Screen.Settings.route) {
+                SettingsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+
+            // 🔔 Bildirim Ayarları
+            composable(Screen.NotificationSettings.route) {
+                NotificationSettingsScreen(onNavigateBack = { navController.popBackStack() })
+            }
+
+            // ℹ️ Hakkında
+            composable(Screen.About.route) {
+                AboutScreen(onNavigateBack = { navController.popBackStack() })
             }
 
         }
