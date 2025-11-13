@@ -73,6 +73,7 @@ fun AddReminderScreen(
     var frequency by remember { mutableStateOf("Her gün") }
     var xValue by remember { mutableStateOf(2) }
     var selectedDates by remember { mutableStateOf<List<String>>(emptyList()) }
+    var startDate by remember { mutableStateOf(System.currentTimeMillis()) } // Başlangıç tarihi
     var showError by remember { mutableStateOf(false) }
     var showSuccess by remember { mutableStateOf(false) }
     var reminderTitle by remember { mutableStateOf("") }
@@ -235,9 +236,11 @@ fun AddReminderScreen(
                             selected = frequency,
                             xValue = xValue,
                             selectedDates = selectedDates,
+                            startDate = startDate,
                             onSelect = { frequency = it },
                             onXChange = { xValue = it },
                             onDatesChange = { selectedDates = it },
+                            onStartDateChange = { startDate = it },
                             context = context
                         )
 
@@ -295,6 +298,7 @@ fun AddReminderScreen(
                                     frequency = frequency,
                                     xValue = xValue,
                                     selectedDates = selectedDates,
+                                    startDate = startDate,
                                     onSuccess = {
                                         if (soundEnabled) playSuccessSound(context)
                                         showSuccess = true
@@ -836,9 +840,11 @@ private fun FrequencyStep(
     selected: String,
     xValue: Int,
     selectedDates: List<String>,
+    startDate: Long,
     onSelect: (String) -> Unit,
     onXChange: (Int) -> Unit,
     onDatesChange: (List<String>) -> Unit,
+    onStartDateChange: (Long) -> Unit,
     context: Context
 ) {
     val options = listOf(
@@ -869,9 +875,11 @@ private fun FrequencyStep(
                     isSelected = selected == option,
                     xValue = xValue,
                     selectedDates = selectedDates,
+                    startDate = startDate,
                     onSelect = { onSelect(option) },
                     onXChange = onXChange,
                     onDatesChange = onDatesChange,
+                    onStartDateChange = onStartDateChange,
                     context = context
                 )
             }
@@ -885,9 +893,11 @@ private fun FrequencyOptionCard(
     isSelected: Boolean,
     xValue: Int,
     selectedDates: List<String>,
+    startDate: Long,
     onSelect: () -> Unit,
     onXChange: (Int) -> Unit,
     onDatesChange: (List<String>) -> Unit,
+    onStartDateChange: (Long) -> Unit,
     context: Context
 ) {
     Card(
@@ -953,6 +963,40 @@ private fun FrequencyOptionCard(
                     IconButton(onClick = { onXChange(xValue + 1) }) {
                         Icon(Icons.Default.Add, contentDescription = "Artır", tint = SuccessGreen)
                     }
+                }
+            }
+
+            // Başlangıç tarihi seçici (İstediğim tarihlerde hariç tüm seçenekler için)
+            if (isSelected && option != "İstediğim tarihlerde") {
+                Spacer(Modifier.height(12.dp))
+                Divider(color = Gray200)
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    text = "Başlangıç Tarihi",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+                Spacer(Modifier.height(8.dp))
+
+                OutlinedButton(
+                    onClick = {
+                        showStartDatePicker(context, startDate) { newStartDate ->
+                            onStartDateChange(newStartDate)
+                        }
+                    },
+                    modifier = Modifier.fillMaxWidth(),
+                    border = BorderStroke(1.dp, SuccessGreen),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SuccessGreen)
+                ) {
+                    Icon(Icons.Default.CalendarToday, contentDescription = null)
+                    Spacer(Modifier.width(8.dp))
+                    val formatter = SimpleDateFormat("dd MMMM yyyy", Locale("tr", "TR"))
+                    Text(
+                        formatter.format(Date(startDate)),
+                        fontWeight = FontWeight.Medium
+                    )
                 }
             }
 
@@ -1042,6 +1086,31 @@ private fun showDatePicker(context: Context, onDateSelected: (String) -> Unit) {
         calendar.get(Calendar.MONTH),
         calendar.get(Calendar.DAY_OF_MONTH)
     ).show()
+}
+
+private fun showStartDatePicker(context: Context, currentStartDate: Long, onDateSelected: (Long) -> Unit) {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = currentStartDate
+    }
+    val today = Calendar.getInstance()
+
+    val picker = DatePickerDialog(
+        context,
+        { _, year, month, day ->
+            val selectedDate = Calendar.getInstance().apply {
+                set(year, month, day, 0, 0, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+            onDateSelected(selectedDate.timeInMillis)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    // Bugünden önceki tarihleri seçilemez yap
+    picker.datePicker.minDate = today.timeInMillis
+    picker.show()
 }
 
 // ADIM 3 - SAAT (Önceki adım 2'ydi, şimdi adım 3)
@@ -1369,6 +1438,7 @@ private fun saveReminderToFirestore(
     frequency: String,
     xValue: Int,
     selectedDates: List<String>,
+    startDate: Long,
     onSuccess: () -> Unit,
     onError: () -> Unit
 ) {
@@ -1384,6 +1454,17 @@ private fun saveReminderToFirestore(
         emptyList() // Diğer sıklıklar için frequency field'ı kullanılacak
     }
 
+    // frequencyValue'yu düzgün hesapla
+    val calculatedFrequencyValue = when (frequency) {
+        "Her gün" -> 1
+        "Gün aşırı" -> 2
+        "Haftada bir" -> 7
+        "15 günde bir" -> 15
+        "Ayda bir" -> 30
+        "Her X günde bir" -> xValue
+        else -> 1 // "İstediğim tarihlerde" için önemsiz
+    }
+
     // Medicine nesnesi oluştur
     val medicine = Medicine(
         id = "", // Repository tarafından oluşturulacak
@@ -1394,8 +1475,8 @@ private fun saveReminderToFirestore(
         times = times,
         days = days,
         frequency = frequency,
-        frequencyValue = xValue,
-        startDate = System.currentTimeMillis(),
+        frequencyValue = calculatedFrequencyValue,
+        startDate = startDate, // Kullanıcının seçtiği başlangıç tarihi
         endDate = null, // Sürekli kullanım
         stockCount = 0,
         boxSize = 0,
