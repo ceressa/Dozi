@@ -202,102 +202,117 @@ fun ProfileScreen(
                     )
                 }
 
-                Spacer(modifier = Modifier.height(32.dp))
+                // ✅ BottomBar için yeterli padding
+                Spacer(modifier = Modifier.height(100.dp))
             }
         }
     }
 }
 
 
-// Profil Header Composable
+// Profil Header Composable - Modernized
 @Composable
 private fun ProfileHeader(
     currentUser: FirebaseUser?,
     firestoreUser: User?
 ) {
+    val planType = firestoreUser?.planType ?: "free"
+    val isPremium = planType != "free"
+
+    // Gradient renklerini plan durumuna göre değiştir
+    val gradientColors = if (isPremium) {
+        listOf(
+            Color(0xFFFFB300),  // Altın
+            Color(0xFFFF6F00)   // Turuncu
+        )
+    } else {
+        listOf(
+            Color(0xFF00BCD4),  // Turquoise
+            Color(0xFF0097A7)   // Koyu Turquoise
+        )
+    }
+
     Box(
         modifier = Modifier
             .fillMaxWidth()
             .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color(0xFF00BCD4),
-                        Color(0xFF0097A7)
-                    )
-                )
+                brush = Brush.verticalGradient(colors = gradientColors)
             )
-            .padding(vertical = 32.dp, horizontal = 24.dp),
+            .padding(vertical = 40.dp, horizontal = 24.dp),
         contentAlignment = Alignment.Center
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(12.dp)
+            verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Avatar
+            // Avatar - Premium kullanıcılar için altın kenarlık
             Surface(
-                modifier = Modifier.size(100.dp),
+                modifier = Modifier.size(120.dp),
                 color = Color.White,
                 shape = CircleShape,
-                tonalElevation = 8.dp
+                tonalElevation = if (isPremium) 12.dp else 8.dp,
+                shadowElevation = if (isPremium) 16.dp else 8.dp
             ) {
-                Box(contentAlignment = Alignment.Center) {
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = if (isPremium) {
+                        Modifier
+                            .fillMaxSize()
+                            .background(
+                                brush = Brush.radialGradient(
+                                    colors = listOf(
+                                        Color(0xFFFFD700).copy(alpha = 0.1f),
+                                        Color.White
+                                    )
+                                )
+                            )
+                    } else Modifier.fillMaxSize()
+                ) {
                     Image(
                         painter = painterResource(R.drawable.dozi),
                         contentDescription = "Avatar",
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(20.dp)
+                            .padding(24.dp)
                     )
                 }
             }
 
             // İsim
             Text(
-                text = currentUser?.displayName ?: "Kullanıcı",
-                style = MaterialTheme.typography.headlineSmall,
+                text = currentUser?.displayName ?: firestoreUser?.name ?: "Kullanıcı",
+                style = MaterialTheme.typography.headlineMedium,
                 color = Color.White,
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.ExtraBold
             )
 
             // Email
             Text(
                 text = currentUser?.email ?: "",
-                style = MaterialTheme.typography.bodyMedium,
+                style = MaterialTheme.typography.bodyLarge,
                 color = Color.White.copy(alpha = 0.9f)
             )
 
             // Plan Badge
-            val planType = firestoreUser?.planType ?: "free"
             val planText = when (planType) {
-                "premium" -> "Premium Plan"
-                "pro" -> "Pro Plan"
-                else -> "Ücretsiz Plan"
+                "premium" -> "⭐ Premium Plan"
+                "pro" -> "👑 Pro Plan"
+                else -> "🆓 Ücretsiz Plan"
             }
-            val planColor = if (planType == "free") Color(0xFFFFB300) else Color(0xFFFFD700)
 
             Surface(
-                shape = RoundedCornerShape(20.dp),
-                color = Color.White.copy(alpha = 0.2f),
-                modifier = Modifier.padding(top = 8.dp)
+                shape = RoundedCornerShape(24.dp),
+                color = Color.White.copy(alpha = if (isPremium) 0.3f else 0.2f),
+                modifier = Modifier.padding(top = 4.dp),
+                tonalElevation = 4.dp
             ) {
-                Row(
-                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(6.dp)
-                ) {
-                    Icon(
-                        Icons.Filled.Star,
-                        contentDescription = null,
-                        tint = planColor,
-                        modifier = Modifier.size(16.dp)
-                    )
-                    Text(
-                        text = planText,
-                        style = MaterialTheme.typography.labelMedium,
-                        color = Color.White,
-                        fontWeight = FontWeight.Medium
-                    )
-                }
+                Text(
+                    text = planText,
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    style = MaterialTheme.typography.labelLarge,
+                    color = Color.White,
+                    fontWeight = FontWeight.Bold
+                )
             }
         }
     }
@@ -357,7 +372,7 @@ fun ColoredDebugButton(label: String, bgColor: Color, onClick: () -> Unit) {
 }
 
 
-// 🌟 Menü Kartı
+// 🌟 Modernize Edilmiş Menü Kartı
 @Composable
 private fun MenuCard(
     icon: ImageVector,
@@ -369,28 +384,42 @@ private fun MenuCard(
     Card(
         onClick = onClick,
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(18.dp),
+        shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+        elevation = CardDefaults.cardElevation(
+            defaultElevation = 2.dp,
+            pressedElevation = 6.dp
+        )
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(18.dp),
+                .padding(20.dp),
             verticalAlignment = Alignment.CenterVertically,
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
+            // Modern ikon container
             Surface(
-                modifier = Modifier.size(46.dp),
-                shape = CircleShape,
-                color = color.copy(alpha = 0.15f)
+                modifier = Modifier.size(52.dp),
+                shape = RoundedCornerShape(14.dp),
+                color = color.copy(alpha = 0.12f),
+                shadowElevation = 2.dp
             ) {
                 Box(contentAlignment = Alignment.Center) {
-                    Icon(icon, null, tint = color)
+                    Icon(
+                        icon,
+                        contentDescription = null,
+                        tint = color,
+                        modifier = Modifier.size(24.dp)
+                    )
                 }
             }
 
-            Column(modifier = Modifier.weight(1f)) {
+            // Metin alanı
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
@@ -399,16 +428,27 @@ private fun MenuCard(
                 )
                 Text(
                     text = desc,
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondary,
+                    lineHeight = 18.sp
                 )
             }
 
-            Icon(
-                Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = TextSecondary
-            )
+            // Chevron ikonu
+            Surface(
+                modifier = Modifier.size(32.dp),
+                shape = CircleShape,
+                color = color.copy(alpha = 0.08f)
+            ) {
+                Box(contentAlignment = Alignment.Center) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = color,
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
         }
     }
 }
