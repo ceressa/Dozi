@@ -86,31 +86,11 @@ class MedicineRepository {
             when (medicine.frequency) {
                 "Her gün" -> true
 
-                "Gün aşırı" -> {
+                "Gün aşırı", "Haftada bir", "15 günde bir", "Ayda bir", "Her X günde bir" -> {
                     // Başlangıçtan bugüne kaç gün geçti?
                     val daysSinceStart = getDaysBetween(medicine.startDate, today)
-                    daysSinceStart % 2 == 0 // Çift günlerde al (0, 2, 4, ...)
-                }
-
-                "Haftada bir" -> {
-                    // Başlangıçtan bugüne kaç hafta geçti?
-                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
-                    daysSinceStart % 7 == 0 // Her 7 günde bir
-                }
-
-                "15 günde bir" -> {
-                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
-                    daysSinceStart % 15 == 0
-                }
-
-                "Ayda bir" -> {
-                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
-                    daysSinceStart % 30 == 0
-                }
-
-                "Her X günde bir" -> {
-                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
-                    daysSinceStart % medicine.frequencyValue == 0
+                    // frequencyValue'nun katı mı kontrol et (0, frequencyValue, 2*frequencyValue, ...)
+                    daysSinceStart % medicine.frequencyValue == 0L
                 }
 
                 "İstediğim tarihlerde" -> {
