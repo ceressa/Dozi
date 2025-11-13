@@ -486,9 +486,7 @@ private fun MultipleMedicinesStep(
     var showPickerForIndex by remember { mutableStateOf(-1) }
 
     Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .verticalScroll(rememberScrollState()),
+        modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
         medicines.forEachIndexed { index, medicine ->
