@@ -64,12 +64,16 @@ data class MedicineEntry(
 fun AddReminderScreen(
     onNavigateBack: () -> Unit,
     navController: NavHostController,
-    modifier: Modifier = Modifier
+    modifier: Modifier = Modifier,
+    medicineId: String? = null  // Edit mode için medicine ID
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     var selectedPlace by remember { mutableStateOf<String?>(null) }
 
+    // Edit mode kontrolü
+    val isEditMode = medicineId != null
+    var isLoading by remember { mutableStateOf(isEditMode) }
 
     // State'ler
     var step by remember { mutableStateOf(1) }
@@ -94,6 +98,42 @@ fun AddReminderScreen(
             context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
                 .getBoolean("sound_enabled", true)
         )
+    }
+
+    // Edit mode: Mevcut medicine verisini yükle
+    LaunchedEffect(medicineId) {
+        if (isEditMode && medicineId != null) {
+            try {
+                val repository = FirestoreMedicineRepository()
+                val medicine = repository.getMedicineById(medicineId)
+
+                if (medicine != null) {
+                    // Medicine verisini state'lere doldur
+                    medicines = listOf(MedicineEntry(
+                        id = 0,
+                        name = medicine.name,
+                        dosageType = medicine.dosage.split(" ").firstOrNull() ?: "1",
+                        customDosage = medicine.dosage
+                    ))
+
+                    // İlk saati al
+                    if (medicine.times.isNotEmpty()) {
+                        val firstTime = medicine.times.first().split(":")
+                        hour = firstTime.getOrNull(0)?.toIntOrNull() ?: 8
+                        minute = firstTime.getOrNull(1)?.toIntOrNull() ?: 0
+                    }
+
+                    frequency = medicine.frequency
+                    xValue = medicine.frequencyValue
+                    selectedDates = medicine.days
+                    startDate = medicine.startDate
+                }
+                isLoading = false
+            } catch (e: Exception) {
+                isLoading = false
+                Toast.makeText(context, "Hatırlatma yüklenirken hata: ${e.message}", Toast.LENGTH_SHORT).show()
+            }
+        }
     }
 
     // MedicineListScreen'den dönen ilaç ismini al
@@ -147,7 +187,7 @@ fun AddReminderScreen(
         modifier = modifier,
         topBar = {
             DoziTopBar(
-                title = "Hatırlatma Asistanı",
+                title = if (isEditMode) "Hatırlatma Düzenle" else "Hatırlatma Asistanı",
                 canNavigateBack = true,
                 onNavigateBack = {
                     if (step > 1) step-- else onNavigateBack()
