@@ -38,10 +38,15 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.bardino.dozi.R
 import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.data.repository.MedicineRepository as FirestoreMedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.screens.profile.addGeofence
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.navigation.Screen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -281,17 +286,26 @@ fun AddReminderScreen(
                                 val finalTitle = reminderTitle.ifBlank { medicineName }
                                 val finalDosage = if (dosageType == "custom") customDosage else dosageType
 
-                                // 🗂️ Hatırlatmayı kaydet
-                                saveReminderToPreferences(
-                                    context = context,
-                                    reminderTitle = finalTitle,
+                                // 🗂️ Hatırlatmayı Firestore'a kaydet
+                                saveReminderToFirestore(
                                     medicineName = medicineName,
                                     dosage = finalDosage,
                                     hour = hour,
                                     minute = minute,
                                     frequency = frequency,
                                     xValue = xValue,
-                                    selectedDates = selectedDates
+                                    selectedDates = selectedDates,
+                                    onSuccess = {
+                                        if (soundEnabled) playSuccessSound(context)
+                                        showSuccess = true
+                                    },
+                                    onError = {
+                                        Toast.makeText(
+                                            context,
+                                            "❌ Hatırlatma kaydedilemedi",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                    }
                                 )
 
                                 // 📍 Eğer kullanıcı bir konum seçtiyse geofence ekle
@@ -312,10 +326,6 @@ fun AddReminderScreen(
                                         }
                                     }
                                 }
-
-                                // 🔔 Ses ve başarı ekranı
-                                if (soundEnabled) playSuccessSound(context)
-                                showSuccess = true
                             }
 
                         }
@@ -1350,31 +1360,61 @@ private fun ReminderSuccessDialog(onAddAnother: () -> Unit, onFinish: () -> Unit
     }
 }
 
-// KAYDETME
-private fun saveReminderToPreferences(
-    context: Context,
-    reminderTitle: String,
+// KAYDETME - Firestore
+private fun saveReminderToFirestore(
     medicineName: String,
     dosage: String,
     hour: Int,
     minute: Int,
     frequency: String,
     xValue: Int,
-    selectedDates: List<String>
+    selectedDates: List<String>,
+    onSuccess: () -> Unit,
+    onError: () -> Unit
 ) {
-    val prefs = context.getSharedPreferences("reminders", Context.MODE_PRIVATE)
+    val medicineRepository = FirestoreMedicineRepository()
 
-    val key = "reminder_${System.currentTimeMillis()}"
-    val value = listOf(
-        "reminderTitle=$reminderTitle",
-        "medicineName=$medicineName",
-        "dosage=$dosage",
-        "hour=$hour",
-        "minute=$minute",
-        "frequency=$frequency",
-        "xValue=$xValue",
-        "dates=${selectedDates.joinToString(",")}"
-    ).joinToString("|")
+    // Zamanları hesapla
+    val times = listOf("%02d:%02d".format(hour, minute))
 
-    prefs.edit().putString(key, value).apply()
+    // Günleri hesapla
+    val days = when (frequency) {
+        "Her gün" -> emptyList() // Boş liste = her gün
+        "Gün aşırı" -> emptyList() // TODO: Gün aşırı mantığı eklenecek
+        "Haftada bir" -> emptyList() // TODO: Haftalık mantık
+        "İstediğim tarihlerde" -> selectedDates
+        else -> emptyList()
+    }
+
+    // Medicine nesnesi oluştur
+    val medicine = Medicine(
+        id = "", // Repository tarafından oluşturulacak
+        userId = "", // Repository tarafından oluşturulacak
+        name = medicineName,
+        dosage = "$dosage adet",
+        form = "tablet",
+        times = times,
+        days = days,
+        startDate = System.currentTimeMillis(),
+        endDate = null, // Sürekli kullanım
+        stockCount = 0,
+        boxSize = 0,
+        notes = "Sıklık: $frequency",
+        reminderEnabled = true,
+        icon = "💊"
+    )
+
+    // Firestore'a kaydet
+    CoroutineScope(Dispatchers.IO).launch {
+        val success = medicineRepository.addMedicine(medicine)
+        if (success) {
+            CoroutineScope(Dispatchers.Main).launch {
+                onSuccess()
+            }
+        } else {
+            CoroutineScope(Dispatchers.Main).launch {
+                onError()
+            }
+        }
+    }
 }

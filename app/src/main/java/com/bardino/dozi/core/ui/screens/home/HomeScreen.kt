@@ -51,6 +51,8 @@ import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.navigation.Screen
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import java.time.LocalDate
@@ -340,6 +342,8 @@ private fun DoziHeader(firestoreUser: User?) {
     val userName = firestoreUser?.name?.split(" ")?.firstOrNull() ?: "Arkadaşım"
     val planType = firestoreUser?.planType ?: "free"
     val isPremium = planType != "free"
+    var showEditNameDialog by remember { mutableStateOf(false) }
+    val canEditName = firestoreUser?.name.isNullOrBlank()
 
     // ✅ Animated gradient colors
     val gradientStart by animateColorAsState(
@@ -377,12 +381,35 @@ private fun DoziHeader(firestoreUser: User?) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    Text(
-                        text = "$greeting, $userName! 👋",
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White
-                    )
+                    // Tıklanabilir kullanıcı adı
+                    if (canEditName) {
+                        Text(
+                            text = buildAnnotatedString {
+                                append("$greeting, ")
+                                withStyle(
+                                    style = SpanStyle(
+                                        textDecoration = TextDecoration.Underline,
+                                        color = Color.White.copy(alpha = 0.9f)
+                                    )
+                                ) {
+                                    append(userName)
+                                }
+                                append("! 👋")
+                            },
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White,
+                            modifier = Modifier.clickable { showEditNameDialog = true }
+                        )
+                    } else {
+                        Text(
+                            text = "$greeting, $userName! 👋",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = Color.White
+                        )
+                    }
+
                     if (isPremium) {
                         Icon(
                             Icons.Default.Star,
@@ -408,6 +435,22 @@ private fun DoziHeader(firestoreUser: User?) {
                     .offset(y = (-2).dp)
             )
         }
+    }
+
+    // Kullanıcı adı düzenleme dialogu
+    if (showEditNameDialog) {
+        EditNameDialog(
+            currentName = firestoreUser?.name ?: "",
+            onDismiss = { showEditNameDialog = false },
+            onConfirm = { newName ->
+                showEditNameDialog = false
+                // Firestore'a kaydet
+                val userRepository = UserRepository()
+                CoroutineScope(Dispatchers.IO).launch {
+                    userRepository.updateUserField("name", newName)
+                }
+            }
+        )
     }
 }
 
@@ -1439,5 +1482,117 @@ private fun ReasonChip(
             color = if (selected) DoziRed else TextPrimaryLight,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
+    }
+}
+
+@Composable
+private fun EditNameDialog(
+    currentName: String,
+    onDismiss: () -> Unit,
+    onConfirm: (String) -> Unit
+) {
+    var nameText by remember { mutableStateOf(currentName) }
+    var isError by remember { mutableStateOf(false) }
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Person,
+                        contentDescription = null,
+                        tint = DoziTurquoise,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Text(
+                        "Adını Düzenle",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryLight
+                    )
+                }
+
+                Text(
+                    "Seni nasıl çağırayım?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondaryLight
+                )
+
+                OutlinedTextField(
+                    value = nameText,
+                    onValueChange = {
+                        nameText = it
+                        isError = it.isBlank()
+                    },
+                    label = { Text("Adın") },
+                    placeholder = { Text("Örn: Ufuk") },
+                    leadingIcon = {
+                        Icon(Icons.Default.Badge, contentDescription = null, tint = DoziTurquoise)
+                    },
+                    isError = isError,
+                    supportingText = if (isError) {
+                        { Text("Lütfen bir isim girin", color = ErrorRed) }
+                    } else null,
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    shape = RoundedCornerShape(12.dp),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = DoziTurquoise,
+                        focusedLabelColor = DoziTurquoise,
+                        cursorColor = DoziTurquoise,
+                        unfocusedBorderColor = VeryLightGray,
+                        focusedContainerColor = DoziTurquoise.copy(alpha = 0.05f),
+                        unfocusedContainerColor = Color.White,
+                        errorBorderColor = ErrorRed,
+                        errorLabelColor = ErrorRed
+                    )
+                )
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(2.dp, VeryLightGray)
+                    ) {
+                        Text("İptal", color = TextSecondaryLight)
+                    }
+
+                    Button(
+                        onClick = {
+                            if (nameText.isNotBlank()) {
+                                onConfirm(nameText)
+                            } else {
+                                isError = true
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = DoziTurquoise
+                        ),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Kaydet", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
     }
 }
