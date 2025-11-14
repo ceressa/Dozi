@@ -11,5 +11,6 @@ data class User(
     val language: String = "tr",
     val vibration: Boolean = true,
     val theme: String = "light",
+    val voiceGender: String = "erkek", // "erkek" (Ozan) veya "kadin" (Efsun)
     val onboardingCompleted: Boolean = false
 )
