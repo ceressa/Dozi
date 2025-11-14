@@ -48,6 +48,7 @@ class MainActivity : ComponentActivity() {
 
     private val userRepository = UserRepository()
     private var currentIntent by mutableStateOf<Intent?>(null)
+    private var navController: androidx.navigation.NavHostController? = null
 
     // 🔹 Çoklu izin isteyici (bildirim, kamera, konum)
     private val permissionLauncher =
@@ -133,17 +134,15 @@ class MainActivity : ComponentActivity() {
 
         setContent {
             DoziAppTheme {
-                val navController = rememberNavController()
+                navController = rememberNavController()
 
-                // Deep link navigation'ı handle et (currentIntent değişince tetiklenir)
-                androidx.compose.runtime.LaunchedEffect(currentIntent) {
-                    currentIntent?.let { intent ->
-                        handleDeepLink(intent, navController)
-                    }
+                // İlk açılışta deep link varsa handle et
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    handleDeepLink(intent, navController!!)
                 }
 
                 NavGraph(
-                    navController = navController,
+                    navController = navController!!,
                     startDestination = Screen.Home.route,
                     onGoogleSignInClick = { signInWithGoogle() } // 🔹 artık burada tanımlı
                 )
@@ -155,8 +154,12 @@ class MainActivity : ComponentActivity() {
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
         setIntent(intent)
-        // Intent güncellendiğinde de handle et (bildirimden tıklanınca)
-        currentIntent = intent
+        Log.d("MainActivity", "onNewIntent called")
+
+        // Bildirimden tıklanınca direkt navigation yap
+        navController?.let { nav ->
+            handleDeepLink(intent, nav)
+        } ?: Log.w("MainActivity", "NavController is null in onNewIntent")
     }
 
     private fun handleDeepLink(intent: Intent?, navController: androidx.navigation.NavHostController) {
