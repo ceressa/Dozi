@@ -987,10 +987,10 @@ private fun FrequencyOptionCard(
         onClick = onSelect,
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (isSelected) SuccessGreen.copy(alpha = 0.1f) else Color.White
+            containerColor = if (isSelected) DoziTurquoise.copy(alpha = 0.1f) else Color.White
         ),
         shape = MaterialTheme.shapes.medium,
-        border = if (isSelected) BorderStroke(2.dp, SuccessGreen) else BorderStroke(1.dp, Gray200)
+        border = if (isSelected) BorderStroke(2.dp, DoziTurquoise) else BorderStroke(1.dp, Gray200)
     ) {
         Column(modifier = Modifier.padding(16.dp)) {
             Row(
@@ -1005,17 +1005,17 @@ private fun FrequencyOptionCard(
                     RadioButton(
                         selected = isSelected,
                         onClick = onSelect,
-                        colors = RadioButtonDefaults.colors(selectedColor = SuccessGreen)
+                        colors = RadioButtonDefaults.colors(selectedColor = DoziTurquoise)
                     )
                     Text(
                         text = option,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) SuccessGreen else TextPrimary
+                        color = if (isSelected) DoziTurquoise else TextPrimary
                     )
                 }
                 if (isSelected) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = SuccessGreen, modifier = Modifier.size(20.dp))
+                    Icon(Icons.Default.Check, contentDescription = null, tint = DoziTurquoise, modifier = Modifier.size(20.dp))
                 }
             }
 
@@ -1029,22 +1029,22 @@ private fun FrequencyOptionCard(
                     verticalAlignment = Alignment.CenterVertically
                 ) {
                     IconButton(onClick = { if (xValue > 1) onXChange(xValue - 1) }) {
-                        Icon(Icons.Default.Remove, contentDescription = "Azalt", tint = SuccessGreen)
+                        Icon(Icons.Default.Remove, contentDescription = "Azalt", tint = DoziTurquoise)
                     }
                     Surface(
-                        color = SuccessGreen.copy(alpha = 0.15f),
+                        color = DoziTurquoise.copy(alpha = 0.15f),
                         shape = MaterialTheme.shapes.small
                     ) {
                         Text(
                             text = "$xValue gün",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = SuccessGreen,
+                            color = DoziTurquoise,
                             modifier = Modifier.padding(horizontal = 24.dp, vertical = 12.dp)
                         )
                     }
                     IconButton(onClick = { onXChange(xValue + 1) }) {
-                        Icon(Icons.Default.Add, contentDescription = "Artır", tint = SuccessGreen)
+                        Icon(Icons.Default.Add, contentDescription = "Artır", tint = DoziTurquoise)
                     }
                 }
             }
@@ -1098,8 +1098,8 @@ private fun FrequencyOptionCard(
                         }
                     },
                     modifier = Modifier.fillMaxWidth(),
-                    border = BorderStroke(1.dp, SuccessGreen),
-                    colors = ButtonDefaults.outlinedButtonColors(contentColor = SuccessGreen)
+                    border = BorderStroke(2.dp, DoziTurquoise),
+                    colors = ButtonDefaults.outlinedButtonColors(contentColor = DoziTurquoise)
                 ) {
                     Icon(Icons.Default.CalendarMonth, contentDescription = null)
                     Spacer(Modifier.width(8.dp))
@@ -1129,7 +1129,7 @@ private fun FrequencyOptionCard(
 @Composable
 private fun DateChip(date: String, onRemove: () -> Unit) {
     Surface(
-        color = SuccessGreen.copy(alpha = 0.15f),
+        color = DoziTurquoise.copy(alpha = 0.15f),
         shape = MaterialTheme.shapes.small
     ) {
         Row(
@@ -1140,13 +1140,13 @@ private fun DateChip(date: String, onRemove: () -> Unit) {
             Text(
                 text = date,
                 style = MaterialTheme.typography.labelMedium,
-                color = SuccessGreen,
+                color = DoziTurquoise,
                 fontWeight = FontWeight.Medium
             )
             Icon(
                 Icons.Default.Close,
                 contentDescription = "Kaldır",
-                tint = SuccessGreen,
+                tint = DoziTurquoise,
                 modifier = Modifier
                     .size(16.dp)
                     .clickable(onClick = onRemove)
@@ -1333,7 +1333,7 @@ private fun SummaryStep(
                         frequency == "İstediğim tarihlerde" -> "${selectedDates.size} tarih seçildi"
                         else -> frequency
                     },
-                    SuccessGreen
+                    DoziTurquoise
                 )
                 SummaryRow(
                     Icons.Default.Schedule,
