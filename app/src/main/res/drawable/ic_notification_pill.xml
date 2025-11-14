@@ -3,11 +3,9 @@
     android:height="24dp"
     android:viewportWidth="24"
     android:viewportHeight="24">
-    <!-- Simple pill/capsule icon for notifications -->
+    <!-- 💧 Dozi su damlası ikonu - sadece beyaz (notification için) -->
     <path
         android:fillColor="#FFFFFF"
-        android:pathData="M8,3 L16,3 Q20,3 20,7 L20,17 Q20,21 16,21 L8,21 Q4,21 4,17 L4,7 Q4,3 8,3 Z"/>
-    <path
-        android:fillColor="#26C6DA"
-        android:pathData="M4,7 L20,7 L20,12 L4,12 Z"/>
+        android:pathData="M12,2.5 C12,2.5 6,9 6,14 C6,17.31 8.69,20 12,20 C15.31,20 18,17.31 18,14 C18,9 12,2.5 12,2.5 Z
+        M12,17.5 C10.62,17.5 9.5,16.38 9.5,15 C9.5,13.62 10.62,12.5 12,12.5 C13.38,12.5 14.5,13.62 14.5,15 C14.5,16.38 13.38,17.5 12,17.5 Z"/>
 </vector>
