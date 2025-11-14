@@ -192,6 +192,12 @@ fun NavGraph(
                     onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                     onNavigateToNotifications = { navController.navigate(Screen.NotificationSettings.route) },
                     onNavigateToAbout = { navController.navigate(Screen.About.route) },
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Home.route) { inclusive = false }
+                            launchSingleTop = true
+                        }
+                    },
                     onGoogleSignInClick = onGoogleSignInClick
                 )
             }

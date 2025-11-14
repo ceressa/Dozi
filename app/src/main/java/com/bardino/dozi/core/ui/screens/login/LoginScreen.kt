@@ -37,7 +37,10 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 @Composable
-fun LoginScreen(onLoginSuccess: () -> Unit) {
+fun LoginScreen(
+    onLoginSuccess: () -> Unit,
+    onSkip: (() -> Unit)? = null
+) {
     val context = androidx.compose.ui.platform.LocalContext.current
     val auth = FirebaseAuth.getInstance()
     val repo = UserRepository()
@@ -86,9 +89,9 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color(0xFF00BCD4),
-                        Color(0xFF0097A7),
-                        Color(0xFF006064)
+                        DoziTurquoise,
+                        DoziTurquoiseDark,
+                        DoziTurquoiseDark.copy(alpha = 0.9f)
                     )
                 )
             ),
@@ -188,6 +191,23 @@ fun LoginScreen(onLoginSuccess: () -> Unit) {
                                 fontWeight = FontWeight.SemiBold
                             )
                         }
+                    }
+                }
+
+                // Skip Button (Daha Sonra)
+                if (onSkip != null) {
+                    Spacer(modifier = Modifier.height(16.dp))
+                    TextButton(
+                        onClick = onSkip,
+                        modifier = Modifier.fillMaxWidth(0.85f),
+                        enabled = !isLoading
+                    ) {
+                        Text(
+                            text = "Daha Sonra",
+                            color = Color.White,
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
 
