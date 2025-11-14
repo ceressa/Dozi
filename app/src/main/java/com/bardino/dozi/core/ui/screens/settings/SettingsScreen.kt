@@ -213,6 +213,50 @@ fun SettingsScreen(
                             }
                         }
                     )
+
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Örnek Ses Dinleme Butonları
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        OutlinedButton(
+                            onClick = {
+                                com.bardino.dozi.core.utils.SoundHelper.playSampleSound(context, "erkek")
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (selectedVoiceGender == "erkek") DoziTurquoise.copy(alpha = 0.1f) else Color.Transparent
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("Ozan'ı Dinle")
+                        }
+
+                        OutlinedButton(
+                            onClick = {
+                                com.bardino.dozi.core.utils.SoundHelper.playSampleSound(context, "kadin")
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = if (selectedVoiceGender == "kadin") DoziTurquoise.copy(alpha = 0.1f) else Color.Transparent
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.PlayArrow,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(4.dp))
+                            Text("Efsun'u Dinle")
+                        }
+                    }
                 }
             }
         }

@@ -28,7 +28,8 @@ object SoundHelper {
         REMINDER_2,
         REMINDER_3,
         REMINDER_4,
-        REMINDER_5
+        REMINDER_5,
+        SAMPLE
     }
 
     /**
@@ -55,6 +56,22 @@ object SoundHelper {
                     playRawSound(context, getSoundResourceId(soundType, "erkek"))
                 }
             }
+        }
+    }
+
+    /**
+     * Belirli bir cinsiyet için örnek ses çalar (ayarlar ekranı için)
+     */
+    fun playSampleSound(context: Context, voiceGender: String) {
+        try {
+            val soundResId = if (voiceGender == "erkek") {
+                R.raw.dozi_erkek_sample
+            } else {
+                R.raw.dozi_kadin_sample
+            }
+            playRawSound(context, soundResId)
+        } catch (e: Exception) {
+            e.printStackTrace()
         }
     }
 
@@ -98,6 +115,10 @@ object SoundHelper {
             SoundType.REMINDER_5 -> {
                 if (voiceGender == "erkek") R.raw.dozi_erkek_reminder5
                 else R.raw.dozi_kadin_reminder5
+            }
+            SoundType.SAMPLE -> {
+                if (voiceGender == "erkek") R.raw.dozi_erkek_sample
+                else R.raw.dozi_kadin_sample
             }
         }
     }
