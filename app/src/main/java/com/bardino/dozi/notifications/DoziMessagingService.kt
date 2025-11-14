@@ -60,6 +60,42 @@ class DoziMessagingService : FirebaseMessagingService() {
                     )
                 }
             }
+            "buddy_request" -> {
+                // Buddy isteği bildirimi
+                val fromUserName = data["fromUserName"] ?: "Biri"
+                handleNotificationMessage(
+                    "🤝 Yeni Buddy İsteği",
+                    "$fromUserName seni buddy olarak eklemek istiyor!"
+                )
+            }
+            "buddy_medication_reminder" -> {
+                // Buddy'nin ilaç hatırlatması
+                val buddyName = data["buddyName"] ?: "Buddy'niz"
+                val medicineName = data["medicineName"] ?: "ilaç"
+                val time = data["time"] ?: ""
+                handleNotificationMessage(
+                    "💊 Buddy İlaç Hatırlatması",
+                    "$buddyName - $medicineName alma zamanı ($time)"
+                )
+            }
+            "medication_taken" -> {
+                // Buddy ilacını aldı bildirimi
+                val buddyName = data["buddyName"] ?: "Buddy'niz"
+                val medicineName = data["medicineName"] ?: "ilacını"
+                handleNotificationMessage(
+                    "✅ İlaç Alındı",
+                    "$buddyName $medicineName aldı"
+                )
+            }
+            "medication_missed" -> {
+                // Buddy ilacını kaçırdı bildirimi
+                val buddyName = data["buddyName"] ?: "Buddy'niz"
+                val medicineName = data["medicineName"] ?: "ilacını"
+                handleNotificationMessage(
+                    "⚠️ İlaç Kaçırıldı",
+                    "$buddyName $medicineName kaçırdı"
+                )
+            }
             "general_notification" -> {
                 val title = data["title"] ?: "Dozi"
                 val body = data["body"] ?: ""
