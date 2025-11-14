@@ -332,7 +332,34 @@ class BuddyRepository(
                     return Result.failure(Exception("Request not found"))
                 }
 
+            // İstek zaten kabul edilmiş mi kontrol et
+            if (request.status != BuddyRequestStatus.PENDING) {
+                android.util.Log.w("BuddyRepository", "acceptBuddyRequest: Request already processed (status=${request.status})")
+                return Result.failure(Exception("Bu istek zaten işleme alınmış"))
+            }
+
             android.util.Log.d("BuddyRepository", "acceptBuddyRequest: From ${request.fromUserId} to $userId")
+
+            // Bu kullanıcılar arasında zaten buddy ilişkisi var mı kontrol et
+            val existingBuddy = db.collection("buddies")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("buddyUserId", request.fromUserId)
+                .whereEqualTo("status", BuddyStatus.ACTIVE.name)
+                .get()
+                .await()
+
+            if (!existingBuddy.isEmpty) {
+                android.util.Log.w("BuddyRepository", "acceptBuddyRequest: Buddy relationship already exists")
+                // İsteği kabul edildi olarak işaretle
+                db.collection("buddy_requests").document(requestId)
+                    .update(
+                        mapOf(
+                            "status" to BuddyRequestStatus.ACCEPTED.name,
+                            "respondedAt" to FieldValue.serverTimestamp()
+                        )
+                    ).await()
+                return Result.success(Unit)
+            }
 
             // İki yönlü buddy ilişkisi oluştur
             val buddy1 = Buddy(
@@ -375,6 +402,57 @@ class BuddyRepository(
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("BuddyRepository", "acceptBuddyRequest: ❌ Error", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Duplicate buddy kayıtlarını temizle
+     * (Her userId-buddyUserId kombinasyonundan sadece birini bırak)
+     */
+    suspend fun cleanupDuplicateBuddies(): Result<Int> {
+        val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
+
+        return try {
+            android.util.Log.d("BuddyRepository", "cleanupDuplicateBuddies: Starting cleanup for user $userId")
+
+            // Kullanıcının tüm buddy kayıtlarını al
+            val buddiesSnapshot = db.collection("buddies")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("status", BuddyStatus.ACTIVE.name)
+                .get()
+                .await()
+
+            // buddyUserId'ye göre grupla
+            val grouped = buddiesSnapshot.documents.groupBy { doc ->
+                doc.toObject(Buddy::class.java)?.buddyUserId ?: ""
+            }
+
+            var deletedCount = 0
+            val batch = db.batch()
+
+            // Her grup için sadece ilkini tut, diğerlerini sil
+            grouped.forEach { (buddyUserId, docs) ->
+                if (docs.size > 1) {
+                    android.util.Log.d("BuddyRepository", "cleanupDuplicateBuddies: Found ${docs.size} duplicates for buddy $buddyUserId")
+                    // İlkini hariç tut, diğerlerini sil
+                    docs.drop(1).forEach { doc ->
+                        batch.delete(doc.reference)
+                        deletedCount++
+                    }
+                }
+            }
+
+            if (deletedCount > 0) {
+                batch.commit().await()
+                android.util.Log.d("BuddyRepository", "cleanupDuplicateBuddies: ✅ Deleted $deletedCount duplicate records")
+            } else {
+                android.util.Log.d("BuddyRepository", "cleanupDuplicateBuddies: No duplicates found")
+            }
+
+            Result.success(deletedCount)
+        } catch (e: Exception) {
+            android.util.Log.e("BuddyRepository", "cleanupDuplicateBuddies: ❌ Error", e)
             Result.failure(e)
         }
     }

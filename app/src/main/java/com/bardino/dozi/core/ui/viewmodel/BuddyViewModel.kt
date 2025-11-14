@@ -52,6 +52,25 @@ class BuddyViewModel @Inject constructor(
     init {
         loadBuddies()
         loadPendingRequests()
+        // Duplicate buddy kayıtlarını temizle
+        cleanupDuplicates()
+    }
+
+    /**
+     * Duplicate buddy kayıtlarını temizle
+     */
+    private fun cleanupDuplicates() {
+        viewModelScope.launch {
+            buddyRepository.cleanupDuplicateBuddies()
+                .onSuccess { deletedCount ->
+                    if (deletedCount > 0) {
+                        android.util.Log.d("BuddyViewModel", "Cleaned up $deletedCount duplicate buddies")
+                    }
+                }
+                .onFailure { error ->
+                    android.util.Log.e("BuddyViewModel", "Cleanup failed", error as? Throwable)
+                }
+        }
     }
 
     // ==================== Buddy İşlemleri ====================
