@@ -83,20 +83,25 @@ fun LoginScreen(
             .build()
     )
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = listOf(
-                        DoziTurquoise,
-                        DoziTurquoiseDark,
-                        DoziTurquoiseDark.copy(alpha = 0.9f)
-                    )
-                )
-            ),
-        contentAlignment = Alignment.Center
+    // Surface ile bottombar'ın üzerine çıkması için
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Transparent
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = listOf(
+                            DoziTurquoise,
+                            DoziTurquoiseDark,
+                            DoziTurquoiseDark.copy(alpha = 0.9f)
+                        )
+                    )
+                ),
+            contentAlignment = Alignment.Center
+        ) {
         AnimatedVisibility(
             visible = showContent,
             enter = fadeIn() + slideInVertically(initialOffsetY = { it / 2 }),
@@ -232,6 +237,7 @@ fun LoginScreen(
                     )
                 }
             }
+        }
         }
     }
 }
