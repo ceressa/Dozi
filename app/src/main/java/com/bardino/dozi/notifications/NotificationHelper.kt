@@ -25,8 +25,12 @@ object NotificationHelper {
     const val ACTION_TAKEN = "ACTION_TAKEN"
     const val ACTION_SNOOZE = "ACTION_SNOOZE"
     const val ACTION_SKIP = "ACTION_SKIP"
+    const val ACTION_BUDDY_ACCEPT = "ACTION_BUDDY_ACCEPT"
+    const val ACTION_BUDDY_REJECT = "ACTION_BUDDY_REJECT"
     const val EXTRA_MEDICINE = "EXTRA_MEDICINE"
     const val EXTRA_TIME = "EXTRA_TIME"
+    const val EXTRA_REQUEST_ID = "EXTRA_REQUEST_ID"
+    const val EXTRA_FROM_USER_NAME = "EXTRA_FROM_USER_NAME"
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showMedicationNotification(
@@ -166,4 +170,79 @@ object NotificationHelper {
 
     private fun mutableFlag(): Int =
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
+
+    /**
+     * Buddy request bildirimi göster (Kabul/Reddet butonları ile)
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showBuddyRequestNotification(
+        context: Context,
+        requestId: String,
+        fromUserName: String
+    ) {
+        createDoziChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        // Bildirime tıklanınca buddy_list ekranına yönlendir
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "buddy_list")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        // Kabul et butonu
+        val acceptPending = PendingIntent.getBroadcast(
+            context,
+            requestId.hashCode() + 1,
+            Intent(context, NotificationActionReceiver::class.java).apply {
+                action = ACTION_BUDDY_ACCEPT
+                putExtra(EXTRA_REQUEST_ID, requestId)
+                putExtra(EXTRA_FROM_USER_NAME, fromUserName)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        // Reddet butonu
+        val rejectPending = PendingIntent.getBroadcast(
+            context,
+            requestId.hashCode() + 2,
+            Intent(context, NotificationActionReceiver::class.java).apply {
+                action = ACTION_BUDDY_REJECT
+                putExtra(EXTRA_REQUEST_ID, requestId)
+                putExtra(EXTRA_FROM_USER_NAME, fromUserName)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#26C6DA"))
+            .setContentTitle("🤝 Yeni Buddy İsteği")
+            .setContentText("$fromUserName seni buddy olarak eklemek istiyor!")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("$fromUserName seni buddy olarak eklemek istiyor!\n\nBuddy'leriniz ilaç hatırlatmalarınızı görebilir ve sizi destekleyebilir.")
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_SOCIAL)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(contentIntent)
+            .addAction(
+                R.drawable.ic_notification_pill,
+                "Kabul Et ✓",
+                acceptPending
+            )
+            .addAction(
+                R.drawable.ic_notification_pill,
+                "Reddet ✕",
+                rejectPending
+            )
+            .build()
+
+        nm.notify(requestId.hashCode(), notification)
+    }
 }

@@ -21,6 +21,10 @@ import androidx.core.content.edit
 import com.bardino.dozi.R
 import com.bardino.dozi.notifications.NotificationHelper
 import com.bardino.dozi.core.utils.SoundHelper
+import com.bardino.dozi.core.data.repository.BuddyRepository
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import java.util.*
 import kotlin.random.Random
 
@@ -38,6 +42,16 @@ class NotificationActionReceiver : BroadcastReceiver() {
             NotificationHelper.ACTION_TAKEN -> handleTaken(context, med, time, prefs, nm)
             NotificationHelper.ACTION_SKIP -> handleSkip(context, med, prefs, nm)
             NotificationHelper.ACTION_SNOOZE -> handleSnooze(context, med, nm)
+            NotificationHelper.ACTION_BUDDY_ACCEPT -> {
+                val requestId = intent.getStringExtra(NotificationHelper.EXTRA_REQUEST_ID) ?: return
+                val fromUserName = intent.getStringExtra(NotificationHelper.EXTRA_FROM_USER_NAME) ?: "Kullanıcı"
+                handleBuddyAccept(context, requestId, fromUserName, nm)
+            }
+            NotificationHelper.ACTION_BUDDY_REJECT -> {
+                val requestId = intent.getStringExtra(NotificationHelper.EXTRA_REQUEST_ID) ?: return
+                val fromUserName = intent.getStringExtra(NotificationHelper.EXTRA_FROM_USER_NAME) ?: "Kullanıcı"
+                handleBuddyReject(context, requestId, fromUserName, nm)
+            }
             "ACTION_SNOOZE_TRIGGER" -> {
                 // Erteleme süresi doldu, yeni bildirim göster
                 if (hasNotificationPermission(context)) {
@@ -107,7 +121,70 @@ class NotificationActionReceiver : BroadcastReceiver() {
         context.startActivity(intent)
     }
 
+    private fun handleBuddyAccept(
+        context: Context,
+        requestId: String,
+        fromUserName: String,
+        nm: NotificationManagerCompat
+    ) {
+        // Bildirimi kapat
+        nm.cancel(requestId.hashCode())
 
+        // Buddy isteğini kabul et
+        val buddyRepository = BuddyRepository()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                buddyRepository.acceptBuddyRequest(requestId)
+                    .onSuccess {
+                        // Ana thread'de toast göster
+                        CoroutineScope(Dispatchers.Main).launch {
+                            showToast(context, "✅ $fromUserName buddy olarak eklendi!")
+                        }
+                    }
+                    .onFailure { error ->
+                        CoroutineScope(Dispatchers.Main).launch {
+                            showToast(context, "❌ Hata: ${error.message}")
+                        }
+                    }
+            } catch (e: Exception) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    showToast(context, "❌ Hata: ${e.message}")
+                }
+            }
+        }
+    }
+
+    private fun handleBuddyReject(
+        context: Context,
+        requestId: String,
+        fromUserName: String,
+        nm: NotificationManagerCompat
+    ) {
+        // Bildirimi kapat
+        nm.cancel(requestId.hashCode())
+
+        // Buddy isteğini reddet
+        val buddyRepository = BuddyRepository()
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                buddyRepository.rejectBuddyRequest(requestId)
+                    .onSuccess {
+                        CoroutineScope(Dispatchers.Main).launch {
+                            showToast(context, "🚫 $fromUserName buddy isteği reddedildi")
+                        }
+                    }
+                    .onFailure { error ->
+                        CoroutineScope(Dispatchers.Main).launch {
+                            showToast(context, "❌ Hata: ${error.message}")
+                        }
+                    }
+            } catch (e: Exception) {
+                CoroutineScope(Dispatchers.Main).launch {
+                    showToast(context, "❌ Hata: ${e.message}")
+                }
+            }
+        }
+    }
 
 
 

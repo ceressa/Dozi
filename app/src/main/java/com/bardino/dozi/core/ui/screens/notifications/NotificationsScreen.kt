@@ -14,6 +14,7 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -112,7 +113,15 @@ fun NotificationsScreen(
                             viewModel.markAsRead(notification.id)
                             onNotificationClick(notification)
                         },
-                        onDelete = { viewModel.deleteNotification(notification.id) }
+                        onDelete = { viewModel.deleteNotification(notification.id) },
+                        onAcceptBuddyRequest = { requestId ->
+                            viewModel.acceptBuddyRequest(requestId)
+                            viewModel.deleteNotification(notification.id)
+                        },
+                        onRejectBuddyRequest = { requestId ->
+                            viewModel.rejectBuddyRequest(requestId)
+                            viewModel.deleteNotification(notification.id)
+                        }
                     )
                 }
             }
@@ -151,7 +160,9 @@ fun NotificationsScreen(
 fun NotificationCard(
     notification: DoziNotification,
     onClick: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onAcceptBuddyRequest: (String) -> Unit = {},
+    onRejectBuddyRequest: (String) -> Unit = {}
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -215,6 +226,44 @@ fun NotificationCard(
                         alpha = if (notification.isRead) 0.6f else 0.8f
                     )
                 )
+
+                // Buddy request için action butonları
+                if (notification.type == NotificationType.BUDDY_REQUEST) {
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Button(
+                            onClick = {
+                                val requestId = notification.data["requestId"] ?: return@Button
+                                onAcceptBuddyRequest(requestId)
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF4CAF50)
+                            )
+                        ) {
+                            Icon(Icons.Default.Check, "Kabul Et", modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Kabul Et")
+                        }
+                        OutlinedButton(
+                            onClick = {
+                                val requestId = notification.data["requestId"] ?: return@OutlinedButton
+                                onRejectBuddyRequest(requestId)
+                            },
+                            modifier = Modifier.weight(1f),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color(0xFFF44336)
+                            )
+                        ) {
+                            Icon(Icons.Default.Close, "Reddet", modifier = Modifier.size(18.dp))
+                            Spacer(modifier = Modifier.width(4.dp))
+                            Text("Reddet")
+                        }
+                    }
+                }
 
                 Row(
                     modifier = Modifier.fillMaxWidth(),
