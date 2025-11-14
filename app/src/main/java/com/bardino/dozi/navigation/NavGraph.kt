@@ -136,7 +136,8 @@ fun NavGraph(
                 val id = backStackEntry.arguments?.getString("id") ?: ""
                 MedicineEditScreen(
                     medicineId = id,
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    savedStateHandle = navController.previousBackStackEntry?.savedStateHandle
                 )
             }
 
