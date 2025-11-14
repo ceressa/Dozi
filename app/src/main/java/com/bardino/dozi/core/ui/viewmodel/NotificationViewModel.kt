@@ -6,6 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.model.DoziNotification
 import com.bardino.dozi.core.data.model.NotificationType
 import com.bardino.dozi.core.data.repository.NotificationRepository
+import com.bardino.dozi.core.data.repository.BuddyRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -26,7 +27,8 @@ data class NotificationUiState(
  */
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
-    private val notificationRepository: NotificationRepository
+    private val notificationRepository: NotificationRepository,
+    private val buddyRepository: BuddyRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationUiState())
@@ -153,6 +155,38 @@ class NotificationViewModel @Inject constructor(
                 medicineId, medicineName, dosage, time
             )
                 .onSuccess { sentCount ->
+                    _uiState.update { it.copy(isLoading = false, error = null) }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error.message) }
+                }
+        }
+    }
+
+    /**
+     * Buddy isteğini kabul et
+     */
+    fun acceptBuddyRequest(requestId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            buddyRepository.acceptBuddyRequest(requestId)
+                .onSuccess {
+                    _uiState.update { it.copy(isLoading = false, error = null) }
+                }
+                .onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false, error = error.message) }
+                }
+        }
+    }
+
+    /**
+     * Buddy isteğini reddet
+     */
+    fun rejectBuddyRequest(requestId: String) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+            buddyRepository.rejectBuddyRequest(requestId)
+                .onSuccess {
                     _uiState.update { it.copy(isLoading = false, error = null) }
                 }
                 .onFailure { error ->

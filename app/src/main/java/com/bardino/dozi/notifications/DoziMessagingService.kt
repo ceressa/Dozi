@@ -61,13 +61,17 @@ class DoziMessagingService : FirebaseMessagingService() {
                 }
             }
             "buddy_request" -> {
-                // Buddy isteği bildirimi
+                // Buddy isteği bildirimi - action butonları ile
+                val requestId = data["requestId"] ?: return
                 val fromUserName = data["fromUserName"] ?: "Biri"
-                handleNotificationMessage(
-                    title = "🤝 Yeni Buddy İsteği",
-                    body = "$fromUserName seni buddy olarak eklemek istiyor!",
-                    type = "buddy_request"
-                )
+
+                if (hasNotificationPermission()) {
+                    NotificationHelper.showBuddyRequestNotification(
+                        context = this,
+                        requestId = requestId,
+                        fromUserName = fromUserName
+                    )
+                }
             }
             "buddy_medication_reminder" -> {
                 // Buddy'nin ilaç hatırlatması
