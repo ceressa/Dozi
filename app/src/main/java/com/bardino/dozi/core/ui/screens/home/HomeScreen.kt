@@ -1309,7 +1309,8 @@ private fun TimelineSection(
                         ) {
                             TimelineItem(
                                 time = time,
-                                medicineName = "${medicine.icon} ${medicine.name} ${medicine.dosage}",
+                                medicineName = "${medicine.icon} ${medicine.name}",
+                                dosageText = "${medicine.dosage} ${medicine.unit}",
                                 status = status.first,
                                 savedStatus = status.second,
                                 currentTime = currentTime
@@ -1343,6 +1344,7 @@ enum class TimelineStatus {
 private fun TimelineItem(
     time: String,
     medicineName: String,
+    dosageText: String,
     status: TimelineStatus,
     savedStatus: String?,
     currentTime: LocalTime
@@ -1416,7 +1418,9 @@ private fun TimelineItem(
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+            // Sol taraf: İlaç bilgileri
             Row(
+                modifier = Modifier.weight(1f),
                 horizontalArrangement = Arrangement.spacedBy(12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
@@ -1436,38 +1440,62 @@ private fun TimelineItem(
                         )
                 )
 
-                Column {
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
                         medicineName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryLight
+                        color = TextPrimaryLight,
+                        maxLines = 1,
+                        overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
-                    Text(
-                        subtitle,
-                        style = MaterialTheme.typography.bodySmall,
-                        color = when (status) {
-                            TimelineStatus.TAKEN -> SuccessGreen
-                            TimelineStatus.SKIPPED -> ErrorRed
-                            TimelineStatus.SNOOZED -> WarningOrange
-                            TimelineStatus.CURRENT -> DoziRed
-                            else -> TextSecondaryLight
-                        },
-                        fontWeight = if (status == TimelineStatus.CURRENT) FontWeight.Bold else FontWeight.Normal
-                    )
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Text(
+                            dosageText,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = DoziTurquoise,
+                            fontWeight = FontWeight.SemiBold
+                        )
+                        Text(
+                            "•",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondaryLight
+                        )
+                        Text(
+                            subtitle,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = when (status) {
+                                TimelineStatus.TAKEN -> SuccessGreen
+                                TimelineStatus.SKIPPED -> ErrorRed
+                                TimelineStatus.SNOOZED -> WarningOrange
+                                TimelineStatus.CURRENT -> DoziRed
+                                else -> TextSecondaryLight
+                            },
+                            fontWeight = if (status == TimelineStatus.CURRENT) FontWeight.Bold else FontWeight.Normal
+                        )
+                    }
                 }
             }
 
-            Text(
-                time,
-                style = MaterialTheme.typography.headlineSmall,
-                fontWeight = FontWeight.Bold,
-                color = when (status) {
-                    TimelineStatus.CURRENT -> DoziRed
-                    TimelineStatus.COMPLETED -> DoziTurquoise
-                    else -> TextSecondaryLight
-                }
-            )
+            // Sağ taraf: Saat
+            Column(
+                horizontalAlignment = Alignment.End,
+                modifier = Modifier.padding(start = 8.dp)
+            ) {
+                Text(
+                    time,
+                    style = MaterialTheme.typography.headlineSmall,
+                    fontWeight = FontWeight.Bold,
+                    color = when (status) {
+                        TimelineStatus.CURRENT -> DoziRed
+                        TimelineStatus.COMPLETED -> DoziTurquoise
+                        else -> TextSecondaryLight
+                    }
+                )
+            }
         }
     }
 }

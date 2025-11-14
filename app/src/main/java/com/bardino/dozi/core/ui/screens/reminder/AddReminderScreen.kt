@@ -55,7 +55,8 @@ data class MedicineEntry(
     val id: Int,
     var name: String = "",
     var dosageType: String = "1",
-    var customDosage: String = ""
+    var customDosage: String = "",
+    var unit: String = "hap"
 )
 
 @RequiresApi(Build.VERSION_CODES.O)
@@ -660,6 +661,104 @@ private fun MultipleMedicinesStep(
                             )
                         )
                     }
+
+                    // Birim seçici
+                    Text(
+                        "Birim",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary,
+                        modifier = Modifier.padding(top = 8.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        UnitChip(
+                            label = "Hap",
+                            isSelected = medicine.unit == "hap",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(unit = "hap")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        UnitChip(
+                            label = "Doz",
+                            isSelected = medicine.unit == "doz",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(unit = "doz")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        UnitChip(
+                            label = "Adet",
+                            isSelected = medicine.unit == "adet",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(unit = "adet")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        UnitChip(
+                            label = "mg",
+                            isSelected = medicine.unit == "mg",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(unit = "mg")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        UnitChip(
+                            label = "ml",
+                            isSelected = medicine.unit == "ml",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(unit = "ml")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        UnitChip(
+                            label = "Damla",
+                            isSelected = medicine.unit == "damla",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(unit = "damla")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        UnitChip(
+                            label = "Kaşık",
+                            isSelected = medicine.unit == "kaşık",
+                            onClick = {
+                                onMedicinesChange(medicines.toMutableList().also {
+                                    it[index] = it[index].copy(unit = "kaşık")
+                                })
+                            },
+                            modifier = Modifier.weight(1f)
+                        )
+                        Spacer(modifier = Modifier.weight(2f))
+                    }
                 }
             }
         }
@@ -752,6 +851,39 @@ private fun DosageChip(
             Text(
                 text = label,
                 style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = if (isSelected) Color.White else TextPrimary
+            )
+        }
+    }
+}
+
+@Composable
+private fun UnitChip(
+    label: String,
+    isSelected: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        onClick = onClick,
+        modifier = modifier.height(48.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = if (isSelected) DoziCoral else Color.White
+        ),
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(
+            width = 2.dp,
+            color = if (isSelected) DoziCoral else Gray200
+        )
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center
+        ) {
+            Text(
+                text = label,
+                style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
                 color = if (isSelected) Color.White else TextPrimary
             )
@@ -1256,12 +1388,14 @@ private fun SummaryStep(
                 )
 
                 medicines.forEachIndexed { index, medicine ->
-                    val dosageText = when (medicine.dosageType) {
-                        "0.5" -> "Yarım adet"
-                        "0.25" -> "Çeyrek adet"
-                        "custom" -> "${medicine.customDosage} adet"
-                        else -> "${medicine.dosageType} adet"
+                    val dosageAmount = when (medicine.dosageType) {
+                        "0.5" -> "Yarım"
+                        "0.25" -> "Çeyrek"
+                        "1.5" -> "1.5"
+                        "custom" -> medicine.customDosage
+                        else -> medicine.dosageType
                     }
+                    val dosageText = "$dosageAmount ${medicine.unit}"
 
                     Surface(
                         color = DoziTurquoise.copy(alpha = 0.1f),
@@ -1542,7 +1676,8 @@ private fun saveMedicinesToFirestore(
                 id = "", // Repository tarafından oluşturulacak
                 userId = "", // Repository tarafından oluşturulacak
                 name = medicineEntry.name,
-                dosage = "$dosage adet",
+                dosage = dosage,
+                unit = medicineEntry.unit,
                 form = "tablet",
                 times = times,
                 days = days,

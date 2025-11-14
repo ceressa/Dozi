@@ -253,10 +253,12 @@ private fun MedicineCard(
                                     text = medicine.name,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimaryLight
+                                    color = TextPrimaryLight,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
                                 Text(
-                                    text = medicine.dosage,
+                                    text = "${medicine.dosage} ${medicine.unit}",
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = TextSecondaryLight,
                                     fontWeight = FontWeight.Medium
@@ -343,6 +345,22 @@ private fun MedicineCard(
                         else -> medicine.frequency
                     },
                     color = SuccessGreen,
+                    fullWidth = true
+                )
+
+                // Başlangıç tarihi
+                val startDateText = remember(medicine.startDate) {
+                    try {
+                        val sdf = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale("tr"))
+                        sdf.format(java.util.Date(medicine.startDate))
+                    } catch (e: Exception) {
+                        "Tarih belirtilmemiş"
+                    }
+                }
+                InfoTag(
+                    icon = Icons.Default.Schedule,
+                    text = "Başlangıç: $startDateText",
+                    color = DoziBlue,
                     fullWidth = true
                 )
             }
