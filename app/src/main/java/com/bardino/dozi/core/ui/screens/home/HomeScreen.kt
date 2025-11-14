@@ -207,7 +207,7 @@ fun HomeScreen(
                     else Modifier
                 )
         ) {
-            DoziHeader(firestoreUser = uiState.user)
+            DoziHeader(firestoreUser = uiState.user, isLoggedIn = uiState.isLoggedIn)
 
             Column(
                 modifier = Modifier
@@ -223,7 +223,8 @@ fun HomeScreen(
                     },
                     onNavigateToReminders = {
                         navController.navigate(Screen.AddReminder.route)
-                    }
+                    },
+                    isLoggedIn = uiState.isLoggedIn
                 )
 
                 Spacer(Modifier.height(20.dp))
@@ -269,7 +270,8 @@ fun HomeScreen(
                     } else {
                         EmptyMedicineCard(
                             currentMedicineStatus = uiState.currentMedicineStatus,
-                            nextMedicine = uiState.allUpcomingMedicines.firstOrNull()
+                            nextMedicine = uiState.allUpcomingMedicines.firstOrNull(),
+                            isLoggedIn = uiState.isLoggedIn
                         )
                     }
                 }
@@ -324,18 +326,20 @@ fun HomeScreen(
             }
         }
 
-        // FAB - Yeni Hatırlatma Ekle
-        FloatingActionButton(
-            onClick = { navController.navigate(Screen.AddReminder.route) },
-            containerColor = DoziTurquoise,
-            contentColor = Color.White,
-            shape = RoundedCornerShape(18.dp),
-            modifier = Modifier
-                .align(Alignment.BottomEnd)
-                .padding(bottom = 80.dp, end = 16.dp) // BottomBar'dan uzakta
-                .shadow(10.dp, RoundedCornerShape(18.dp))
-        ) {
-            Icon(Icons.Default.Add, contentDescription = "Yeni Hatırlatma")
+        // FAB - Yeni Hatırlatma Ekle (sadece login olduysa)
+        if (uiState.isLoggedIn) {
+            FloatingActionButton(
+                onClick = { navController.navigate(Screen.AddReminder.route) },
+                containerColor = DoziTurquoise,
+                contentColor = Color.White,
+                shape = RoundedCornerShape(18.dp),
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(bottom = 80.dp, end = 16.dp) // BottomBar'dan uzakta
+                    .shadow(10.dp, RoundedCornerShape(18.dp))
+            ) {
+                Icon(Icons.Default.Add, contentDescription = "Yeni Hatırlatma")
+            }
         }
     }
 
@@ -404,7 +408,7 @@ fun getCurrentDateString(): String {
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun DoziHeader(firestoreUser: User?) {
+private fun DoziHeader(firestoreUser: User?, isLoggedIn: Boolean) {
     val hour = LocalTime.now().hour
     val greeting = remember(hour) {
         when (hour) {
@@ -415,8 +419,12 @@ private fun DoziHeader(firestoreUser: User?) {
         }
     }
 
-    // Kullanıcı adını al
-    val userName = firestoreUser?.name?.split(" ")?.firstOrNull() ?: "Arkadaşım"
+    // Kullanıcı adını al - login olmamışsa isim gösterme
+    val userName = if (isLoggedIn) {
+        firestoreUser?.name?.split(" ")?.firstOrNull() ?: "Arkadaşım"
+    } else {
+        null
+    }
     val planType = firestoreUser?.planType ?: "free"
     val isPremium = planType != "free"
     var showEditNameDialog by remember { mutableStateOf(false) }
@@ -458,33 +466,43 @@ private fun DoziHeader(firestoreUser: User?) {
                     verticalAlignment = Alignment.CenterVertically,
                     horizontalArrangement = Arrangement.spacedBy(8.dp)
                 ) {
-                    // Tıklanabilir kullanıcı adı
-                    if (canEditName) {
+                    // Login olmayan kullanıcılar için sadece greeting
+                    if (userName == null) {
                         Text(
-                            text = buildAnnotatedString {
-                                append("$greeting, ")
-                                withStyle(
-                                    style = SpanStyle(
-                                        textDecoration = TextDecoration.Underline,
-                                        color = Color.White.copy(alpha = 0.9f)
-                                    )
-                                ) {
-                                    append(userName)
-                                }
-                                append("!")
-                            },
-                            style = MaterialTheme.typography.titleLarge,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = Color.White,
-                            modifier = Modifier.clickable { showEditNameDialog = true }
-                        )
-                    } else {
-                        Text(
-                            text = "$greeting, $userName!",
+                            text = "$greeting!",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
                             color = Color.White
                         )
+                    } else {
+                        // Tıklanabilir kullanıcı adı
+                        if (canEditName) {
+                            Text(
+                                text = buildAnnotatedString {
+                                    append("$greeting, ")
+                                    withStyle(
+                                        style = SpanStyle(
+                                            textDecoration = TextDecoration.Underline,
+                                            color = Color.White.copy(alpha = 0.9f)
+                                        )
+                                    ) {
+                                        append(userName)
+                                    }
+                                    append("!")
+                                },
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White,
+                                modifier = Modifier.clickable { showEditNameDialog = true }
+                            )
+                        } else {
+                            Text(
+                                text = "$greeting, $userName!",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = Color.White
+                            )
+                        }
                     }
 
                     if (isPremium) {
@@ -498,7 +516,7 @@ private fun DoziHeader(firestoreUser: User?) {
                 }
                 Spacer(Modifier.height(2.dp))
                 Text(
-                    text = "İlaçlarını düzenli almayı unutma",
+                    text = if (isLoggedIn) "İlaçlarını düzenli almayı unutma" else "Dozi ile ilaç takibini kolaylaştır",
                     style = MaterialTheme.typography.labelLarge,
                     color = Color.White.copy(alpha = 0.8f)
                 )
@@ -536,7 +554,8 @@ private fun DoziHeader(firestoreUser: User?) {
 fun HorizontalCalendar(
     selectedDate: LocalDate?,
     onDateSelected: (LocalDate) -> Unit,
-    onNavigateToReminders: () -> Unit
+    onNavigateToReminders: () -> Unit,
+    isLoggedIn: Boolean
 ) {
     val today = LocalDate.now()
     val context = LocalContext.current
@@ -648,7 +667,8 @@ fun HorizontalCalendar(
                     status = status,
                     onNavigateToReminders = onNavigateToReminders,
                     context = context,
-                    allMedicines = allMedicines
+                    allMedicines = allMedicines,
+                    isLoggedIn = isLoggedIn
                 )
             }
         }
@@ -722,7 +742,8 @@ private fun CalendarExpandedContent(
     status: MedicineStatus,
     onNavigateToReminders: () -> Unit,
     context: Context,
-    allMedicines: List<Medicine>
+    allMedicines: List<Medicine>,
+    isLoggedIn: Boolean
 ) {
     val dayLabel = "${date.dayOfMonth} ${date.month.getDisplayName(TextStyle.FULL, Locale("tr", "TR"))}"
     val medicines = remember(date, allMedicines) {
@@ -768,7 +789,7 @@ private fun CalendarExpandedContent(
                 Spacer(Modifier.height(8.dp))
 
                 if (status == MedicineStatus.NONE) {
-                    ClickableReminderText(onNavigateToReminders)
+                    ClickableReminderText(onNavigateToReminders, isLoggedIn)
                 } else {
                     medicines.forEach { med ->
                         Row(
@@ -819,27 +840,36 @@ private fun CalendarExpandedContent(
 }
 
 @Composable
-private fun ClickableReminderText(onNavigateToReminders: () -> Unit) {
-    ClickableText(
-        text = buildAnnotatedString {
-            append("💧 Bugün için planlanmış bir ilacın yok.\n\n")
-            append("Yeni bir hatırlatma eklemek için ")
-            withStyle(
-                style = SpanStyle(
-                    fontWeight = FontWeight.Bold,
-                    color = DoziPurple,
-                    textDecoration = TextDecoration.Underline
-                )
-            ) {
-                append("buraya tıklayabilirsin.")
+private fun ClickableReminderText(onNavigateToReminders: () -> Unit, isLoggedIn: Boolean) {
+    if (isLoggedIn) {
+        ClickableText(
+            text = buildAnnotatedString {
+                append("💧 Bugün için planlanmış bir ilacın yok.\n\n")
+                append("Yeni bir hatırlatma eklemek için ")
+                withStyle(
+                    style = SpanStyle(
+                        fontWeight = FontWeight.Bold,
+                        color = DoziPurple,
+                        textDecoration = TextDecoration.Underline
+                    )
+                ) {
+                    append("buraya tıklayabilirsin.")
+                }
+            },
+            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight, lineHeight = 20.sp),
+            onClick = { offset ->
+                // Tüm metin tıklanınca Hatırlatmalar ekranına yönlendir
+                onNavigateToReminders()
             }
-        },
-        style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight, lineHeight = 20.sp),
-        onClick = { offset ->
-            // Tüm metin tıklanınca Hatırlatmalar ekranına yönlendir
-            onNavigateToReminders()
-        }
-    )
+        )
+    } else {
+        Text(
+            text = "💧 Login olursan ilaçlarını beraber takip edebiliriz!",
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextSecondaryLight,
+            textAlign = TextAlign.Center
+        )
+    }
 }
 
 
@@ -1013,7 +1043,8 @@ private fun CurrentMedicineCard(
 @Composable
 private fun EmptyMedicineCard(
     currentMedicineStatus: MedicineStatus,
-    nextMedicine: Pair<Medicine, String>?
+    nextMedicine: Pair<Medicine, String>?,
+    isLoggedIn: Boolean
 ) {
     Card(
         modifier = Modifier
@@ -1037,10 +1068,14 @@ private fun EmptyMedicineCard(
             )
 
             Text(
-                when (currentMedicineStatus) {
-                    MedicineStatus.TAKEN -> "Harika! İlacını aldın"
-                    MedicineStatus.SKIPPED -> "Bugün için başka ilaç yok"
-                    else -> "Henüz ilaç zamanı değil"
+                if (!isLoggedIn) {
+                    "Dozi ile tanışalım!"
+                } else {
+                    when (currentMedicineStatus) {
+                        MedicineStatus.TAKEN -> "Harika! İlacını aldın"
+                        MedicineStatus.SKIPPED -> "Bugün için başka ilaç yok"
+                        else -> "Henüz ilaç zamanı değil"
+                    }
                 },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
@@ -1048,8 +1083,22 @@ private fun EmptyMedicineCard(
                 textAlign = TextAlign.Center
             )
 
-            // Sıradaki hatırlatmayı göster
-            if (nextMedicine != null && currentMedicineStatus != MedicineStatus.TAKEN && currentMedicineStatus != MedicineStatus.SKIPPED) {
+            // Sıradaki hatırlatmayı göster veya login teşvik mesajı
+            if (!isLoggedIn) {
+                Text(
+                    "Login olursan ilaçlarını beraber takip edebiliriz! 💊",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondaryLight,
+                    textAlign = TextAlign.Center
+                )
+                Spacer(Modifier.height(8.dp))
+                Text(
+                    "İlaç hatırlatmaları, düzenli takip ve senkronize edilmiş veriler için giriş yapman yeterli.",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondaryLight.copy(alpha = 0.8f),
+                    textAlign = TextAlign.Center
+                )
+            } else if (nextMedicine != null && currentMedicineStatus != MedicineStatus.TAKEN && currentMedicineStatus != MedicineStatus.SKIPPED) {
                 Spacer(Modifier.height(8.dp))
                 Surface(
                     color = DoziTurquoise.copy(alpha = 0.1f),
