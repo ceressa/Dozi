@@ -92,6 +92,7 @@ fun BuddyListScreen(
                 BuddyList(
                     buddies = uiState.buddies,
                     onBuddyClick = { buddy ->
+                        android.util.Log.d("BuddyListScreen", "Buddy clicked: id=${buddy.buddy.id}, userId=${buddy.buddy.userId}, buddyUserId=${buddy.buddy.buddyUserId}, userName=${buddy.user.name}")
                         onNavigateToBuddyDetail(buddy.buddy.id)
                     }
                 )
