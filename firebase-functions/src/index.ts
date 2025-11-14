@@ -8,12 +8,18 @@ admin.initializeApp();
 const db = admin.firestore();
 const messaging = admin.messaging();
 
+// 🇪🇺 EU Region Configuration (Frankfurt)
+const REGION = "europe-west3";
+
 /**
  * 🤝 Buddy isteği oluşturulduğunda tetiklenir
  * Alıcıya push notification gönderir
  */
 export const onBuddyRequestCreated = onDocumentCreated(
-  "buddy_requests/{requestId}",
+  {
+    document: "buddy_requests/{requestId}",
+    region: REGION,
+  },
   async (event) => {
     const request = event.data?.data();
     if (!request) {
@@ -87,7 +93,10 @@ export const onBuddyRequestCreated = onDocumentCreated(
  * Buddy'lere bildirim gönderir
  */
 export const onMedicationTaken = onDocumentCreated(
-  "medication_logs/{logId}",
+  {
+    document: "medication_logs/{logId}",
+    region: REGION,
+  },
   async (event) => {
     const log = event.data?.data();
     if (!log) {
@@ -222,6 +231,7 @@ export const onMedicationTaken = onDocumentCreated(
  * Android app'ten callable function olarak çağrılır
  */
 export const sendMedicationReminderToBuddies = onCall(
+  {region: REGION},
   async (request) => {
     // Auth kontrolü
     if (!request.auth) {
@@ -357,7 +367,10 @@ export const sendMedicationReminderToBuddies = onCall(
  * Her 15 dakikada bir çalışır
  */
 export const checkMissedMedications = onSchedule(
-  "every 15 minutes",
+  {
+    schedule: "every 15 minutes",
+    region: REGION,
+  },
   async () => {
     console.log("🔍 Kaçırılan ilaçlar kontrol ediliyor...");
 
