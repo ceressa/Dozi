@@ -320,7 +320,7 @@ fun NavGraph(
                 BuddyListScreen(
                     onNavigateBack = { navController.popBackStack() },
                     onNavigateToAddBuddy = { navController.navigate(Screen.AddBuddy.route) },
-                    onNavigateToBuddyTracking = { buddyId ->
+                    onNavigateToBuddyDetail = { buddyId ->
                         navController.navigate(Screen.BuddyMedicationTracking.createRoute(buddyId))
                     }
                 )
