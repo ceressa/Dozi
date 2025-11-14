@@ -43,6 +43,7 @@ import com.bardino.dozi.core.data.repository.MedicineRepository as FirestoreMedi
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.screens.profile.addGeofence
 import com.bardino.dozi.core.ui.theme.*
+import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.navigation.Screen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -410,10 +411,7 @@ private fun playStepSound(context: Context, step: Int, soundEnabled: Boolean) {
 
 private fun playSuccessSound(context: Context) {
     try {
-        MediaPlayer.create(context, R.raw.success)?.apply {
-            setOnCompletionListener { release() }
-            start()
-        }
+        SoundHelper.playSound(context, SoundHelper.SoundType.HERSEY_TAMAM)
     } catch (e: Exception) {
         // Ses dosyası yoksa sessizce devam et
     }
