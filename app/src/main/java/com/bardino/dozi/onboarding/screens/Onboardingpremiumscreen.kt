@@ -63,20 +63,21 @@ fun OnboardingPremiumScreen(
         ) {
             Spacer(Modifier.height(40.dp))
 
-            // Hediye ikonu
-            Box(
+            // Dozi karakteri - Mutlu Dozi (hediye veriyor)
+            Image(
+                painter = painterResource(id = R.drawable.dozi_happy),
+                contentDescription = "Dozi Happy",
                 modifier = Modifier
-                    .size(100.dp)
+                    .size(140.dp)
                     .scale(pulseScale)
-                    .clip(CircleShape)
-                    .background(DoziTurquoise.copy(alpha = 0.2f)),
-                contentAlignment = Alignment.Center
-            ) {
-                Text(
-                    text = "🎁",
-                    style = MaterialTheme.typography.displayLarge
-                )
-            }
+            )
+
+            // Hediye ikonu (kalp gibi)
+            Text(
+                text = "💝",
+                style = MaterialTheme.typography.displayMedium,
+                modifier = Modifier.offset(y = (-20).dp)
+            )
 
             Spacer(Modifier.height(24.dp))
 
