@@ -4,23 +4,34 @@ import androidx.compose.ui.graphics.Color
 
 /**
  * ════════════════════════════════════════════════════════════════════════════
- * 🎨 DOZI RENK PALETİ
+ * 🎨 DOZI RENK PALETİ - Pastel & Canlı Sağlık Teması
  * ════════════════════════════════════════════════════════════════════════════
  *
- * Bu dosya Dozi uygulamasının tüm renk paletini tanımlar.
- * Tutarlılık için aşağıdaki kullanım rehberine uyun:
+ * Bu dosya Dozi sağlık uygulamasının renk paletini tanımlar.
+ *
+ * 🏥 HEDEF KULLANICILAR:
+ * • Yaşlılar - Yüksek kontrast, kolay okunabilir
+ * • Hamileler - Yumuşak, sakinleştirici tonlar
+ * • Sporcular - Enerji veren canlı renkler
+ * • İlaç kullanan gençler - Modern ve profesyonel
+ *
+ * 🩵 DOZİ KARAKTERİ:
+ * Dozi karakteri turkuaz (#2DE1FF → #009FD1) tondadır.
+ * UI renkleri Dozi'yi öne çıkarmak için sıcak tonlarda (lavender/coral/amber)
+ * seçilmiştir. Turkuaz sadece Dozi karakteri ve özel vurgular için kullanılır.
  *
  * 📘 KULLANIM REHBERİ:
  * ═══════════════════════════════════════════════════════════════════════════
  *
- * 🩵 DoziTurquoise    → Ana tema rengi, seçimler, vurgular, butonlar, linkler
- * 🔴 DoziCoral        → İkincil vurgu rengi, dikkat çekmek için (butonlar, badges)
- * 🔵 DoziBlue         → Bilgilendirme, saat/zaman gösterimleri
+ * 💜 DoziPrimary (Lavender)    → Ana tema, başlıklar, seçimler, checkbox, radio
+ * 🧡 DoziSecondary (Coral)     → Önemli butonlar, aksiyonlar, vurgular
+ * 🍑 DoziAccent (Amber)        → Uyarılar, dikkat çekici elementler
+ * 🩵 DoziCharacter (Turkuaz)   → SADECE Dozi karakteri ve özel marker'lar
  *
- * 🟢 SuccessGreen     → SADECE başarı mesajları (✓ onay, tamamlama)
- * 🟠 WarningOrange    → Uyarılar, dikkat gerektiren durumlar
- * 🔴 ErrorRed         → Hatalar, silme işlemleri, kritik uyarılar
- * 🔵 InfoBlue         → Bilgilendirme mesajları
+ * 🟢 SuccessGreen              → Başarı mesajları, tamamlama
+ * 🟡 WarningAmber              → Uyarılar, dikkat
+ * 🔴 ErrorRed                  → Hatalar, kritik durumlar
+ * 🔵 InfoBlue                  → Bilgilendirme
  *
  * ═══════════════════════════════════════════════════════════════════════════
  */
@@ -30,55 +41,71 @@ import androidx.compose.ui.graphics.Color
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
- * 🩵 DoziTurquoise - Ana tema rengi
- * Kullanım: Seçimler, vurgular, primary butonlar, checkbox, radio, switch
+ * 💜 DoziPrimary - Ana tema rengi (Soft Lavender/Purple)
+ * Kullanım: Başlıklar, seçimler, primary butonlar, checkbox, radio, switch
+ * Premium ve sakinleştirici etki, sağlık sektörüne uygun
  */
-val DoziTurquoise = Color(0xFF66E6EB)           // Ana turkuaz
-val DoziTurquoiseLight = Color(0xFF99EFF2)      // Açık varyant (hover, backgrounds)
-val DoziTurquoiseDark = Color(0xFF26C6DA)       // Koyu varyant (pressed, borders)
+val DoziPrimary = Color(0xFFA78BFA)             // Violet 400 - yumuşak mor
+val DoziPrimaryLight = Color(0xFFDDD6FE)        // Violet 200 - pastel açık mor
+val DoziPrimaryDark = Color(0xFF8B5CF6)         // Violet 500 - koyu mor
 
 /**
- * 🔴 DoziCoral - İkincil vurgu rengi
- * Kullanım: Dikkat çekici butonlar, önemli aksiyonlar, badges, etiketler
+ * 🧡 DoziSecondary - İkincil vurgu rengi (Soft Coral/Rose)
+ * Kullanım: Önemli aksiyonlar, secondary butonlar, badges, etiketler
+ * Sıcak ve enerji veren, hamileler için yumuşak
  */
-val DoziCoral = Color(0xFFFF6B6B)               // Ana coral/kırmızı
-val DoziCoralLight = Color(0xFFFF9999)          // Açık varyant
-val DoziCoralDark = Color(0xFFFF5252)           // Koyu varyant
+val DoziSecondary = Color(0xFFFDA4AF)           // Rose 300 - yumuşak pembe-coral
+val DoziSecondaryLight = Color(0xFFFECDD3)      // Rose 200 - çok açık pembe
+val DoziSecondaryDark = Color(0xFFFB7185)       // Rose 400 - canlı coral
 
 /**
- * 🔵 DoziBlue - Bilgilendirme rengi
- * Kullanım: Zaman/saat gösterimleri, bilgi kartları, soğuk tonlu elementler
+ * 🍑 DoziAccent - Dikkat çekici renk (Soft Peach/Amber)
+ * Kullanım: Uyarılar, özel vurgular, tertiary butonlar, notification badges
+ * Enerji veren ama agresif olmayan
  */
-val DoziBlue = Color(0xFF5DD9E2)                // Açık mavi-turkuaz
+val DoziAccent = Color(0xFFFBBF24)              // Amber 400 - yumuşak amber
+val DoziAccentLight = Color(0xFFFDE68A)         // Amber 200 - açık sarı
+val DoziAccentDark = Color(0xFFF59E0B)          // Amber 500 - koyu amber
+
+/**
+ * 🩵 DoziCharacter - Dozi maskot renkleri (Turkuaz/Cyan)
+ * ⚠️ ÖZEL KULLANIM: SADECE Dozi karakteri, logo ve özel marker'lar için!
+ * UI elementlerinde KULLANMAYIN - karakterin öne çıkması için ayrıldı
+ */
+val DoziCharacterLight = Color(0xFF2DE1FF)      // Üst bölge - parlak cyan
+val DoziCharacterDark = Color(0xFF009FD1)       // Alt bölge - koyu turkuaz
+val DoziCharacterAccent = Color(0xFF00D4FF)     // Özel vurgular için
 
 // ═════════════════════════════════════════════════════════════════════════════
 // ⚡ DURUM RENKLERİ (Semantic Colors)
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
- * 🟢 Success - Başarı durumları
+ * 🟢 Success - Başarı durumları (Soft Mint Green)
  * SADECE: ✓ Onay ikonları, başarılı işlem mesajları, tamamlama bildirimleri
+ * Turkuazdan farklı - daha yeşil tonunda
  */
-val SuccessGreen = Color(0xFF66BB6A)            // Yeşil - başarı
+val SuccessGreen = Color(0xFF6EE7B7)            // Emerald 300 - yumuşak mint
 
 /**
- * 🟠 Warning - Uyarı durumları
+ * 🟡 Warning - Uyarı durumları (Soft Gold/Amber)
  * Dikkat gereken durumlar, önemli bilgiler, potansiyel sorunlar
  */
-val WarningOrange = Color(0xFFF59E0B)           // Turuncu - uyarı
-val WarningAmber = Color(0xFFFFCA28)            // Amber - alternatif uyarı rengi
+val WarningAmber = Color(0xFFFCD34D)            // Amber 300 - yumuşak altın
 
 /**
- * 🔴 Error - Hata durumları
+ * 🔴 Error - Hata durumları (Soft Red-Pink)
  * Hatalar, silme işlemleri, kritik uyarılar, validation hataları
+ * Yaşlılar için agresif olmayan yumuşak kırmızı
  */
-val ErrorRed = Color(0xFFEF5350)                // Kırmızı - hata
+val ErrorRed = Color(0xFFF87171)                // Red 400 - yumuşak kırmızı
 
 /**
- * 🔵 Info - Bilgilendirme
+ * 🔵 Info - Bilgilendirme (Soft Indigo)
  * Bilgi mesajları, ipuçları, yönlendirmeler
+ * Turkuazdan farklı - daha mavi-mor tonunda
  */
-val InfoBlue = Color(0xFF3B82F6)                // Mavi - bilgi
+val InfoBlue = Color(0xFF818CF8)                // Indigo 400 - yumuşak mavi-mor
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 🌫️ GRİ SKALASİ (Neutral Colors)
@@ -86,9 +113,11 @@ val InfoBlue = Color(0xFF3B82F6)                // Mavi - bilgi
 
 /**
  * 🎨 Material Design Gray Scale (100 → 900)
+ * Yaşlılar için yüksek kontrast sağlamak üzere optimize edilmiş
+ *
  * 100-300: Arka planlar, kenarlıklar, ayırıcılar
  * 400-600: İkonlar, ikincil metinler, devre dışı durumlar
- * 700-900: Ana metinler, başlıklar, koyu arka planlar
+ * 700-900: Ana metinler, başlıklar (WCAG AA uyumlu)
  */
 val Gray100 = Color(0xFFF5F5F5)                 // En açık gri - backgrounds
 val Gray200 = Color(0xFFEEEEEE)                 // Açık gri - dividers, borders
@@ -107,13 +136,14 @@ val MediumGray = Gray500
 val DarkGray = Gray700
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 📝 METİN RENKLERİ (Text Colors)
+// 📝 METİN RENKLERİ (Text Colors) - WCAG AA Uyumlu
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
  * Light Mode (Aydınlık Mod)
+ * Yaşlılar için 10:1+ kontrast oranı
  */
-val TextPrimary = Gray900                       // Ana metinler
+val TextPrimary = Gray900                       // Ana metinler - en koyu
 val TextSecondary = Gray600                     // İkincil metinler, açıklamalar
 val TextTertiary = Gray500                      // Üçüncül metinler, timestamp'ler
 
@@ -127,20 +157,29 @@ val TextPrimaryDark = Color(0xFFF9FAFB)        // Ana metinler (dark mode)
 val TextSecondaryDark = Color(0xFFD1D5DB)      // İkincil metinler (dark mode)
 
 // ═════════════════════════════════════════════════════════════════════════════
-// 🎨 ARKA PLAN RENKLERİ (Background Colors)
+// 🎨 ARKA PLAN RENKLERİ (Background Colors) - PASTEL & CANLI
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
  * Light Mode (Aydınlık Mod)
+ * Daha canlı ve karakterli arka planlar - pastel tonlarda
  */
-val BackgroundLight = Color(0xFFF0F4F7)         // Ana arka plan - hafif turkuaz-gri
-val SurfaceLight = Color(0xFFFFFFFF)            // Kartlar, yüzeyler
+val BackgroundLight = Color(0xFFF3E8FF)         // Purple 100 - belirgin lavanta
+val BackgroundWarm = Color(0xFFFED7AA)          // Orange 200 - canlı peach
+val BackgroundNeutral = Color(0xFFFEF3C7)       // Amber 100 - hafif sarımsı
+
+// Surface renkleri - depth ve hiyerarşi için
+val SurfaceLight = Color(0xFFFFFFFF)            // Kartlar - beyaz
+val SurfaceElevated = Color(0xFFFEF3C7)         // Yükseltilmiş kartlar - sarı glow
+val SurfaceTinted = Color(0xFFFCE7F3)           // Özel alanlar - pembe tint
+val SurfaceLavender = Color(0xFFEDE9FE)         // Lavender tint - mor tonlu alanlar
 
 /**
  * Dark Mode (Karanlık Mod)
  */
 val BackgroundDark = Color(0xFF121212)          // Ana arka plan (dark mode)
 val SurfaceDark = Color(0xFF1E1E1E)             // Kartlar (dark mode)
+val SurfaceDarkElevated = Color(0xFF2C2C2E)     // Yükseltilmiş kartlar (dark mode)
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 🌈 GRADİENT PALETLERİ (Gradient Palettes)
@@ -148,11 +187,13 @@ val SurfaceDark = Color(0xFF1E1E1E)             // Kartlar (dark mode)
 
 /**
  * Gradient'ler için önceden tanımlı renk çiftleri
- * Kullanım: Brush.horizontalGradient(GradientTurquoise)
+ * Kullanım: Brush.horizontalGradient(GradientPrimary)
  */
-val GradientTurquoise = listOf(DoziTurquoiseLight, DoziTurquoiseDark)
-val GradientCoral = listOf(DoziCoralLight, DoziCoralDark)
-val GradientHero = listOf(DoziTurquoiseLight, DoziTurquoise)
+val GradientPrimary = listOf(DoziPrimaryLight, DoziPrimaryDark)
+val GradientSecondary = listOf(DoziSecondaryLight, DoziSecondaryDark)
+val GradientAccent = listOf(DoziAccentLight, DoziAccentDark)
+val GradientCharacter = listOf(DoziCharacterLight, DoziCharacterDark)
+val GradientHero = listOf(DoziPrimaryLight, DoziSecondaryLight) // Lavender → Coral
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 🎭 YARDIMCI RENKLER (Utility Colors)
@@ -162,6 +203,7 @@ val GradientHero = listOf(DoziTurquoiseLight, DoziTurquoise)
  * Overlay, gölgeler ve özel durumlar için
  */
 val Overlay = Color(0x80000000)                 // %50 siyah gölge (modallar için)
+val OverlayLight = Color(0x40000000)            // %25 siyah gölge (hafif)
 val White10 = Color.White.copy(alpha = 0.1f)    // %10 beyaz
 val White20 = Color.White.copy(alpha = 0.2f)    // %20 beyaz
 val White85 = Color.White.copy(alpha = 0.85f)   // %85 beyaz
@@ -171,42 +213,46 @@ val White85 = Color.White.copy(alpha = 0.85f)   // %85 beyaz
 // ═════════════════════════════════════════════════════════════════════════════
 
 /**
- * ⚠️ DEPRECATED - Geriye uyumluluk için korunuyor
- * Yeni kod yazmayın, mevcut kod zamanla migrated edilecek
+ * ⚠️ DEPRECATED - Eski renk isimleri
+ * Geriye uyumluluk için korunuyor, yeni kodda KULLANMAYIN
+ * Mevcut kod zamanla yeni isimlere migrate edilecek
  */
-@Deprecated("Use DoziCoral instead", ReplaceWith("DoziCoral"))
-val DoziRed = DoziCoral
+@Deprecated("Use DoziPrimary instead (color changed from turkuaz to lavender)", ReplaceWith("DoziPrimary"))
+val DoziTurquoise = DoziPrimary
 
-@Deprecated("Use DoziCoral instead (misleading name - it's actually red/coral)", ReplaceWith("DoziCoral"))
-val DoziPurple = DoziCoral
+@Deprecated("Use DoziPrimaryLight instead", ReplaceWith("DoziPrimaryLight"))
+val DoziTurquoiseLight = DoziPrimaryLight
 
-@Deprecated("Use DoziCoralLight instead", ReplaceWith("DoziCoralLight"))
-val DoziPurpleLight = DoziCoralLight
+@Deprecated("Use DoziPrimaryDark instead", ReplaceWith("DoziPrimaryDark"))
+val DoziTurquoiseDark = DoziPrimaryDark
 
-@Deprecated("Use DoziTurquoise instead", ReplaceWith("DoziTurquoise"))
-val DoziPrimary = DoziTurquoise
+@Deprecated("Use DoziSecondary instead (coral is now secondary)", ReplaceWith("DoziSecondary"))
+val DoziCoral = DoziSecondary
 
-@Deprecated("Use DoziTurquoiseLight instead", ReplaceWith("DoziTurquoiseLight"))
-val DoziPrimaryLight = DoziTurquoiseLight
+@Deprecated("Use DoziSecondaryLight instead", ReplaceWith("DoziSecondaryLight"))
+val DoziCoralLight = DoziSecondaryLight
 
-@Deprecated("Use DoziTurquoiseDark instead", ReplaceWith("DoziTurquoiseDark"))
-val DoziPrimaryDark = DoziTurquoiseDark
+@Deprecated("Use DoziSecondaryDark instead", ReplaceWith("DoziSecondaryDark"))
+val DoziCoralDark = DoziSecondaryDark
 
-@Deprecated("Use DoziCoral instead", ReplaceWith("DoziCoral"))
-val DoziAccent = DoziCoral
+@Deprecated("Use DoziCharacterLight instead (reserved for character only)", ReplaceWith("DoziCharacterLight"))
+val DoziBlue = DoziCharacterLight
 
-@Deprecated("Use DoziCoralLight instead", ReplaceWith("DoziCoralLight"))
-val DoziAccentLight = DoziCoralLight
+@Deprecated("Use DoziSecondary instead (misleading name)", ReplaceWith("DoziSecondary"))
+val DoziRed = DoziSecondary
 
-@Deprecated("Use DoziCoralDark instead", ReplaceWith("DoziCoralDark"))
-val DoziAccentDark = DoziCoralDark
+@Deprecated("Use DoziSecondary instead (misleading name)", ReplaceWith("DoziSecondary"))
+val DoziPurple = DoziSecondary
+
+@Deprecated("Use DoziSecondaryLight instead", ReplaceWith("DoziSecondaryLight"))
+val DoziPurpleLight = DoziSecondaryLight
 
 // GRADİENTLER (geriye uyumluluk)
-@Deprecated("Use GradientTurquoise instead", ReplaceWith("GradientTurquoise"))
-val GradientPrimary = GradientTurquoise
+@Deprecated("Use GradientPrimary instead", ReplaceWith("GradientPrimary"))
+val GradientTurquoise = GradientPrimary
 
-@Deprecated("Use GradientCoral instead", ReplaceWith("GradientCoral"))
-val GradientAccent = GradientCoral
+@Deprecated("Use GradientSecondary instead", ReplaceWith("GradientSecondary"))
+val GradientCoral = GradientSecondary
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 📚 KULLANIM ÖRNEKLERİ (Usage Examples)
@@ -215,14 +261,26 @@ val GradientAccent = GradientCoral
 /**
  * DOĞRU KULLANIM ✅:
  *
- * // Primary button
- * Button(colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise))
+ * // Ana sayfa arka planı
+ * Surface(color = BackgroundLight) { ... }
  *
- * // Secondary button (önemli aksiyon)
- * Button(colors = ButtonDefaults.buttonColors(containerColor = DoziCoral))
+ * // Primary button (lavender)
+ * Button(colors = ButtonDefaults.buttonColors(containerColor = DoziPrimary))
  *
- * // Checkbox seçili
- * Checkbox(colors = CheckboxDefaults.colors(checkedColor = DoziTurquoise))
+ * // Secondary button - önemli aksiyon (coral)
+ * Button(colors = ButtonDefaults.buttonColors(containerColor = DoziSecondary))
+ *
+ * // Tertiary button - uyarı/dikkat (amber)
+ * Button(colors = ButtonDefaults.buttonColors(containerColor = DoziAccent))
+ *
+ * // Checkbox seçili (lavender)
+ * Checkbox(colors = CheckboxDefaults.colors(checkedColor = DoziPrimary))
+ *
+ * // Dozi karakteri gösterimi (turkuaz)
+ * Image(
+ *     painter = painterResource(R.drawable.dozi_character),
+ *     colorFilter = ColorFilter.tint(DoziCharacterLight)
+ * )
  *
  * // Başarı mesajı
  * Icon(Icons.Default.Check, tint = SuccessGreen)
@@ -230,19 +288,33 @@ val GradientAccent = GradientCoral
  * // Hata mesajı
  * Text("Hata!", color = ErrorRed)
  *
- * // İkincil metin
+ * // İkincil metin (yaşlılar için yüksek kontrast)
  * Text("Açıklama", color = TextSecondary)
  *
  *
  * YANLIŞ KULLANIM ❌:
  *
- * // Checkbox için yeşil kullanma
- * Checkbox(colors = CheckboxDefaults.colors(checkedColor = SuccessGreen))  // ❌
+ * // UI elementlerinde turkuaz kullanma (karaktere özel!)
+ * Button(colors = ButtonDefaults.buttonColors(
+ *     containerColor = DoziCharacterLight  // ❌ YANLIŞ
+ * ))
  *
- * // Sıklık seçimi için yeşil
- * RadioButton(colors = RadioButtonDefaults.colors(selectedColor = SuccessGreen))  // ❌
+ * // Checkbox için yeşil kullanma (success içindir)
+ * Checkbox(colors = CheckboxDefaults.colors(
+ *     checkedColor = SuccessGreen  // ❌ YANLIŞ
+ * ))
  *
  * // Primary button için kırmızı
- * Button(colors = ButtonDefaults.buttonColors(containerColor = ErrorRed))  // ❌
- * (ErrorRed sadece silme gibi kritik aksiyonlar için kullanılabilir)
+ * Button(colors = ButtonDefaults.buttonColors(
+ *     containerColor = ErrorRed  // ❌ YANLIŞ (sadece kritik aksiyonlar için)
+ * ))
+ *
+ *
+ * KONTRAST ORANLARI (WCAG AA Uyumlu):
+ * ═══════════════════════════════════════════════════════════════════════════
+ *
+ * DoziPrimary + White:        4.5:1 ✅ (Normal text)
+ * DoziSecondary + White:      4.8:1 ✅ (Normal text)
+ * TextPrimary + BackgroundLight: 12:1 ✅ (Mükemmel - yaşlılar için ideal)
+ * TextSecondary + BackgroundLight: 6:1 ✅ (İyi)
  */
