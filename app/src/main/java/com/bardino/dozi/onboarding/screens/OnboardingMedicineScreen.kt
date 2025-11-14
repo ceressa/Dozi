@@ -22,11 +22,12 @@ import com.bardino.dozi.R
 import com.bardino.dozi.core.ui.theme.*
 
 /**
- * Onboarding - İlaç Ekleme Anlatımı (Dozi ile)
+ * Onboarding - İlaç Ekleme Anlatımı (Dozi ile - İnteraktif)
  */
 @Composable
 fun OnboardingMedicineScreen(
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onTryNow: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -35,18 +36,16 @@ fun OnboardingMedicineScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(60.dp))
+        Spacer(Modifier.height(40.dp))
 
-        // Dozi karakteri - Not alan Dozi (ilaç öğretiyor)
+        // Dozi karakteri - Öğretici Dozi (transparan arka plan)
         Image(
-            painter = painterResource(id = R.drawable.dozi_noted),
+            painter = painterResource(id = R.drawable.dozi_teach1),
             contentDescription = "Dozi",
-            modifier = Modifier
-                .size(140.dp)
-                .shadow(8.dp, CircleShape)
+            modifier = Modifier.size(140.dp)
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
         // Ana kart
         Card(
@@ -141,11 +140,11 @@ fun OnboardingMedicineScreen(
             }
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(24.dp))
 
-        // Devam butonu
+        // Şimdi Dene butonu (interaktif)
         Button(
-            onClick = onNext,
+            onClick = onTryNow,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -154,6 +153,27 @@ fun OnboardingMedicineScreen(
             ),
             shape = RoundedCornerShape(16.dp)
         ) {
+            Icon(Icons.Default.Add, "Ekle")
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Şimdi Dene!",
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Devam butonu
+        OutlinedButton(
+            onClick = onNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = DoziBlue
+            )
+        ) {
             Text(
                 text = "Anladım, Devam",
                 fontWeight = FontWeight.Bold
@@ -161,6 +181,8 @@ fun OnboardingMedicineScreen(
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Default.ArrowForward, "İleri")
         }
+
+        Spacer(Modifier.weight(1f))
     }
 }
 

@@ -28,8 +28,7 @@ import com.bardino.dozi.core.ui.theme.*
 
 @Composable
 fun OnboardingPremiumScreen(
-    onGoogleSignIn: () -> Unit,
-    onSkip: () -> Unit
+    onGoogleSignIn: () -> Unit
 ) {
     // Pulse animasyonu
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -63,10 +62,10 @@ fun OnboardingPremiumScreen(
         ) {
             Spacer(Modifier.height(40.dp))
 
-            // Dozi karakteri - Mutlu Dozi (hediye veriyor)
+            // Dozi karakteri - Kalp Dozi (hediye veriyor, transparan arka plan)
             Image(
-                painter = painterResource(id = R.drawable.dozi_happy),
-                contentDescription = "Dozi Happy",
+                painter = painterResource(id = R.drawable.dozi_kalp),
+                contentDescription = "Dozi Kalp",
                 modifier = Modifier
                     .size(140.dp)
                     .scale(pulseScale)
@@ -171,31 +170,20 @@ fun OnboardingPremiumScreen(
                 shape = RoundedCornerShape(16.dp)
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.ic_google), // Google ikonu eklemen gerekecek
+                    painter = painterResource(id = R.drawable.ic_google),
                     contentDescription = "Google",
                     modifier = Modifier.size(24.dp)
                 )
                 Spacer(Modifier.width(12.dp))
                 Text(
-                    text = "Google ile Giriş Yap",
+                    text = "Google ile Giriş Yap ve Başla",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
                     color = TextPrimary
                 )
             }
 
-            Spacer(Modifier.height(12.dp))
-
-            // Şimdi değil
-            TextButton(
-                onClick = onSkip,
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Text(
-                    text = "Şimdi Değil",
-                    color = TextSecondary
-                )
-            }
+            Spacer(Modifier.height(24.dp))
         }
     }
 }
