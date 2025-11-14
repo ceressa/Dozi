@@ -87,16 +87,37 @@ private fun processImageFromUri(
 @Composable
 fun MedicineEditScreen(
     medicineId: String,
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    savedStateHandle: androidx.lifecycle.SavedStateHandle? = null
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
 
+    // Lookup ekranından gelen ilaç bilgisi
+    val selectedMedicine = savedStateHandle?.get<IlacSearchResultParcelable>("selectedMedicine")
+
     // Mevcut ilaç bilgilerini yükle
     val existing = MedicineRepository.getMedicine(context, medicineId)
-    var name by remember { mutableStateOf(existing?.name ?: "") }
-    var dosage by remember { mutableStateOf(existing?.dosage ?: "") }
-    var stock by remember { mutableStateOf(existing?.stock?.toString() ?: "0") }
+    var name by remember { mutableStateOf(
+        existing?.name
+            ?: selectedMedicine?.item?.Product_Name
+            ?: ""
+    ) }
+    var dosage by remember { mutableStateOf(
+        existing?.dosage
+            ?: selectedMedicine?.dosage
+            ?: ""
+    ) }
+    var stock by remember { mutableStateOf(
+        existing?.stock?.toString() ?: "0"
+    ) }
+
+    // Lookup'tan gelen veriyi temizle (bir kez okunsun diye)
+    LaunchedEffect(selectedMedicine) {
+        if (selectedMedicine != null) {
+            savedStateHandle?.remove<IlacSearchResultParcelable>("selectedMedicine")
+        }
+    }
 
     // Hata durumları
     var nameError by remember { mutableStateOf(false) }
