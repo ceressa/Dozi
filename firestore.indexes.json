@@ -5,11 +5,15 @@
       "queryScope": "COLLECTION",
       "fields": [
         {
+          "fieldPath": "toUserId",
+          "order": "ASCENDING"
+        },
+        {
           "fieldPath": "status",
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "toUserId",
+          "fieldPath": "respondedAt",
           "order": "ASCENDING"
         },
         {
