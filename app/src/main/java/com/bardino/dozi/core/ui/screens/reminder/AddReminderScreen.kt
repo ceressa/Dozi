@@ -164,22 +164,12 @@ fun AddReminderScreen(
     LaunchedEffect(step, soundEnabled) {
         if (soundEnabled && step <= 4) {
             playStepSound(context, step, soundEnabled)
-        } else if (!soundEnabled) {
-            currentMediaPlayer?.apply {
-                if (isPlaying) stop()
-                release()
-            }
-            currentMediaPlayer = null
         }
     }
 
     DisposableEffect(Unit) {
         onDispose {
-            currentMediaPlayer?.apply {
-                if (isPlaying) stop()
-                release()
-            }
-            currentMediaPlayer = null
+            // SoundHelper kendi ses yönetimini yapıyor
         }
     }
 
@@ -200,14 +190,6 @@ fun AddReminderScreen(
                                 .edit()
                                 .putBoolean("sound_enabled", soundEnabled)
                                 .apply()
-
-                            if (!soundEnabled) {
-                                currentMediaPlayer?.apply {
-                                    if (isPlaying) stop()
-                                    release()
-                                }
-                                currentMediaPlayer = null
-                            }
                         }
                     ) {
                         Icon(
