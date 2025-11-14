@@ -50,7 +50,17 @@ fun OnboardingMedicineScreen(
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // Adım göstergesi
+        Text(
+            text = "Adım 1/4",
+            style = MaterialTheme.typography.labelLarge,
+            color = DoziBlue,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(16.dp))
 
         // Dozi karakteri - Öğretici Dozi (transparan arka plan)
         Image(

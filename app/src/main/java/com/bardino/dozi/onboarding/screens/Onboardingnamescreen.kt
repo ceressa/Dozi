@@ -29,7 +29,17 @@ fun OnboardingNameScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(60.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // Adım göstergesi
+        Text(
+            text = "Adım 2/4",
+            style = MaterialTheme.typography.labelLarge,
+            color = DoziTurquoise,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(24.dp))
 
         // Dozi karakteri
         Image(
