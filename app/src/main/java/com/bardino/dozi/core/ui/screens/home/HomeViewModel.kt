@@ -2,12 +2,14 @@ package com.bardino.dozi.core.ui.screens.home
 
 import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.UserRepository
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -15,16 +17,24 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 /**
  * HomeScreen için ViewModel
  * State management ve business logic burada
+ * ✅ Offline-first: MedicationLogRepository kullanır
  */
 @RequiresApi(Build.VERSION_CODES.O)
 class HomeViewModel(
+    private val context: Context,
     private val medicineRepository: MedicineRepository = MedicineRepository(),
+    private val medicationLogRepository: MedicationLogRepository = MedicationLogRepository(context),
     private val userRepository: UserRepository = UserRepository()
 ) : ViewModel() {
+
+    companion object {
+        private const val TAG = "HomeViewModel"
+    }
 
     /**
      * UI State data class
@@ -218,23 +228,44 @@ class HomeViewModel(
     }
 
     /**
-     * İlaç alındı
+     * İlaç alındı (Offline-first)
+     * 1. Local DB'ye kaydet
+     * 2. Firestore'a sync et
+     * 3. Stok azalt
      */
     fun onMedicineTaken(context: Context, medicine: Medicine, time: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(currentMedicineStatus = MedicineStatus.TAKEN) }
 
-            // Durumu kaydet
-            saveMedicineStatus(context, medicine.id, getCurrentDateString(), time, "taken")
+            // ✅ Offline-first: MedicationLogRepository kullan
+            try {
+                val scheduledTime = getScheduledTimeInMillis(time)
+                medicationLogRepository.logMedicationTaken(
+                    medicineId = medicine.id,
+                    medicineName = medicine.name,
+                    dosage = medicine.dosage,
+                    scheduledTime = scheduledTime,
+                    notes = null
+                ).onSuccess {
+                    Log.d(TAG, "✅ Medication logged to Room DB and queued for sync")
+                }.onFailure {
+                    Log.e(TAG, "❌ Failed to log medication", it)
+                }
+
+                // ⚠️ Fallback: SharedPreferences için backward compatibility
+                saveMedicineStatus(context, medicine.id, getCurrentDateString(), time, "taken")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error logging medication taken", e)
+            }
 
             // Stok azalt (eğer stok > 0 ise)
             if (medicine.stockCount > 0) {
                 try {
                     val newStockCount = medicine.stockCount - 1
                     medicineRepository.updateMedicineField(medicine.id, "stockCount", newStockCount)
-                    android.util.Log.d("HomeViewModel", "Stock decreased: ${medicine.name} -> $newStockCount")
+                    Log.d(TAG, "Stock decreased: ${medicine.name} -> $newStockCount")
                 } catch (e: Exception) {
-                    android.util.Log.e("HomeViewModel", "Failed to decrease stock", e)
+                    Log.e(TAG, "Failed to decrease stock", e)
                 }
             }
 
@@ -259,7 +290,7 @@ class HomeViewModel(
     }
 
     /**
-     * İlaç atlandı
+     * İlaç atlandı (Offline-first)
      */
     fun onMedicineSkipped(context: Context, medicine: Medicine, time: String) {
         viewModelScope.launch {
@@ -271,8 +302,26 @@ class HomeViewModel(
                 )
             }
 
-            // Durumu kaydet
-            saveMedicineStatus(context, medicine.id, getCurrentDateString(), time, "skipped")
+            // ✅ Offline-first: MedicationLogRepository kullan
+            try {
+                val scheduledTime = getScheduledTimeInMillis(time)
+                medicationLogRepository.logMedicationSkipped(
+                    medicineId = medicine.id,
+                    medicineName = medicine.name,
+                    dosage = medicine.dosage,
+                    scheduledTime = scheduledTime,
+                    reason = null
+                ).onSuccess {
+                    Log.d(TAG, "✅ Medication skipped logged to Room DB")
+                }.onFailure {
+                    Log.e(TAG, "❌ Failed to log skipped medication", it)
+                }
+
+                // ⚠️ Fallback: SharedPreferences için backward compatibility
+                saveMedicineStatus(context, medicine.id, getCurrentDateString(), time, "skipped")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error logging medication skipped", e)
+            }
 
             // Listeyi güncelle
             delay(100)
@@ -292,7 +341,7 @@ class HomeViewModel(
     }
 
     /**
-     * İlaç ertelendi
+     * İlaç ertelendi (Offline-first)
      */
     fun onMedicineSnoozed(context: Context, medicine: Medicine, time: String, minutes: Int) {
         viewModelScope.launch {
@@ -303,9 +352,27 @@ class HomeViewModel(
                 )
             }
 
-            // Durumu kaydet
-            val snoozeUntil = System.currentTimeMillis() + minutes * 60_000L
-            saveMedicineStatus(context, medicine.id, getCurrentDateString(), time, "snoozed_$snoozeUntil")
+            // ✅ Offline-first: MedicationLogRepository kullan
+            try {
+                val scheduledTime = getScheduledTimeInMillis(time)
+                medicationLogRepository.logMedicationSnoozed(
+                    medicineId = medicine.id,
+                    medicineName = medicine.name,
+                    dosage = medicine.dosage,
+                    scheduledTime = scheduledTime,
+                    snoozeMinutes = minutes
+                ).onSuccess {
+                    Log.d(TAG, "✅ Medication snoozed logged to Room DB")
+                }.onFailure {
+                    Log.e(TAG, "❌ Failed to log snoozed medication", it)
+                }
+
+                // ⚠️ Fallback: SharedPreferences için backward compatibility
+                val snoozeUntil = System.currentTimeMillis() + minutes * 60_000L
+                saveMedicineStatus(context, medicine.id, getCurrentDateString(), time, "snoozed_$snoozeUntil")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error logging medication snoozed", e)
+            }
         }
     }
 
@@ -339,6 +406,29 @@ class HomeViewModel(
         val month = calendar.get(java.util.Calendar.MONTH) + 1
         val year = calendar.get(java.util.Calendar.YEAR)
         return "%02d/%02d/%d".format(day, month, year)
+    }
+
+    /**
+     * Helper: Time string'i (HH:mm) epoch millis'e çevir
+     * Örn: "08:00" -> bugünün 08:00'i için epoch millis
+     */
+    private fun getScheduledTimeInMillis(time: String): Long {
+        return try {
+            val parts = time.split(":")
+            val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+            val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+
+            val calendar = Calendar.getInstance()
+            calendar.set(Calendar.HOUR_OF_DAY, hour)
+            calendar.set(Calendar.MINUTE, minute)
+            calendar.set(Calendar.SECOND, 0)
+            calendar.set(Calendar.MILLISECOND, 0)
+
+            calendar.timeInMillis
+        } catch (e: Exception) {
+            Log.e(TAG, "Error parsing time: $time", e)
+            System.currentTimeMillis()
+        }
     }
 }
 

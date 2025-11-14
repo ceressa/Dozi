@@ -22,6 +22,8 @@ import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
@@ -159,9 +161,20 @@ fun HomeScreen(
     contentPadding: PaddingValues = PaddingValues(),
     onNavigateToMedicines: () -> Unit,
     onNavigateToReminders: () -> Unit,
-    onNavigateToProfile: () -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    onNavigateToProfile: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    // ✅ ViewModelFactory ile context inject et
+    val viewModel: HomeViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return HomeViewModel(context.applicationContext) as T
+            }
+        }
+    )
+
     // ✅ ViewModel'den state'leri al
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -171,7 +184,6 @@ fun HomeScreen(
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     // ✅ Context gerektiren ViewModel fonksiyonlarını çağır
     LaunchedEffect(context) {
