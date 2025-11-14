@@ -13,6 +13,8 @@ import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import com.bardino.dozi.MainActivity
 import com.bardino.dozi.R
+import com.bardino.dozi.core.data.model.MedicineCriticality
+import com.bardino.dozi.core.data.model.User
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -244,5 +246,205 @@ object NotificationHelper {
             .build()
 
         nm.notify(requestId.hashCode(), notification)
+    }
+
+    /**
+     * ⚠️ Düşük stok bildirimi göster (5 doz kaldı)
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showLowStockNotification(
+        context: Context,
+        medicineName: String,
+        remainingStock: Int
+    ) {
+        createDoziChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        // Ana ekrana yönlendir
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "medicine_list")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#FFA726")) // Turuncu renk (uyarı)
+            .setContentTitle("⚠️ Düşük Stok Uyarısı")
+            .setContentText("$medicineName - $remainingStock doz kaldı!")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("📦 $medicineName ilacınızdan sadece $remainingStock doz kaldı.\n\n💊 Eczaneden temin etmeyi unutmayın!")
+                    .setBigContentTitle("⚠️ Düşük Stok Uyarısı")
+                    .setSummaryText("Dozi")
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(contentIntent)
+            .build()
+
+        // Her ilaç için benzersiz bildirim ID'si (medicineName hashCode)
+        nm.notify(NOTIF_ID + 1000 + medicineName.hashCode(), notification)
+    }
+
+    /**
+     * 🚨 Stok bitti bildirimi göster (eczane önerisi)
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showOutOfStockNotification(
+        context: Context,
+        medicineName: String
+    ) {
+        createDoziChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        // Haritalar uygulamasına yönlendir (eczane ara)
+        val mapIntent = Intent(Intent.ACTION_VIEW).apply {
+            data = android.net.Uri.parse("geo:0,0?q=eczane")
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+
+        val mapPendingIntent = PendingIntent.getActivity(
+            context,
+            medicineName.hashCode() + 1,
+            mapIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        // Ana ekrana yönlendir
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "medicine_list")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#EF5350")) // Kırmızı renk (acil)
+            .setContentTitle("🚨 Stok Bitti!")
+            .setContentText("$medicineName ilacınız tükendi!")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("🚨 $medicineName ilacınızın stoğu bitti!\n\n🏥 En yakın eczaneyi bulmak için dokunun.")
+                    .setBigContentTitle("🚨 Stok Bitti!")
+                    .setSummaryText("Dozi")
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(contentIntent)
+            .addAction(
+                R.drawable.ic_notification_pill,
+                "🏥 Eczane Bul",
+                mapPendingIntent
+            )
+            .build()
+
+        // Her ilaç için benzersiz bildirim ID'si
+        nm.notify(NOTIF_ID + 2000 + medicineName.hashCode(), notification)
+    }
+
+    /**
+     * 🔕 DND (Do Not Disturb) kontrolü
+     * @return true ise bildirim gösterilebilir, false ise DND aktif
+     */
+    fun shouldShowNotification(
+        user: User?,
+        medicineCriticality: MedicineCriticality = MedicineCriticality.ROUTINE
+    ): Boolean {
+        // Kullanıcı yoksa veya DND kapalıysa bildirim göster
+        if (user == null || !user.dndEnabled) {
+            return true
+        }
+
+        // Kritik ilaçlar DND'yi bypass eder
+        if (medicineCriticality == MedicineCriticality.CRITICAL) {
+            return true
+        }
+
+        // Şu anki saat DND saatleri içinde mi kontrol et
+        val now = Calendar.getInstance()
+        val currentHour = now.get(Calendar.HOUR_OF_DAY)
+        val currentMinute = now.get(Calendar.MINUTE)
+        val currentTimeInMinutes = currentHour * 60 + currentMinute
+
+        val dndStartInMinutes = user.dndStartHour * 60 + user.dndStartMinute
+        val dndEndInMinutes = user.dndEndHour * 60 + user.dndEndMinute
+
+        val isInDndPeriod = if (dndStartInMinutes <= dndEndInMinutes) {
+            // Normal durum: 22:00 - 08:00
+            currentTimeInMinutes >= dndStartInMinutes && currentTimeInMinutes < dndEndInMinutes
+        } else {
+            // Gece yarısını geçen durum: 22:00 - 02:00
+            currentTimeInMinutes >= dndStartInMinutes || currentTimeInMinutes < dndEndInMinutes
+        }
+
+        // IMPORTANT ilaçlar DND'de sessiz gösterilir
+        if (medicineCriticality == MedicineCriticality.IMPORTANT && isInDndPeriod) {
+            // Sessiz bildirim için hala true döndür ama caller'da sessiz yapılacak
+            return true
+        }
+
+        // ROUTINE ilaçlar DND'de gösterilmez
+        return !isInDndPeriod
+    }
+
+    /**
+     * 🔔 Adaptive timing - İlaç zamanını kullanıcı tercihine göre ayarla
+     */
+    fun adjustTimeWithAdaptiveTiming(
+        originalTime: String,  // "08:00"
+        user: User?
+    ): String {
+        if (user == null || !user.adaptiveTimingEnabled) {
+            return originalTime
+        }
+
+        try {
+            val parts = originalTime.split(":")
+            val hour = parts.getOrNull(0)?.toIntOrNull() ?: return originalTime
+            val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+
+            // Sabah ilaçları (6-11 arası) kullanıcının tercih ettiği sabah saatine kaydır
+            val adjustedHour = when (hour) {
+                in 6..11 -> {
+                    // Kullanıcının sabah tercihi ile değiştir
+                    user.preferredMorningHour
+                }
+                in 18..22 -> {
+                    // Kullanıcının akşam tercihi ile değiştir
+                    user.preferredEveningHour
+                }
+                else -> hour  // Diğer saatler değişmez
+            }
+
+            return String.format("%02d:%02d", adjustedHour, minute)
+        } catch (e: Exception) {
+            return originalTime
+        }
+    }
+
+    /**
+     * 🚨 Bildirim prioritesi belirle (kritiklik seviyesine göre)
+     */
+    fun getNotificationPriority(
+        medicineCriticality: MedicineCriticality,
+        isInDndPeriod: Boolean
+    ): Int {
+        return when {
+            medicineCriticality == MedicineCriticality.CRITICAL -> NotificationCompat.PRIORITY_MAX
+            medicineCriticality == MedicineCriticality.IMPORTANT && isInDndPeriod -> NotificationCompat.PRIORITY_LOW
+            medicineCriticality == MedicineCriticality.IMPORTANT -> NotificationCompat.PRIORITY_HIGH
+            else -> NotificationCompat.PRIORITY_DEFAULT
+        }
     }
 }

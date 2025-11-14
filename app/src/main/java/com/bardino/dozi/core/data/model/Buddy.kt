@@ -23,14 +23,103 @@ data class Buddy(
 )
 
 /**
+ * Buddy rolleri
+ */
+enum class BuddyRole {
+    VIEWER,      // Sadece görüntüleme
+    HELPER,      // İlaç aldı işaretleyebilir
+    CAREGIVER,   // İlaç ekle/düzenle
+    ADMIN        // Tüm yetkiler
+}
+
+/**
  * Buddy izinleri
  */
 data class BuddyPermissions(
-    val canViewReminders: Boolean = true,        // Hatırlatmaları görüntüleyebilir
-    val canReceiveNotifications: Boolean = true, // Bildirim alabilir
-    val canEditReminders: Boolean = false,       // Hatırlatmaları düzenleyebilir
-    val canViewMedicationHistory: Boolean = true // İlaç geçmişini görüntüleyebilir
-)
+    val role: BuddyRole = BuddyRole.VIEWER,       // Buddy rolü
+    val canViewReminders: Boolean = true,         // Hatırlatmaları görüntüleyebilir
+    val canReceiveNotifications: Boolean = true,  // Bildirim alabilir
+    val canMarkAsTaken: Boolean = false,          // İlaç aldı işaretleyebilir
+    val canEditReminders: Boolean = false,        // Hatırlatmaları düzenleyebilir
+    val canAddMedicine: Boolean = false,          // Yeni ilaç ekleyebilir
+    val canDeleteMedicine: Boolean = false,       // İlaç silebilir
+    val canViewMedicationHistory: Boolean = true, // İlaç geçmişini görüntüleyebilir
+    val canManageBuddies: Boolean = false         // Diğer buddy'leri yönetebilir
+) {
+    companion object {
+        /**
+         * Rol bazlı izin seti döndür
+         */
+        fun fromRole(role: BuddyRole): BuddyPermissions {
+            return when (role) {
+                BuddyRole.VIEWER -> BuddyPermissions(
+                    role = role,
+                    canViewReminders = true,
+                    canReceiveNotifications = true,
+                    canMarkAsTaken = false,
+                    canEditReminders = false,
+                    canAddMedicine = false,
+                    canDeleteMedicine = false,
+                    canViewMedicationHistory = true,
+                    canManageBuddies = false
+                )
+                BuddyRole.HELPER -> BuddyPermissions(
+                    role = role,
+                    canViewReminders = true,
+                    canReceiveNotifications = true,
+                    canMarkAsTaken = true,          // ✅ İlaç aldı işaretleyebilir
+                    canEditReminders = false,
+                    canAddMedicine = false,
+                    canDeleteMedicine = false,
+                    canViewMedicationHistory = true,
+                    canManageBuddies = false
+                )
+                BuddyRole.CAREGIVER -> BuddyPermissions(
+                    role = role,
+                    canViewReminders = true,
+                    canReceiveNotifications = true,
+                    canMarkAsTaken = true,
+                    canEditReminders = true,        // ✅ İlaç düzenleyebilir
+                    canAddMedicine = true,          // ✅ İlaç ekleyebilir
+                    canDeleteMedicine = false,
+                    canViewMedicationHistory = true,
+                    canManageBuddies = false
+                )
+                BuddyRole.ADMIN -> BuddyPermissions(
+                    role = role,
+                    canViewReminders = true,
+                    canReceiveNotifications = true,
+                    canMarkAsTaken = true,
+                    canEditReminders = true,
+                    canAddMedicine = true,
+                    canDeleteMedicine = true,       // ✅ İlaç silebilir
+                    canViewMedicationHistory = true,
+                    canManageBuddies = true         // ✅ Buddy'leri yönetebilir
+                )
+            }
+        }
+    }
+}
+
+/**
+ * Buddy rolü için Türkçe isimler
+ */
+fun BuddyRole.toTurkish(): String = when (this) {
+    BuddyRole.VIEWER -> "İzleyici"
+    BuddyRole.HELPER -> "Yardımcı"
+    BuddyRole.CAREGIVER -> "Bakıcı"
+    BuddyRole.ADMIN -> "Yönetici"
+}
+
+/**
+ * Buddy rolü için açıklama
+ */
+fun BuddyRole.toDescription(): String = when (this) {
+    BuddyRole.VIEWER -> "Sadece ilaç hatırlatmalarını ve geçmişi görüntüleyebilir"
+    BuddyRole.HELPER -> "İlaç alındı olarak işaretleyebilir"
+    BuddyRole.CAREGIVER -> "İlaç ekleyebilir ve düzenleyebilir"
+    BuddyRole.ADMIN -> "Tüm yetkiler (ilaç ekleme, silme, buddy yönetimi)"
+}
 
 /**
  * Buddy bildirim tercihleri

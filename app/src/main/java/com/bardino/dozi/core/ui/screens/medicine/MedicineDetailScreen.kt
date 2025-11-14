@@ -9,13 +9,15 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
-import com.bardino.dozi.core.data.Medicine
-import com.bardino.dozi.core.data.MedicineRepository
+import kotlinx.coroutines.launch
+import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 
@@ -26,18 +28,28 @@ fun MedicineDetailScreen(
     onEditMedicine: (String) -> Unit
 ) {
     val context = LocalContext.current
+    val repository = remember { MedicineRepository() }
 
     // Mevcut ilacı yükle
-    val medicine by remember {
-        mutableStateOf(
-            MedicineRepository.getMedicine(context, medicineId) ?: Medicine(
-                id = medicineId,
-                name = "Bilinmiyor",
-                dosage = "-",
-                stock = 0
-            )
-        )
+    var medicine by remember { mutableStateOf<Medicine?>(null) }
+    var isLoading by remember { mutableStateOf(true) }
+
+    LaunchedEffect(medicineId) {
+        medicine = repository.getMedicine(medicineId)
+        isLoading = false
     }
+
+    if (isLoading || medicine == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            CircularProgressIndicator(color = DoziTurquoise)
+        }
+        return
+    }
+
+    val med = medicine!! // Non-null assertion safe here
 
     Scaffold(
         topBar = {
@@ -48,7 +60,7 @@ fun MedicineDetailScreen(
                 backgroundColor = Color.White,
                 actions = {
                     IconButton(
-                        onClick = { onEditMedicine(medicine.id) },
+                        onClick = { onEditMedicine(med.id) },
                         modifier = Modifier
                             .size(46.dp)
                             .background(DoziTurquoise.copy(alpha = 0.1f), CircleShape)
@@ -80,11 +92,19 @@ fun MedicineDetailScreen(
             ) {
                 Column(
                     Modifier.padding(20.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    DetailRow("İlaç Adı", medicine.name)
-                    DetailRow("Dozaj", medicine.dosage)
-                    DetailRow("Stok", "${medicine.stock} adet")
+                    DetailRow("İlaç Adı", med.name)
+                    DetailRow("Dozaj", "${med.dosage} ${med.unit}")
+
+                    // 📊 Stok Progress Bar
+                    StockProgressIndicator(
+                        currentStock = med.stockCount,
+                        boxSize = med.boxSize
+                    )
+
+                    DetailRow("Form", med.form)
+                    DetailRow("Kullanım Sıklığı", med.frequency)
                 }
             }
 
@@ -112,5 +132,88 @@ private fun DetailRow(label: String, value: String) {
             fontWeight = FontWeight.Bold,
             color = TextPrimaryLight
         )
+    }
+}
+
+/**
+ * 📊 Stok göstergesi (progress bar)
+ */
+@Composable
+private fun StockProgressIndicator(
+    currentStock: Int,
+    boxSize: Int
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        // Label
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Text(
+                text = "Stok Durumu",
+                style = MaterialTheme.typography.labelMedium,
+                color = TextSecondaryLight
+            )
+            Text(
+                text = "$currentStock / $boxSize ${if (boxSize > 0) "adet" else ""}",
+                style = MaterialTheme.typography.titleSmall,
+                fontWeight = FontWeight.Bold,
+                color = getStockColor(currentStock, boxSize)
+            )
+        }
+
+        // Progress bar
+        if (boxSize > 0) {
+            val progress = (currentStock.toFloat() / boxSize.toFloat()).coerceIn(0f, 1f)
+
+            LinearProgressIndicator(
+                progress = progress,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(12.dp),
+                color = getStockColor(currentStock, boxSize),
+                trackColor = VeryLightGray,
+            )
+
+            // Stok uyarı mesajı
+            when {
+                currentStock == 0 -> {
+                    Text(
+                        text = "🚨 Stok bitti! Eczaneden temin edin.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFEF5350),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+                currentStock <= 5 -> {
+                    Text(
+                        text = "⚠️ Düşük stok! Eczaneden temin etmeyi unutmayın.",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = Color(0xFFFFA726),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
+        } else {
+            Text(
+                text = "$currentStock adet",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimaryLight
+            )
+        }
+    }
+}
+
+/**
+ * Stok seviyesine göre renk döndür
+ */
+private fun getStockColor(currentStock: Int, boxSize: Int): Color {
+    return when {
+        currentStock == 0 -> Color(0xFFEF5350) // Kırmızı - Stok bitti
+        currentStock <= 5 -> Color(0xFFFFA726) // Turuncu - Düşük stok
+        boxSize > 0 && currentStock.toFloat() / boxSize.toFloat() < 0.25f -> Color(0xFFFFA726) // Turuncu - %25'in altında
+        else -> Color(0xFF66BB6A) // Yeşil - Yeterli stok
     }
 }

@@ -33,17 +33,18 @@ data class DoziNotification(
  * Bildirim türü
  */
 enum class NotificationType {
-    GENERAL,                // Genel bildirim
-    BUDDY_REQUEST,          // Buddy isteği
-    BUDDY_ACCEPTED,         // Buddy isteği kabul edildi
-    BUDDY_REJECTED,         // Buddy isteği reddedildi
-    MEDICATION_REMINDER,    // İlaç hatırlatması
-    BUDDY_MEDICATION_ALERT, // Buddy ilaç uyarısı
-    MEDICATION_TAKEN,       // İlaç alındı bildirimi
-    MEDICATION_MISSED,      // İlaç kaçırıldı uyarısı
-    STOCK_LOW,              // Stok azaldı
-    STOCK_EMPTY,            // Stok bitti
-    SYSTEM                  // Sistem bildirimi
+    GENERAL,                        // Genel bildirim
+    BUDDY_REQUEST,                  // Buddy isteği
+    BUDDY_ACCEPTED,                 // Buddy isteği kabul edildi
+    BUDDY_REJECTED,                 // Buddy isteği reddedildi
+    MEDICATION_REMINDER,            // İlaç hatırlatması
+    BUDDY_MEDICATION_ALERT,         // Buddy ilaç uyarısı
+    MEDICATION_TAKEN,               // İlaç alındı bildirimi
+    MEDICATION_MISSED,              // İlaç kaçırıldı uyarısı
+    CRITICAL_MEDICATION_MISSED,     // 🚨 Kritik ilaç kaçırıldı (escalation)
+    STOCK_LOW,                      // Stok azaldı
+    STOCK_EMPTY,                    // Stok bitti
+    SYSTEM                          // Sistem bildirimi
 }
 
 /**
@@ -67,6 +68,7 @@ fun NotificationType.toTurkish(): String = when (this) {
     NotificationType.BUDDY_MEDICATION_ALERT -> "Buddy İlaç Uyarısı"
     NotificationType.MEDICATION_TAKEN -> "İlaç Alındı"
     NotificationType.MEDICATION_MISSED -> "İlaç Kaçırıldı"
+    NotificationType.CRITICAL_MEDICATION_MISSED -> "Kritik İlaç Kaçırıldı"
     NotificationType.STOCK_LOW -> "Stok Azaldı"
     NotificationType.STOCK_EMPTY -> "Stok Bitti"
     NotificationType.SYSTEM -> "Sistem"
@@ -84,6 +86,7 @@ fun NotificationType.toEmoji(): String = when (this) {
     NotificationType.BUDDY_MEDICATION_ALERT -> "⚠️"
     NotificationType.MEDICATION_TAKEN -> "✅"
     NotificationType.MEDICATION_MISSED -> "❌"
+    NotificationType.CRITICAL_MEDICATION_MISSED -> "🚨"
     NotificationType.STOCK_LOW -> "📉"
     NotificationType.STOCK_EMPTY -> "🚫"
     NotificationType.SYSTEM -> "⚙️"
