@@ -24,7 +24,12 @@ val DoziCoralDark = Color(0xFFFF5252)
 val DoziPurpleLight = Color(0xFFFF8080)
 
 // --- DURUM RENKLERİ ---
-val SuccessGreen = Color(0xFF66BB6A)
+// ⚠️ KULLANIM REHBERİ:
+// ✅ DoziTurquoise → Ana tema rengi, seçimler, vurgular, butonlar
+// ✅ SuccessGreen → SADECE başarı durumları (onay, tamamlama)
+// ✅ WarningOrange/Amber → Uyarılar, dikkat gereken durumlar
+// ✅ ErrorRed → Hatalar, silme işlemleri
+val SuccessGreen = Color(0xFF66BB6A)     // Başarı mesajları için
 val WarningAmber = Color(0xFFFFCA28)
 val WarningOrange = Color(0xFFF59E0B)
 val ErrorRed = Color(0xFFEF5350)
