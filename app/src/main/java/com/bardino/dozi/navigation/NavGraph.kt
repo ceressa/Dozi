@@ -248,7 +248,6 @@ fun NavGraph(
 
             composable(Screen.OnboardingMedicine.route) {
                 OnboardingMedicineScreen(
-                    navController = navController,
                     onNext = { navController.navigate(Screen.OnboardingName.route) }
                 )
             }
@@ -273,18 +272,13 @@ fun NavGraph(
 
             composable(Screen.OnboardingReminder.route) {
                 OnboardingReminderScreen(
-                    navController = navController,
                     onNext = { navController.navigate(Screen.OnboardingHomeTour.route) }
                 )
             }
 
             composable(Screen.OnboardingHomeTour.route) {
                 OnboardingHomeTourScreen(
-                    navController = navController,
-                    onNext = { navController.navigate(Screen.OnboardingPremium.route) },
-                    onNavigateToMedicines = {},
-                    onNavigateToReminders = {},
-                    onNavigateToProfile = {}
+                    onNext = { navController.navigate(Screen.OnboardingPremium.route) }
                 )
             }
 
