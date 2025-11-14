@@ -70,13 +70,23 @@ fun OnboardingHomeTourScreen(
     ) {
         Spacer(Modifier.height(40.dp))
 
-        // Dozi karakteri
-        AnimatedVisibility(
-            visible = true,
-            enter = fadeIn() + scaleIn()
-        ) {
+        // Dozi karakteri - Değişen ifadeler
+        AnimatedContent(
+            targetState = currentStep,
+            transitionSpec = {
+                fadeIn() + scaleIn() togetherWith fadeOut() + scaleOut()
+            },
+            label = "dozi_animation"
+        ) { step ->
             Image(
-                painter = painterResource(id = R.drawable.dozi),
+                painter = painterResource(
+                    id = when (step) {
+                        0 -> R.drawable.dozi_happy2  // Ana ekran - heyecanlı
+                        1 -> R.drawable.dozi_ok      // Hatırlatmalar - onaylıyor
+                        2 -> R.drawable.dozi_noted   // İlaç listesi - not alıyor
+                        else -> R.drawable.dozi_happy // Buddy - mutlu
+                    }
+                ),
                 contentDescription = "Dozi",
                 modifier = Modifier
                     .size(140.dp)

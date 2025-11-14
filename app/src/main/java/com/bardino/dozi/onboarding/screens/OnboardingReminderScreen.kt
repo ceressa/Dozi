@@ -37,12 +37,12 @@ fun OnboardingReminderScreen(
     ) {
         Spacer(Modifier.height(60.dp))
 
-        // Dozi karakteri
+        // Dozi karakteri - Onaylayan Dozi (hatırlatma kuruyor)
         Image(
-            painter = painterResource(id = R.drawable.dozi),
+            painter = painterResource(id = R.drawable.dozi_ok),
             contentDescription = "Dozi",
             modifier = Modifier
-                .size(120.dp)
+                .size(140.dp)
                 .shadow(8.dp, CircleShape)
         )
 
