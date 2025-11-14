@@ -32,7 +32,8 @@ data class OnboardingPage(
     val title: String,
     val description: String,
     val icon: ImageVector,
-    val backgroundColor: List<Color>
+    val backgroundColor: List<Color>,
+    val doziImage: Int  // Drawable resource ID
 )
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,25 +48,29 @@ fun OnboardingScreen(
                 title = "Dozi'ye Hoş Geldin!",
                 description = "İlaç takibini kolaylaştır, sağlığını kontrol altında tut. Hiç ilaç almayı unutma!",
                 icon = Icons.Default.MedicalServices,
-                backgroundColor = listOf(DoziTurquoise, DoziTurquoiseDark)
+                backgroundColor = listOf(DoziTurquoise, DoziTurquoiseDark),
+                doziImage = R.drawable.dozi_hosgeldin
             ),
             OnboardingPage(
                 title = "Hatırlatmalar",
                 description = "İlaçlarını zamanında almak için özel hatırlatmalar oluştur. Günlük, haftalık veya özel takvim.",
                 icon = Icons.Default.Notifications,
-                backgroundColor = listOf(DoziBlue, Color(0xFF0288D1))
+                backgroundColor = listOf(DoziBlue, Color(0xFF0288D1)),
+                doziImage = R.drawable.dozi_noted2
             ),
             OnboardingPage(
                 title = "İlaç Takibi",
                 description = "İlaç stoklarını takip et, reçete bilgilerini kaydet. Hangi ilacı ne zaman aldığını gör.",
                 icon = Icons.Default.EventNote,
-                backgroundColor = listOf(DoziCoral, DoziCoralDark)
+                backgroundColor = listOf(DoziCoral, DoziCoralDark),
+                doziImage = R.drawable.dozi_perfect
             ),
             OnboardingPage(
                 title = "Tüm Cihazlarda",
                 description = "Giriş yap ve verilerini tüm cihazlarında senkronize et. Her yerden erişim sağla.",
                 icon = Icons.Default.CloudSync,
-                backgroundColor = listOf(SuccessGreen, Color(0xFF388E3C))
+                backgroundColor = listOf(SuccessGreen, Color(0xFF388E3C)),
+                doziImage = R.drawable.dozi_king
             )
         )
     }
@@ -73,15 +78,20 @@ fun OnboardingScreen(
     val pagerState = rememberPagerState(pageCount = { pages.size })
     val scope = rememberCoroutineScope()
 
-    Box(
-        modifier = Modifier
-            .fillMaxSize()
-            .background(
-                brush = Brush.verticalGradient(
-                    colors = pages[pagerState.currentPage].backgroundColor
-                )
-            )
+    // Surface ile bottombar'ın üzerine çıkması için
+    Surface(
+        modifier = Modifier.fillMaxSize(),
+        color = Color.Transparent
     ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(
+                    brush = Brush.verticalGradient(
+                        colors = pages[pagerState.currentPage].backgroundColor
+                    )
+                )
+        ) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
@@ -213,6 +223,7 @@ fun OnboardingScreen(
 
             Spacer(modifier = Modifier.height(16.dp))
         }
+        }
     }
 }
 
@@ -227,13 +238,13 @@ private fun OnboardingPageContent(page: OnboardingPage) {
     ) {
         // Animated Icon with Dozi character
         AnimatedContent(
-            targetState = page.icon,
+            targetState = page.doziImage,
             transitionSpec = {
                 fadeIn(animationSpec = tween(600)) togetherWith
                         fadeOut(animationSpec = tween(600))
             },
             label = "icon_animation"
-        ) { icon ->
+        ) { doziImage ->
             Column(
                 horizontalAlignment = Alignment.CenterHorizontally,
                 verticalArrangement = Arrangement.spacedBy(24.dp)
@@ -245,7 +256,7 @@ private fun OnboardingPageContent(page: OnboardingPage) {
                     color = Color.White.copy(alpha = 0.2f)
                 ) {
                     Image(
-                        painter = painterResource(R.drawable.dozi_happy),
+                        painter = painterResource(doziImage),
                         contentDescription = "Dozi",
                         modifier = Modifier
                             .fillMaxSize()
@@ -265,7 +276,7 @@ private fun OnboardingPageContent(page: OnboardingPage) {
                         modifier = Modifier.fillMaxSize()
                     ) {
                         Icon(
-                            imageVector = icon,
+                            imageVector = page.icon,
                             contentDescription = null,
                             tint = page.backgroundColor[0],
                             modifier = Modifier.size(40.dp)
