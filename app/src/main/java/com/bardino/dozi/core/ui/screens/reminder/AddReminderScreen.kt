@@ -3,7 +3,6 @@ package com.bardino.dozi.core.ui.screens.reminder
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
-import android.media.MediaPlayer
 import android.os.Build
 import android.widget.Toast
 import androidx.annotation.RequiresApi
@@ -378,32 +377,19 @@ fun AddReminderScreen(
     }
 }
 
-private var currentMediaPlayer: MediaPlayer? = null
-
 private fun playStepSound(context: Context, step: Int, soundEnabled: Boolean) {
     if (!soundEnabled) return
 
     try {
-        currentMediaPlayer?.apply {
-            if (isPlaying) stop()
-            release()
-        }
-
-        val soundResId = when (step) {
-            1 -> R.raw.dozi_kadin_reminder1
-            2 -> R.raw.dozi_kadin_reminder2
-            3 -> R.raw.dozi_kadin_reminder3
-            4 -> R.raw.dozi_kadin_reminder4
+        val soundType = when (step) {
+            1 -> SoundHelper.SoundType.REMINDER_1
+            2 -> SoundHelper.SoundType.REMINDER_2
+            3 -> SoundHelper.SoundType.REMINDER_3
+            4 -> SoundHelper.SoundType.REMINDER_4
             else -> return
         }
 
-        currentMediaPlayer = MediaPlayer.create(context, soundResId)?.apply {
-            setOnCompletionListener {
-                release()
-                currentMediaPlayer = null
-            }
-            start()
-        }
+        SoundHelper.playSound(context, soundType)
     } catch (e: Exception) {
         e.printStackTrace()
     }
