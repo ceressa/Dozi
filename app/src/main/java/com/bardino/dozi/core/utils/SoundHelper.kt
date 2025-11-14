@@ -18,6 +18,7 @@ import kotlinx.coroutines.withContext
 object SoundHelper {
 
     private val userRepository = UserRepository()
+    private var currentMediaPlayer: MediaPlayer? = null
 
     enum class SoundType {
         ERTELE,
@@ -61,6 +62,7 @@ object SoundHelper {
 
     /**
      * Belirli bir cinsiyet için örnek ses çalar (ayarlar ekranı için)
+     * Önceki örnek ses çalıyorsa önce onu durdurur
      */
     fun playSampleSound(context: Context, voiceGender: String) {
         try {
@@ -125,12 +127,40 @@ object SoundHelper {
 
     /**
      * Raw resource'tan ses çalar
+     * Önceki ses çalıyorsa önce onu durdurur
      */
     private fun playRawSound(context: Context, soundResId: Int) {
         try {
+            // Önceki sesi durdur ve temizle
+            stopCurrentSound()
+
+            // Yeni sesi çal
             val player = MediaPlayer.create(context, soundResId)
-            player?.setOnCompletionListener { it.release() }
+            player?.setOnCompletionListener {
+                it.release()
+                if (currentMediaPlayer == it) {
+                    currentMediaPlayer = null
+                }
+            }
+            currentMediaPlayer = player
             player?.start()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        }
+    }
+
+    /**
+     * Çalan sesi durdurur ve temizler
+     */
+    fun stopCurrentSound() {
+        try {
+            currentMediaPlayer?.apply {
+                if (isPlaying) {
+                    stop()
+                }
+                release()
+            }
+            currentMediaPlayer = null
         } catch (e: Exception) {
             e.printStackTrace()
         }

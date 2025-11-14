@@ -8,7 +8,8 @@ data class Medicine(
     val id: String = "",
     val userId: String = "",                    // Firebase Auth UID
     val name: String = "",
-    val dosage: String = "",                    // "1 tablet", "2 kaşık" etc.
+    val dosage: String = "",                    // "1", "1.5", "2" etc.
+    val unit: String = "hap",                   // hap, doz, mg, ml, adet, damla, kaşık
     val form: String = "tablet",                // tablet, kapsül, şurup, damla
     val times: List<String> = emptyList(),      // ["09:00", "13:00", "21:00"]
     val days: List<String> = emptyList(),       // ["Pazartesi", "Salı"] or empty for everyday
