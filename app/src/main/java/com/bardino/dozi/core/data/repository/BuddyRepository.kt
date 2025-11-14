@@ -9,6 +9,7 @@ import com.google.firebase.Timestamp
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import java.util.*
 import kotlin.random.Random
@@ -35,6 +36,8 @@ class BuddyRepository(
             return@callbackFlow
         }
 
+        val scope = this
+
         val listener = db.collection("buddies")
             .whereEqualTo("userId", userId)
             .whereEqualTo("status", BuddyStatus.ACTIVE.name)
@@ -48,15 +51,19 @@ class BuddyRepository(
                     doc.toObject(Buddy::class.java)
                 } ?: emptyList()
 
-                // Her buddy için user bilgilerini çek
-                trySend(buddies.map { buddy ->
-                    val user = getUserById(buddy.buddyUserId)
-                    BuddyWithUser(buddy, user)
-                })
+                // ❗ Suspend fonksiyon kullanacağımız için coroutine açıyoruz
+                scope.launch {
+                    val list = buddies.map { buddy ->
+                        val user = getUserById(buddy.buddyUserId)
+                        BuddyWithUser(buddy, user)
+                    }
+                    trySend(list).isSuccess
+                }
             }
 
         awaitClose { listener.remove() }
     }
+
 
     /**
      * Belirli bir buddy'yi ID ile getir
@@ -268,6 +275,8 @@ class BuddyRepository(
             return@callbackFlow
         }
 
+        val scope = this
+
         val listener = db.collection("buddy_requests")
             .whereEqualTo("toUserId", userId)
             .whereEqualTo("status", BuddyRequestStatus.PENDING.name)
@@ -282,15 +291,18 @@ class BuddyRepository(
                     doc.toObject(BuddyRequest::class.java)?.copy(id = doc.id)
                 } ?: emptyList()
 
-                // Her istek için user bilgilerini çek
-                trySend(requests.map { request ->
-                    val user = getUserById(request.fromUserId)
-                    BuddyRequestWithUser(request, user)
-                })
+                scope.launch {
+                    val list = requests.map { request ->
+                        val user = getUserById(request.fromUserId)
+                        BuddyRequestWithUser(request, user)
+                    }
+                    trySend(list).isSuccess
+                }
             }
 
         awaitClose { listener.remove() }
     }
+
 
     /**
      * Buddy isteğini kabul et

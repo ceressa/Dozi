@@ -161,7 +161,7 @@ export const onMedicationTaken = functions.firestore
             buddyName: user.name || "",
           },
           android: {
-            priority: "default" as const,
+            priority: "normal" as const,
             notification: {
               sound: "default",
               channelId: "dozi_med_channel",
