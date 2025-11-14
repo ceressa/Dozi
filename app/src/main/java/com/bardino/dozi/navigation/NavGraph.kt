@@ -45,6 +45,7 @@ fun NavGraph(
     onGoogleSignInClick: () -> Unit,
     startDestination: String = Screen.Home.route
 ) {
+    // Bottom bar sadece ana ekranlarda gösterilecek (onboarding ekranlarında değil)
     val bottomBarRoutes = setOf(
         Screen.Home.route,
         Screen.MedicineList.route,
@@ -281,15 +282,20 @@ fun NavGraph(
             composable(Screen.OnboardingPremium.route) {
                 OnboardingPremiumScreen(
                     onGoogleSignIn = {
-                        // TODO: Google Sign-In implementation
+                        // Onboarding tamamlandı olarak işaretle
                         OnboardingPreferences.setFirstTimeComplete(context)
-                        navController.navigate(Screen.Home.route) {
+                        // Google giriş yap
+                        onGoogleSignInClick()
+                        // Profile ekranına git (login ekranı)
+                        navController.navigate(Screen.Profile.route) {
                             popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
                         }
                     },
                     onSkip = {
+                        // Onboarding tamamlandı olarak işaretle
                         OnboardingPreferences.setFirstTimeComplete(context)
-                        navController.navigate(Screen.Home.route) {
+                        // Profile ekranına git (login yapmak için)
+                        navController.navigate(Screen.Profile.route) {
                             popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
                         }
                     }

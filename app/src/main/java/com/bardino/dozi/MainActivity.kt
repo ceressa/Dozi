@@ -141,10 +141,17 @@ class MainActivity : ComponentActivity() {
                     handleDeepLink(intent, navController!!)
                 }
 
+                // Başlangıç ekranını belirle
+                val startDestination = if (OnboardingPreferences.isFirstTime(this)) {
+                    Screen.OnboardingWelcome.route
+                } else {
+                    Screen.Home.route
+                }
+
                 NavGraph(
                     navController = navController!!,
-                    startDestination = Screen.Home.route,
-                    onGoogleSignInClick = { signInWithGoogle() } // 🔹 artık burada tanımlı
+                    startDestination = startDestination,
+                    onGoogleSignInClick = { signInWithGoogle() }
                 )
             }
         }
