@@ -170,7 +170,8 @@ fun AddReminderScreen(
 
     DisposableEffect(Unit) {
         onDispose {
-            // SoundHelper kendi ses yönetimini yapıyor
+            // Ekrandan çıkışta çalan sesi durdur
+            SoundHelper.stopCurrentSound()
         }
     }
 
