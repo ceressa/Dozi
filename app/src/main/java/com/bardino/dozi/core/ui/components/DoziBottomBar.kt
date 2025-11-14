@@ -1,6 +1,5 @@
 package com.bardino.dozi.core.ui.components
 
-import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.size
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -63,8 +62,7 @@ fun DoziBottomBar(
     NavigationBar(
         containerColor = Color(0xFF1A237E), // Koyu mavi - kontrast
         contentColor = Color.White,
-        tonalElevation = 8.dp,
-        modifier = Modifier.height(72.dp) // Biraz daha yüksek bar yaşlılar için
+        tonalElevation = 8.dp
     ) {
         items.forEach { item ->
             val selected = currentRoute == item.route
@@ -77,16 +75,18 @@ fun DoziBottomBar(
                     Icon(
                         item.icon,
                         contentDescription = item.label,
-                        modifier = Modifier.size(if (selected) 26.dp else 23.dp) // Biraz küçültüldü metin için yer açmak için
+                        modifier = Modifier.size(if (selected) 24.dp else 22.dp)
                     )
                 },
                 label = {
                     Text(
                         item.label,
-                        style = MaterialTheme.typography.labelSmall,
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            fontSize = 11.sp,
+                            lineHeight = 12.sp
+                        ),
                         maxLines = 1,
-                        overflow = TextOverflow.Ellipsis,
-                        fontSize = 10.sp
+                        overflow = TextOverflow.Ellipsis
                     )
                 },
                 selected = selected,
