@@ -8,8 +8,7 @@ import com.google.gson.reflect.TypeToken
 data class Medicine(
     val id: String,
     val name: String,
-    val dosage: String,
-
+    val dosage: String = "", // Artık opsiyonel, varsayılan boş string
     val stock: Int
 )
 

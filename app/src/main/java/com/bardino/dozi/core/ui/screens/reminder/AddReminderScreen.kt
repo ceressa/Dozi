@@ -37,6 +37,7 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.bardino.dozi.R
 import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.repository.MedicineRepository as FirestoreMedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
@@ -323,6 +324,11 @@ fun AddReminderScreen(
                                     onSuccess = {
                                         if (soundEnabled) playSuccessSound(context)
                                         showSuccess = true
+                                        // Onboarding state kontrolü
+                                        if (OnboardingPreferences.isInOnboarding(context) &&
+                                            OnboardingPreferences.getOnboardingStep(context) == "reminder") {
+                                            OnboardingPreferences.setOnboardingStep(context, "reminder_completed")
+                                        }
                                     },
                                     onError = {
                                         Toast.makeText(
