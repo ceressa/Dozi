@@ -116,9 +116,39 @@ class DoziMessagingService : FirebaseMessagingService() {
             return
         }
 
-        // Basit bildirim göster
-        // TODO: Genel bildirimler için ayrı bir helper fonksiyonu eklenebilir
-        Log.d(TAG, "Notification: $title - $body")
+        Log.d(TAG, "Showing notification: $title - $body")
+
+        // Notification channel'ı oluştur
+        NotificationHelper.createDoziChannel(this)
+
+        // Bildirim göster
+        val notificationId = System.currentTimeMillis().toInt()
+
+        val contentIntent = PendingIntent.getActivity(
+            this,
+            0,
+            Intent(this, com.bardino.dozi.MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+
+        val notification = androidx.core.app.NotificationCompat.Builder(this, NotificationHelper.CHANNEL_ID)
+            .setSmallIcon(com.bardino.dozi.R.drawable.ic_notification_pill)
+            .setContentTitle(title)
+            .setContentText(body)
+            .setAutoCancel(true)
+            .setContentIntent(contentIntent)
+            .setPriority(androidx.core.app.NotificationCompat.PRIORITY_HIGH)
+            .build()
+
+        try {
+            val notificationManager = androidx.core.app.NotificationManagerCompat.from(this)
+            notificationManager.notify(notificationId, notification)
+            Log.d(TAG, "✅ Notification displayed with ID: $notificationId")
+        } catch (e: SecurityException) {
+            Log.e(TAG, "❌ Notification permission denied", e)
+        }
     }
 
     /**
