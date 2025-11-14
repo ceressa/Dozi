@@ -149,14 +149,16 @@ fun MedicineEditScreen(
         }
     }
 
-    // Lookup'tan gelen veriyi temizle (bir kez okunsun diye)
+    // Lookup'tan gelen veriyi işle ve temizle
     LaunchedEffect(selectedMedicine) {
         if (selectedMedicine != null) {
             // Seçilen ilaçtan stok bilgisini çıkart
             selectedMedicine.item.Product_Name?.let { productName ->
                 val extracted = extractStockFromName(productName)
+                android.util.Log.d("MedicineEdit", "📦 Product: $productName, Extracted stock: $extracted")
                 if (extracted > 0 && existing == null) {
                     stock = extracted.toString()
+                    android.util.Log.d("MedicineEdit", "✅ Stock updated to: $stock")
                 }
             }
             savedStateHandle?.remove<IlacSearchResultParcelable>("selectedMedicine")

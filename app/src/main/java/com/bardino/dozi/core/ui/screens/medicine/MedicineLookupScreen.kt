@@ -34,6 +34,7 @@ import androidx.navigation.NavController
 import com.bardino.dozi.core.data.Ilac
 import com.bardino.dozi.core.data.IlacJsonRepository
 import com.bardino.dozi.core.data.IlacSearchResult
+import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.navigation.Screen
@@ -65,6 +66,15 @@ fun MedicineLookupScreen(
     var showDetail by remember { mutableStateOf(false) }
     var isSearching by remember { mutableStateOf(false) }
     var searchMode by remember { mutableStateOf("text") } // "text", "barcode", "voice"
+
+    // Onboarding'den ilaç eklendikten sonra geri dönme kontrolü
+    LaunchedEffect(Unit) {
+        if (OnboardingPreferences.isInOnboarding(context) &&
+            OnboardingPreferences.getOnboardingStep(context) == "medicine_completed") {
+            // İlaç eklendi, onboarding'e geri dön
+            onNavigateBack()
+        }
+    }
 
     // ✅ Barkod Tarayıcı
     val barcodeOptions = GmsBarcodeScannerOptions.Builder()
