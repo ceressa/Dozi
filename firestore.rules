@@ -1,0 +1,87 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Helper functions
+    function isAuthenticated() {
+      return request.auth != null;
+    }
+
+    function isOwner(userId) {
+      return isAuthenticated() && request.auth.uid == userId;
+    }
+
+    function isBuddy(userId) {
+      return isAuthenticated() && exists(
+        /databases/$(database)/documents/buddies/$(request.auth.uid + '_' + userId)
+      );
+    }
+
+    // Users collection
+    match /users/{userId} {
+      allow read: if isAuthenticated();
+      allow create: if isAuthenticated() && request.auth.uid == userId;
+      allow update: if isOwner(userId);
+      allow delete: if isOwner(userId);
+    }
+
+    // Buddies collection
+    match /buddies/{buddyId} {
+      allow read: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.buddyUserId == request.auth.uid
+      );
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.buddyUserId == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && (
+        resource.data.userId == request.auth.uid ||
+        resource.data.buddyUserId == request.auth.uid
+      );
+    }
+
+    // Buddy requests collection
+    match /buddy_requests/{requestId} {
+      allow read: if isAuthenticated() && (
+        resource.data.fromUserId == request.auth.uid ||
+        resource.data.toUserId == request.auth.uid
+      );
+      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.fromUserId;
+      allow update: if isAuthenticated() && (
+        resource.data.fromUserId == request.auth.uid ||
+        resource.data.toUserId == request.auth.uid
+      );
+      allow delete: if isAuthenticated() && resource.data.fromUserId == request.auth.uid;
+    }
+
+    // Reminders collection
+    match /reminders/{reminderId} {
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        isBuddy(resource.data.userId)
+      );
+      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // Medication logs collection
+    match /medication_logs/{logId} {
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        isBuddy(resource.data.userId)
+      );
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+
+    // Notifications collection
+    match /notifications/{notificationId} {
+      allow read: if isAuthenticated() && isOwner(resource.data.userId);
+      allow create: if isAuthenticated();
+      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+      allow delete: if isAuthenticated() && isOwner(resource.data.userId);
+    }
+  }
+}
