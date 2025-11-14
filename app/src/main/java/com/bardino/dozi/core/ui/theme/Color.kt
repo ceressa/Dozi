@@ -247,6 +247,9 @@ val DoziPurple = DoziSecondary
 @Deprecated("Use DoziSecondaryLight instead", ReplaceWith("DoziSecondaryLight"))
 val DoziPurpleLight = DoziSecondaryLight
 
+@Deprecated("Use WarningAmber instead", ReplaceWith("WarningAmber"))
+val WarningOrange = WarningAmber
+
 // GRADİENTLER (geriye uyumluluk)
 @Deprecated("Use GradientPrimary instead", ReplaceWith("GradientPrimary"))
 val GradientTurquoise = GradientPrimary
