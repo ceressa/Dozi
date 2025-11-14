@@ -184,6 +184,36 @@ fun SettingsScreen(
                     // 🔔 Test Bildirimi Butonu
                     TestNotificationButton()
                 }
+
+                // Ses Ayarları
+                SettingsSection(title = "Sesli Asistan") {
+                    var selectedVoiceGender by remember { mutableStateOf(userData?.voiceGender ?: "erkek") }
+
+                    SettingsDropdown(
+                        label = "Ses Seçimi",
+                        icon = Icons.Default.RecordVoiceOver,
+                        options = listOf(
+                            "erkek" to "🎙️ Ozan (Erkek Ses)",
+                            "kadin" to "🎙️ Efsun (Kadın Ses)"
+                        ),
+                        selectedValue = selectedVoiceGender,
+                        onValueChange = { newVoice ->
+                            selectedVoiceGender = newVoice
+                            scope.launch {
+                                try {
+                                    userRepository.updateUserField("voiceGender", newVoice)
+                                    Toast.makeText(
+                                        context,
+                                        "Ses değiştirildi: ${if (newVoice == "erkek") "Ozan" else "Efsun"}",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    )
+                }
             }
         }
     }

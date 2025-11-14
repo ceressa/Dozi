@@ -20,6 +20,7 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import com.bardino.dozi.R
 import com.bardino.dozi.notifications.NotificationHelper
+import com.bardino.dozi.core.utils.SoundHelper
 import java.util.*
 import kotlin.random.Random
 
@@ -63,8 +64,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         showToast(context, "$medicineName alındı olarak işaretlendi ✅")
 
-        // ✅ Yeni: başarı sesi
-        playRawSound(context, R.raw.hersey_tamam)
+        // ✅ Kullanıcının ses seçimine göre başarı sesi
+        SoundHelper.playSound(context, SoundHelper.SoundType.HERSEY_TAMAM)
     }
 
 
@@ -83,8 +84,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         showToast(context, "$medicineName atlandı 🚫")
 
-        // ✅ Yeni: atla sesi
-        playRawSound(context, R.raw.pekala)
+        // ✅ Kullanıcının ses seçimine göre atla sesi
+        SoundHelper.playSound(context, SoundHelper.SoundType.PEKALA)
     }
 
 
@@ -94,7 +95,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
         nm: NotificationManagerCompat
     ) {
         nm.cancel(NotificationHelper.NOTIF_ID)
-        playRawSound(context, R.raw.ertele)
+
+        // ✅ Kullanıcının ses seçimine göre erteleme sesi
+        SoundHelper.playSound(context, SoundHelper.SoundType.ERTELE)
 
         // ✅ Yeni: Dialog yerine Activity başlat
         val intent = Intent(context, SnoozePromptActivity::class.java).apply {
@@ -106,15 +109,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
 
 
-    private fun playRawSound(context: Context, soundResId: Int) {
-        try {
-            val player = android.media.MediaPlayer.create(context, soundResId)
-            player?.setOnCompletionListener { it.release() }
-            player?.start()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        }
-    }
 
 
     private fun showSmartSnoozeDialog(context: Context, medicineName: String) {
