@@ -20,10 +20,10 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.repository.MedicineRepository
-import com.bardino.dozi.core.ui.screens.home.playSound
 import com.bardino.dozi.core.ui.screens.home.saveMedicineStatus
 import com.bardino.dozi.core.ui.screens.home.getCurrentDateString
 import com.bardino.dozi.core.ui.theme.*
+import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.R
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -188,17 +188,17 @@ fun MedicationActionScreen(
                             time = time,
                             isCompleted = isCompleted,
                             onTaken = {
-                                playSound(context, R.raw.success)
+                                SoundHelper.playSound(context, SoundHelper.SoundType.HERSEY_TAMAM)
                                 handleMedicineTaken(context, medicine, time, medicineRepository)
                                 completedMedicines = completedMedicines + medicine.id
                             },
                             onSkipped = {
-                                playSound(context, R.raw.pekala)
+                                SoundHelper.playSound(context, SoundHelper.SoundType.PEKALA)
                                 handleMedicineSkipped(context, medicine, time)
                                 completedMedicines = completedMedicines + medicine.id
                             },
                             onSnoozed = { minutes ->
-                                playSound(context, R.raw.ertele)
+                                SoundHelper.playSound(context, SoundHelper.SoundType.ERTELE)
                                 handleMedicineSnoozed(context, medicine, time, minutes)
                                 completedMedicines = completedMedicines + medicine.id
                             }
