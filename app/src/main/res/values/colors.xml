@@ -1,10 +1,82 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- 🎨 DOZI RENK PALETİ - Pastel & Canlı Sağlık Teması                  -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Ana Marka Renkleri (Primary Brand Colors) -->
+    <!-- 💜 Lavender/Purple - Ana tema rengi -->
+    <color name="dozi_primary">#A78BFA</color>              <!-- Violet 400 -->
+    <color name="dozi_primary_light">#DDD6FE</color>        <!-- Violet 200 -->
+    <color name="dozi_primary_dark">#8B5CF6</color>         <!-- Violet 500 -->
+
+    <!-- 🧡 Coral/Rose - İkincil vurgu rengi -->
+    <color name="dozi_secondary">#FDA4AF</color>            <!-- Rose 300 -->
+    <color name="dozi_secondary_light">#FECDD3</color>      <!-- Rose 200 -->
+    <color name="dozi_secondary_dark">#FB7185</color>       <!-- Rose 400 -->
+
+    <!-- 🍑 Amber - Dikkat çekici accent rengi -->
+    <color name="dozi_accent">#FBBF24</color>               <!-- Amber 400 -->
+    <color name="dozi_accent_light">#FDE68A</color>         <!-- Amber 200 -->
+    <color name="dozi_accent_dark">#F59E0B</color>          <!-- Amber 500 -->
+
+    <!-- 🩵 Dozi Karakteri - Turkuaz (SADECE karakter için!) -->
+    <color name="dozi_character_light">#2DE1FF</color>      <!-- Üst bölge -->
+    <color name="dozi_character_dark">#009FD1</color>       <!-- Alt bölge -->
+    <color name="dozi_character_accent">#00D4FF</color>     <!-- Özel vurgular -->
+
+    <!-- Durum Renkleri (Semantic Colors) -->
+    <color name="success_green">#6EE7B7</color>             <!-- Emerald 300 -->
+    <color name="warning_amber">#FCD34D</color>             <!-- Amber 300 -->
+    <color name="error_red">#F87171</color>                 <!-- Red 400 -->
+    <color name="info_blue">#818CF8</color>                 <!-- Indigo 400 -->
+
+    <!-- Gri Skalası (Neutral Colors) -->
+    <color name="gray_100">#F5F5F5</color>
+    <color name="gray_200">#EEEEEE</color>
+    <color name="gray_300">#E0E0E0</color>
+    <color name="gray_400">#BDBDBD</color>
+    <color name="gray_500">#9E9E9E</color>
+    <color name="gray_600">#757575</color>
+    <color name="gray_700">#616161</color>
+    <color name="gray_800">#424242</color>
+    <color name="gray_900">#212121</color>
+
+    <!-- Metin Renkleri (Text Colors) -->
+    <color name="text_primary">#212121</color>              <!-- Gray 900 -->
+    <color name="text_secondary">#757575</color>            <!-- Gray 600 -->
+    <color name="text_tertiary">#9E9E9E</color>             <!-- Gray 500 -->
+    <color name="text_primary_dark">#F9FAFB</color>         <!-- Dark mode -->
+    <color name="text_secondary_dark">#D1D5DB</color>       <!-- Dark mode -->
+
+    <!-- Arka Plan Renkleri (Background Colors) - PASTEL & CANLI -->
+    <color name="background_light">#F3E8FF</color>          <!-- Purple 100 - belirgin lavanta -->
+    <color name="background_warm">#FED7AA</color>           <!-- Orange 200 - canlı peach -->
+    <color name="background_neutral">#FEF3C7</color>        <!-- Amber 100 - hafif sarımsı -->
+    <color name="background_dark">#121212</color>           <!-- Dark mode -->
+
+    <!-- Surface Renkleri (Card/Surface Colors) -->
+    <color name="surface_light">#FFFFFF</color>             <!-- Beyaz kartlar -->
+    <color name="surface_elevated">#FEF3C7</color>          <!-- Amber 100 - sarı glow -->
+    <color name="surface_tinted">#FCE7F3</color>            <!-- Pink 100 - pembe tint -->
+    <color name="surface_lavender">#EDE9FE</color>          <!-- Violet 100 - lavender tint -->
+    <color name="surface_dark">#1E1E1E</color>              <!-- Dark mode kartlar -->
+    <color name="surface_dark_elevated">#2C2C2E</color>     <!-- Dark mode yükseltilmiş -->
+
+    <!-- Yardımcı Renkler (Utility Colors) -->
+    <color name="overlay">#80000000</color>                 <!-- 50% siyah -->
+    <color name="overlay_light">#40000000</color>           <!-- 25% siyah -->
+    <color name="white">#FFFFFFFF</color>
+    <color name="black">#FF000000</color>
+
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+    <!-- ⚠️ DEPRECATED - Geriye Uyumluluk İçin (Kullanmayın!)               -->
+    <!-- ════════════════════════════════════════════════════════════════════ -->
+
+    <!-- Eski Material template renkleri (kullanılmıyor) -->
     <color name="purple_200">#FFBB86FC</color>
     <color name="purple_500">#FF6200EE</color>
     <color name="purple_700">#FF3700B3</color>
     <color name="teal_200">#FF03DAC5</color>
     <color name="teal_700">#FF018786</color>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
 </resources>
