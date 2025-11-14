@@ -17,7 +17,9 @@ export const onBuddyRequestCreated = functions.firestore
     const requestId = context.params.requestId;
 
     console.log(`📬 Yeni buddy isteği: ${requestId}`);
-    console.log(`From: ${request.fromUserId} → To: ${request.toUserId}`);
+    const from = request.fromUserId;
+    const to = request.toUserId;
+    console.log(`From: ${from} → To: ${to}`);
 
     try {
       // Alıcının FCM token'ını al
@@ -35,11 +37,13 @@ export const onBuddyRequestCreated = functions.firestore
       }
 
       // Push notification gönder
+      const fromName = request.fromUserName;
+      const notifBody = `${fromName} seni buddy olarak eklemek istiyor!`;
       const message = {
         token: toUser.fcmToken,
         notification: {
           title: "🤝 Yeni Buddy İsteği",
-          body: `${request.fromUserName} seni buddy olarak eklemek istiyor!`,
+          body: notifBody,
         },
         data: {
           type: "buddy_request",
@@ -126,32 +130,38 @@ export const onMedicationTaken = functions.firestore
         return null;
       }
 
-      const promises: Promise<any>[] = [];
+      const promises: Promise<unknown>[] = [];
 
       for (const buddyDoc of buddiesSnapshot.docs) {
         const buddy = buddyDoc.data();
 
         // Buddy'nin bildirim tercihini kontrol et
-        if (!buddy.notificationPreferences?.onMedicationTaken) {
-          console.log(`⏭️ Buddy bildirim almak istemiyor: ${buddy.buddyUserId}`);
+        const prefs = buddy.notificationPreferences;
+        if (!prefs?.onMedicationTaken) {
+          const buddyUid = buddy.buddyUserId;
+          console.log(`⏭️ Buddy bildirim almak istemiyor: ${buddyUid}`);
           continue;
         }
 
         // Buddy'nin FCM token'ını al
-        const buddyUserDoc = await db.collection("users").doc(buddy.buddyUserId).get();
+        const buddyUid = buddy.buddyUserId;
+        const buddyUserDoc = await db.collection("users").doc(buddyUid).get();
         const buddyUser = buddyUserDoc.data();
 
         if (!buddyUser || !buddyUser.fcmToken) {
-          console.warn(`⚠️ Buddy kullanıcı/token yok: ${buddy.buddyUserId}`);
+          console.warn(`⚠️ Buddy kullanıcı/token yok: ${buddyUid}`);
           continue;
         }
 
         // Push notification gönder
+        const userName = user.name || "Buddy'niz";
+        const medName = log.medicineName;
+        const notifBody = `${userName} ${medName} ilacını aldı`;
         const message = {
           token: buddyUser.fcmToken,
           notification: {
             title: "✅ İlaç Alındı",
-            body: `${user.name || "Buddy'niz"} ${log.medicineName} ilacını aldı`,
+            body: notifBody,
           },
           data: {
             type: "medication_taken",
@@ -173,7 +183,8 @@ export const onMedicationTaken = functions.firestore
           messaging
             .send(message)
             .then(async () => {
-              console.log(`✅ Bildirim gönderildi: ${buddy.buddyUserId}`);
+              const uid = buddy.buddyUserId;
+              console.log(`✅ Bildirim gönderildi: ${uid}`);
 
               // Notification kaydı oluştur
               await db.collection("notifications").add({
@@ -190,13 +201,15 @@ export const onMedicationTaken = functions.firestore
               });
             })
             .catch((error) => {
-              console.error(`❌ Bildirim hatası (${buddy.buddyUserId}):`, error);
+              const uid = buddy.buddyUserId;
+              console.error(`❌ Bildirim hatası (${uid}):`, error);
             })
         );
       }
 
       await Promise.all(promises);
-      console.log(`✅ ${promises.length} buddy'ye bildirim gönderildi`);
+      const count = promises.length;
+      console.log(`✅ ${count} buddy'ye bildirim gönderildi`);
     } catch (error) {
       console.error("❌ onMedicationTaken hatası:", error);
     }
@@ -242,35 +255,40 @@ export const sendMedicationReminderToBuddies = functions.https.onCall(
       console.log(`👥 ${buddiesSnapshot.size} aktif buddy bulundu`);
 
       if (buddiesSnapshot.empty) {
-        return { success: true, sentCount: 0, message: "Aktif buddy yok" };
+        return {success: true, sentCount: 0, message: "Aktif buddy yok"};
       }
 
-      const promises: Promise<any>[] = [];
+      const promises: Promise<unknown>[] = [];
 
       for (const buddyDoc of buddiesSnapshot.docs) {
         const buddy = buddyDoc.data();
 
         // Buddy'nin bildirim tercihini kontrol et
-        if (!buddy.notificationPreferences?.onMedicationTime) {
-          console.log(`⏭️ Buddy bildirim almak istemiyor: ${buddy.buddyUserId}`);
+        const prefs = buddy.notificationPreferences;
+        if (!prefs?.onMedicationTime) {
+          const buddyUid = buddy.buddyUserId;
+          console.log(`⏭️ Buddy bildirim almak istemiyor: ${buddyUid}`);
           continue;
         }
 
         // Buddy'nin FCM token'ını al
-        const buddyUserDoc = await db.collection("users").doc(buddy.buddyUserId).get();
+        const buddyUid = buddy.buddyUserId;
+        const buddyUserDoc = await db.collection("users").doc(buddyUid).get();
         const buddyUser = buddyUserDoc.data();
 
         if (!buddyUser || !buddyUser.fcmToken) {
-          console.warn(`⚠️ Buddy kullanıcı/token yok: ${buddy.buddyUserId}`);
+          console.warn(`⚠️ Buddy kullanıcı/token yok: ${buddyUid}`);
           continue;
         }
 
         // Push notification gönder
+        const userName = user.name || "Buddy'niz";
+        const body = `${userName} - ${medicineName} ${dosage} (${time})`;
         const message = {
           token: buddyUser.fcmToken,
           notification: {
             title: "💊 Buddy İlaç Hatırlatması",
-            body: `${user.name || "Buddy'niz"} - ${medicineName} ${dosage} alma zamanı (${time})`,
+            body: body,
           },
           data: {
             type: "buddy_medication_reminder",
@@ -293,7 +311,8 @@ export const sendMedicationReminderToBuddies = functions.https.onCall(
           messaging
             .send(message)
             .then(async () => {
-              console.log(`✅ Hatırlatma gönderildi: ${buddy.buddyUserId}`);
+              const uid = buddy.buddyUserId;
+              console.log(`✅ Hatırlatma gönderildi: ${uid}`);
 
               // Notification kaydı oluştur
               await db.collection("notifications").add({
@@ -310,7 +329,8 @@ export const sendMedicationReminderToBuddies = functions.https.onCall(
               });
             })
             .catch((error) => {
-              console.error(`❌ Hatırlatma hatası (${buddy.buddyUserId}):`, error);
+              const uid = buddy.buddyUserId;
+              console.error(`❌ Hatırlatma hatası (${uid}):`, error);
             })
         );
       }
@@ -338,7 +358,7 @@ export const sendMedicationReminderToBuddies = functions.https.onCall(
  */
 export const checkMissedMedications = functions.pubsub
   .schedule("every 15 minutes")
-  .onRun(async (context) => {
+  .onRun(async () => {
     console.log("🔍 Kaçırılan ilaçlar kontrol ediliyor...");
 
     try {
@@ -359,7 +379,7 @@ export const checkMissedMedications = functions.pubsub
         return null;
       }
 
-      const promises: Promise<any>[] = [];
+      const promises: Promise<unknown>[] = [];
 
       for (const logDoc of missedLogsSnapshot.docs) {
         const log = logDoc.data();
@@ -435,10 +455,12 @@ export const checkMissedMedications = functions.pubsub
       }
 
       await Promise.all(promises);
-      console.log(`✅ ${promises.length} kaçırma bildirimi gönderildi`);
+      const count = promises.length;
+      console.log(`✅ ${count} kaçırma bildirimi gönderildi`);
     } catch (error) {
       console.error("❌ checkMissedMedications hatası:", error);
     }
 
     return null;
   });
+
