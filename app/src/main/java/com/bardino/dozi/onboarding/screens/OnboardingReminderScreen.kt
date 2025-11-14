@@ -47,19 +47,19 @@ fun OnboardingReminderScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(BackgroundLight)
-            .padding(24.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(24.dp))
 
         // Dozi karakteri - Öğretici Dozi 2 (transparan arka plan)
         Image(
             painter = painterResource(id = R.drawable.dozi_teach2),
             contentDescription = "Dozi",
-            modifier = Modifier.size(140.dp)
+            modifier = Modifier.size(120.dp)
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
 
         // Ana kart
         Card(
@@ -89,75 +89,46 @@ fun OnboardingReminderScreen(
                 // Ana açıklama
                 Text(
                     text = "İlaçların için hatırlatma kurmak çok basit! İşte adımlar:",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 24.sp
+                    lineHeight = 20.sp
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
-                // Adımlar
+                // Adımlar - Daha kompakt
                 StepCard(
                     number = "1",
                     title = "İlaç Seç",
-                    description = "Eklediğin ilaçlardan birini seç",
+                    description = "İlaçlardan birini seç",
                     icon = Icons.Default.MedicalServices,
                     color = DoziBlue
                 )
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
 
                 StepCard(
                     number = "2",
                     title = "Zaman Belirle",
-                    description = "Günde kaç kez? Hangi saatlerde?",
+                    description = "Saat ve sıklık ayarla",
                     icon = Icons.Default.AccessTime,
                     color = DoziTurquoise
                 )
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
 
                 StepCard(
                     number = "3",
                     title = "Kaydet",
-                    description = "Sana bildiri göndereceğim!",
+                    description = "Bildirim göndereceğim!",
                     icon = Icons.Default.NotificationsActive,
                     color = DoziCoral
                 )
-
-                Spacer(Modifier.height(20.dp))
-
-                // İpucu
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = DoziCoral.copy(alpha = 0.1f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Lightbulb,
-                            contentDescription = null,
-                            tint = DoziCoral,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "Hatırlatma zamanı geldiğinde sana bildirim göndereceğim!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = DoziCoral,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
 
         // Şimdi Dene butonu (interaktif)
         Button(

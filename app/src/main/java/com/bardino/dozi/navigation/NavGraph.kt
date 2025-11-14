@@ -276,7 +276,7 @@ fun NavGraph(
 
             composable(Screen.OnboardingReminder.route) {
                 OnboardingReminderScreen(
-                    onNext = { navController.navigate(Screen.OnboardingHomeTour.route) },
+                    onNext = { navController.navigate(Screen.OnboardingPremium.route) },
                     onTryNow = {
                         // Hatırlatma ekleme ekranına git
                         navController.navigate(Screen.AddReminder.route)
