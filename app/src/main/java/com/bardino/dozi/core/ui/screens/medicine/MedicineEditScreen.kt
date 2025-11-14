@@ -44,6 +44,33 @@ fun verifyMedicine(name: String): Ilac? {
 }
 
 // --------------------------------------------------------------------
+// 📦 İlaç isminden stok bilgisini çıkart
+// --------------------------------------------------------------------
+fun extractStockFromName(productName: String?): Int {
+    if (productName.isNullOrBlank()) return 0
+
+    // "20 tablet", "x30", "30 kapsül", "50'li kutu" gibi patternler
+    val patterns = listOf(
+        Regex("""(\d+)\s*tablet""", RegexOption.IGNORE_CASE),
+        Regex("""(\d+)\s*kaps[üu]l""", RegexOption.IGNORE_CASE),
+        Regex("""x\s*(\d+)""", RegexOption.IGNORE_CASE),
+        Regex("""(\d+)'li\s*kutu""", RegexOption.IGNORE_CASE),
+        Regex("""(\d+)\s*adet""", RegexOption.IGNORE_CASE),
+        Regex("""\b(\d+)\s*(tb|kps|amp|flakon)\b""", RegexOption.IGNORE_CASE)
+    )
+
+    patterns.forEach { pattern ->
+        pattern.find(productName)?.groups?.get(1)?.value?.toIntOrNull()?.let {
+            android.util.Log.d("MedicineEdit", "✅ Extracted stock: $it from '$productName'")
+            return it
+        }
+    }
+
+    android.util.Log.d("MedicineEdit", "⚠️ No stock found in '$productName', defaulting to 0")
+    return 0
+}
+
+// --------------------------------------------------------------------
 // 📷 Geçici fotoğraf dosyası URI'si oluşturur
 // --------------------------------------------------------------------
 private fun createImageUri(context: Context): Uri {
@@ -108,8 +135,15 @@ fun MedicineEditScreen(
             ?: selectedMedicine?.dosage
             ?: ""
     ) }
+
+    // ✅ Stok bilgisini akıllıca belirle:
+    // 1. Mevcut ilaç varsa -> onun stoğunu kullan
+    // 2. Yoksa ve selectedMedicine varsa -> isimden çıkart
+    // 3. Hiçbiri yoksa -> 0
     var stock by remember { mutableStateOf(
-        existing?.stock?.toString() ?: "0"
+        existing?.stock?.toString()
+            ?: selectedMedicine?.item?.Product_Name?.let { extractStockFromName(it).toString() }
+            ?: "0"
     ) }
 
     // Lookup'tan gelen veriyi temizle (bir kez okunsun diye)
@@ -229,7 +263,7 @@ fun MedicineEditScreen(
                                 }
                             }
                         },
-                        label = { Text("Stok Adedi (1–999) *", color = TextSecondaryLight) },
+                        label = { Text("Evde Kaç Adet Var? (1–999) *", color = TextSecondaryLight) },
                         leadingIcon = { Icon(Icons.Default.Inventory, null, tint = DoziCoralDark) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -246,7 +280,7 @@ fun MedicineEditScreen(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         isError = stockError,
-                        placeholder = { Text("Stok miktarını girin", color = TextSecondaryLight) }
+                        placeholder = { Text("Örn: 20 (kaç tablet/kapsül var)", color = TextSecondaryLight) }
                     )
 
                     if (stockError) ErrorCard("Stok bilgisi geçersiz.")
