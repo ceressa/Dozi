@@ -1,7 +1,6 @@
 package com.bardino.dozi.core.ui.screens.home
 
 import android.content.Context
-import android.media.MediaPlayer
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
@@ -54,6 +53,7 @@ import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.ui.screens.home.MedicineStatus
 import com.bardino.dozi.core.ui.theme.*
+import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.navigation.Screen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -246,7 +246,7 @@ fun HomeScreen(
                                 time = uiState.upcomingMedicine!!.second,
                                 snoozeMinutes = uiState.snoozeMinutes,
                                 onTaken = {
-                                    playSound(context, R.raw.success)
+                                    SoundHelper.playSound(context, SoundHelper.SoundType.HERSEY_TAMAM)
                                     viewModel.onMedicineTaken(context, uiState.upcomingMedicine!!.first, uiState.upcomingMedicine!!.second)
                                 },
                                 onSnooze = { viewModel.setShowSnoozeDialog(true) },
@@ -257,12 +257,12 @@ fun HomeScreen(
                                 medicines = sameTimeMedicines,
                                 time = uiState.upcomingMedicine!!.second,
                                 onTaken = { medicine ->
-                                    playSound(context, R.raw.success)
+                                    SoundHelper.playSound(context, SoundHelper.SoundType.HERSEY_TAMAM)
                                     viewModel.onMedicineTaken(context, medicine, uiState.upcomingMedicine!!.second)
                                 },
                                 onSnooze = { viewModel.setShowSnoozeDialog(true) },
                                 onSkip = { medicine ->
-                                    playSound(context, R.raw.pekala)
+                                    SoundHelper.playSound(context, SoundHelper.SoundType.PEKALA)
                                     viewModel.onMedicineSkipped(context, medicine, uiState.upcomingMedicine!!.second)
                                 }
                             )
@@ -333,11 +333,11 @@ fun HomeScreen(
         val currentMedicine = uiState.upcomingMedicine
         SkipReasonDialog(
             onDismiss = {
-                playSound(context, R.raw.pekala)
+                SoundHelper.playSound(context, SoundHelper.SoundType.PEKALA)
                 viewModel.setShowSkipDialog(false)
             },
             onConfirm = { reason ->
-                playSound(context, R.raw.pekala)
+                SoundHelper.playSound(context, SoundHelper.SoundType.PEKALA)
                 currentMedicine?.let {
                     viewModel.onMedicineSkipped(context, it.first, it.second)
                 }
@@ -359,15 +359,6 @@ fun HomeScreen(
 }
 
 
-fun playSound(context: Context, resourceId: Int) {
-    try {
-        val mediaPlayer = MediaPlayer.create(context, resourceId)
-        mediaPlayer?.setOnCompletionListener { it.release() }
-        mediaPlayer?.start()
-    } catch (e: Exception) {
-        e.printStackTrace()
-    }
-}
 
 // İlaç durumu kaydetme fonksiyonları
 fun saveMedicineStatus(context: Context, medicineId: String, date: String, time: String, status: String) {
@@ -1008,7 +999,7 @@ private fun CurrentMedicineCard(
                     color = WarningOrange,
                     modifier = Modifier.weight(1f),
                     onClick = {
-                        playSound(context, R.raw.ertele)
+                        SoundHelper.playSound(context, SoundHelper.SoundType.ERTELE)
                         onSnooze()
                     }
                 )
