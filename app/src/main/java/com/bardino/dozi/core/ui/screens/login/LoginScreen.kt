@@ -117,11 +117,11 @@ fun LoginScreen(
                     tonalElevation = 8.dp
                 ) {
                     Image(
-                        painter = painterResource(R.drawable.dozi),
+                        painter = painterResource(R.drawable.dozi_hosgeldin),
                         contentDescription = "Dozi Logo",
                         modifier = Modifier
                             .fillMaxSize()
-                            .padding(24.dp)
+                            .padding(18.dp)
                     )
                 }
 

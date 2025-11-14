@@ -229,8 +229,8 @@ fun ProfileScreen(
                     // Konum/Eczaneler
                     MenuCard(
                         icon = Icons.Outlined.LocationOn,
-                        title = "Eczaneler",
-                        desc = "Yakındaki eczaneleri bul",
+                        title = "Kayıtlı Konumlar",
+                        desc = "Kayıtlı konumlarına göz at",
                         color = Color(0xFF4CAF50),
                         onClick = onNavigateToLocations
                     )
