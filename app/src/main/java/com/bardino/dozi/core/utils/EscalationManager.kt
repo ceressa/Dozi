@@ -107,8 +107,8 @@ class EscalationManager(
 
             // Notification almak isteyen buddy'leri filtrele
             val notifiableBuddies = buddies.filter {
-                it.notificationPreferences.onMedicationMissed &&
-                it.permissions.canReceiveNotifications
+                it.buddy.notificationPreferences.onMedicationMissed &&
+                it.buddy.permissions.canReceiveNotifications
             }
 
             if (notifiableBuddies.isEmpty()) {
@@ -117,12 +117,12 @@ class EscalationManager(
             }
 
             // Her buddy için bildirim oluştur
-            for (buddy in notifiableBuddies) {
+            for (buddyWithUser in notifiableBuddies) {
                 val notification = DoziNotification(
-                    userId = buddy.buddyUserId,
+                    userId = buddyWithUser.buddy.buddyUserId,
                     type = NotificationType.CRITICAL_MEDICATION_MISSED,
                     title = "🚨 Kritik İlaç Uyarısı",
-                    body = "${buddy.nickname ?: "Arkadaşınız"} son 24 saatte $missedCount kritik ilaç kaçırdı!",
+                    body = "${buddyWithUser.buddy.nickname ?: buddyWithUser.user.name} son 24 saatte $missedCount kritik ilaç kaçırdı!",
                     data = mapOf(
                         "fromUserId" to userId,
                         "missedCount" to missedCount.toString(),
@@ -133,7 +133,7 @@ class EscalationManager(
                 )
 
                 notificationRepository.createNotification(notification)
-                Log.d(TAG, "Escalation notification sent to buddy: ${buddy.buddyUserId}")
+                Log.d(TAG, "Escalation notification sent to buddy: ${buddyWithUser.buddy.buddyUserId}")
             }
 
             Log.d(TAG, "🚨 Escalation notifications sent to ${notifiableBuddies.size} buddies")
@@ -158,8 +158,8 @@ class EscalationManager(
 
             // Notification almak isteyen buddy'leri filtrele
             val notifiableBuddies = buddies.filter {
-                it.notificationPreferences.onMedicationMissed &&
-                it.permissions.canReceiveNotifications
+                it.buddy.notificationPreferences.onMedicationMissed &&
+                it.buddy.permissions.canReceiveNotifications
             }
 
             if (notifiableBuddies.isEmpty()) {
@@ -167,12 +167,12 @@ class EscalationManager(
             }
 
             // Her buddy için bildirim oluştur
-            for (buddy in notifiableBuddies) {
+            for (buddyWithUser in notifiableBuddies) {
                 val notification = DoziNotification(
-                    userId = buddy.buddyUserId,
+                    userId = buddyWithUser.buddy.buddyUserId,
                     type = NotificationType.MEDICATION_MISSED,
                     title = "⚠️ Kritik İlaç Kaçırıldı",
-                    body = "${buddy.nickname ?: "Arkadaşınız"} ${medicine.name} ilacını kaçırdı!",
+                    body = "${buddyWithUser.buddy.nickname ?: buddyWithUser.user.name} ${medicine.name} ilacını kaçırdı!",
                     data = mapOf(
                         "fromUserId" to userId,
                         "medicineId" to medicine.id,
