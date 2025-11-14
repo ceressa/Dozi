@@ -16,6 +16,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.withTimeout
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
@@ -33,18 +34,87 @@ fun MedicineDetailScreen(
     // Mevcut ilacı yükle
     var medicine by remember { mutableStateOf<Medicine?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
 
     LaunchedEffect(medicineId) {
-        medicine = repository.getMedicine(medicineId)
-        isLoading = false
+        try {
+            // 10 saniye timeout
+            medicine = withTimeout(10000L) {
+                repository.getMedicine(medicineId)
+            }
+        } catch (e: kotlinx.coroutines.TimeoutCancellationException) {
+            error = "İlaç yükleme zaman aşımına uğradı. İnternet bağlantınızı kontrol edin."
+            android.util.Log.e("MedicineDetailScreen", "Timeout loading medicine", e)
+        } catch (e: Exception) {
+            error = "İlaç yüklenirken hata: ${e.message}"
+            android.util.Log.e("MedicineDetailScreen", "Error loading medicine", e)
+        } finally {
+            isLoading = false
+        }
     }
 
-    if (isLoading || medicine == null) {
+    // Loading durumu
+    if (isLoading) {
         Box(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = androidx.compose.ui.Alignment.Center
         ) {
             CircularProgressIndicator(color = DoziTurquoise)
+        }
+        return
+    }
+
+    // Hata durumu
+    if (error != null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "❌ Hata",
+                    style = MaterialTheme.typography.headlineSmall,
+                    color = Color.Red
+                )
+                Text(
+                    text = error ?: "Bilinmeyen hata",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondaryLight
+                )
+                Button(onClick = onNavigateBack) {
+                    Text("Geri Dön")
+                }
+            }
+        }
+        return
+    }
+
+    // İlaç bulunamadı durumu
+    if (medicine == null) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = androidx.compose.ui.Alignment.Center
+        ) {
+            Column(
+                horizontalAlignment = androidx.compose.ui.Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Text(
+                    text = "🔍 İlaç Bulunamadı",
+                    style = MaterialTheme.typography.headlineSmall
+                )
+                Text(
+                    text = "Bu ilaç silinmiş olabilir.",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondaryLight
+                )
+                Button(onClick = onNavigateBack) {
+                    Text("Geri Dön")
+                }
+            }
         }
         return
     }
