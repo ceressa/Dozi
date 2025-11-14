@@ -152,11 +152,28 @@ class MedicineRepository {
      * Get a single medicine by ID
      */
     suspend fun getMedicine(medicineId: String): Medicine? {
-        val collection = getMedicinesCollection() ?: return null
+        android.util.Log.d("MedicineRepository", "getMedicine called with ID: $medicineId")
+
+        val collection = getMedicinesCollection()
+        if (collection == null) {
+            android.util.Log.e("MedicineRepository", "getMedicine: User not authenticated!")
+            return null
+        }
+
         return try {
+            android.util.Log.d("MedicineRepository", "Fetching medicine from Firestore...")
             val doc = collection.document(medicineId).get().await()
-            doc.toObject(Medicine::class.java)
+
+            if (!doc.exists()) {
+                android.util.Log.w("MedicineRepository", "Medicine document does not exist: $medicineId")
+                return null
+            }
+
+            val medicine = doc.toObject(Medicine::class.java)
+            android.util.Log.d("MedicineRepository", "Medicine fetched successfully: ${medicine?.name}")
+            medicine
         } catch (e: Exception) {
+            android.util.Log.e("MedicineRepository", "Error fetching medicine: $medicineId", e)
             null
         }
     }

@@ -36,7 +36,11 @@ fun MedicineDetailScreen(
     var isLoading by remember { mutableStateOf(true) }
     var error by remember { mutableStateOf<String?>(null) }
 
+    // Debug log
+    android.util.Log.d("MedicineDetailScreen", "Screen initialized with medicineId: $medicineId")
+
     LaunchedEffect(medicineId) {
+        android.util.Log.d("MedicineDetailScreen", "LaunchedEffect started, loading medicine: $medicineId")
         try {
             // 10 saniye timeout
             medicine = withTimeout(10000L) {
