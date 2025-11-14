@@ -264,9 +264,15 @@ class HomeViewModel(
                     val newStockCount = medicine.stockCount - 1
                     medicineRepository.updateMedicineField(medicine.id, "stockCount", newStockCount)
                     Log.d(TAG, "Stock decreased: ${medicine.name} -> $newStockCount")
+
+                    // ⚠️ Stok uyarıları kontrol et
+                    checkStockWarnings(context, medicine.copy(stockCount = newStockCount))
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to decrease stock", e)
                 }
+            } else if (medicine.stockCount == 0) {
+                // 🚨 Stok bitti uyarısı
+                showOutOfStockNotification(context, medicine)
             }
 
             // Success popup göster
@@ -428,6 +434,61 @@ class HomeViewModel(
         } catch (e: Exception) {
             Log.e(TAG, "Error parsing time: $time", e)
             System.currentTimeMillis()
+        }
+    }
+
+    /**
+     * Stok uyarılarını kontrol et
+     */
+    private fun checkStockWarnings(context: Context, medicine: Medicine) {
+        val LOW_STOCK_THRESHOLD = 5
+
+        when {
+            medicine.stockCount == 0 -> {
+                // 🚨 Stok bitti
+                showOutOfStockNotification(context, medicine)
+                Log.w(TAG, "⚠️ STOK BİTTİ: ${medicine.name}")
+            }
+            medicine.stockCount <= LOW_STOCK_THRESHOLD -> {
+                // ⚠️ Düşük stok
+                showLowStockNotification(context, medicine)
+                Log.w(TAG, "⚠️ DÜŞÜK STOK: ${medicine.name} - ${medicine.stockCount} doz kaldı")
+            }
+        }
+    }
+
+    /**
+     * Düşük stok bildirimi göster
+     */
+    private fun showLowStockNotification(context: Context, medicine: Medicine) {
+        try {
+            val notificationHelper = Class.forName("com.bardino.dozi.notifications.NotificationHelper")
+            val method = notificationHelper.getDeclaredMethod(
+                "showLowStockNotification",
+                Context::class.java,
+                String::class.java,
+                Int::class.java
+            )
+            method.invoke(null, context, medicine.name, medicine.stockCount)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to show low stock notification", e)
+        }
+    }
+
+    /**
+     * Stok bitti bildirimi göster
+     */
+    private fun showOutOfStockNotification(context: Context, medicine: Medicine) {
+        try {
+            val notificationHelper = Class.forName("com.bardino.dozi.notifications.NotificationHelper")
+            val method = notificationHelper.getDeclaredMethod(
+                "showOutOfStockNotification",
+                Context::class.java,
+                String::class.java
+            )
+            method.invoke(null, context, medicine.name)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to show out of stock notification", e)
         }
     }
 }

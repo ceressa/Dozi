@@ -30,5 +30,17 @@ data class Medicine(
     val barcode: String? = null,                // Barkod/QR kod
     val imageUrl: String? = null,               // İlaç fotoğrafı
     val manufacturer: String? = null,           // Üretici firma
-    val activeIngredient: String? = null        // Etken madde
+    val activeIngredient: String? = null,       // Etken madde
+
+    // 🚨 Acil durum ve kritiklik ayarları
+    val criticalityLevel: MedicineCriticality = MedicineCriticality.ROUTINE  // İlaç kritiklik seviyesi
 )
+
+/**
+ * İlaç kritiklik seviyeleri
+ */
+enum class MedicineCriticality {
+    ROUTINE,      // Normal ilaç - DND'ye uyar
+    IMPORTANT,    // Önemli ilaç - DND'de sessiz bildirim
+    CRITICAL      // Kritik ilaç - DND'yi bypass eder
+}
