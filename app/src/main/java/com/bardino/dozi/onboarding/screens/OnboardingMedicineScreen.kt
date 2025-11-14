@@ -47,19 +47,19 @@ fun OnboardingMedicineScreen(
         modifier = Modifier
             .fillMaxSize()
             .background(BackgroundLight)
-            .padding(24.dp),
+            .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(24.dp))
 
         // Dozi karakteri - Öğretici Dozi (transparan arka plan)
         Image(
             painter = painterResource(id = R.drawable.dozi_teach1),
             contentDescription = "Dozi",
-            modifier = Modifier.size(140.dp)
+            modifier = Modifier.size(120.dp)
         )
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
 
         // Ana kart
         Card(
@@ -89,15 +89,15 @@ fun OnboardingMedicineScreen(
                 // Ana açıklama
                 Text(
                     text = "İlaçlarını eklemek çok kolay! Sana 3 farklı yol sunuyorum:",
-                    style = MaterialTheme.typography.bodyLarge,
+                    style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 24.sp
+                    lineHeight = 20.sp
                 )
 
-                Spacer(Modifier.height(24.dp))
+                Spacer(Modifier.height(16.dp))
 
-                // Yöntemler
+                // Yöntemler - Daha kompakt
                 MethodCard(
                     icon = Icons.Default.Search,
                     title = "İsimle Ara",
@@ -105,56 +105,27 @@ fun OnboardingMedicineScreen(
                     color = DoziTurquoise
                 )
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
 
                 MethodCard(
                     icon = Icons.Default.Mic,
                     title = "Sesle Söyle",
-                    description = "Mikrofona söyle, ben bulayım",
+                    description = "Mikrofona söyle",
                     color = DoziCoral
                 )
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
 
                 MethodCard(
                     icon = Icons.Default.QrCodeScanner,
                     title = "Barkod Tara",
-                    description = "İlaç kutusunu tara, otomatik ekle",
+                    description = "Kutuyu tara",
                     color = DoziPurple
                 )
-
-                Spacer(Modifier.height(20.dp))
-
-                // İpucu
-                Card(
-                    colors = CardDefaults.cardColors(
-                        containerColor = DoziBlue.copy(alpha = 0.1f)
-                    ),
-                    shape = RoundedCornerShape(12.dp)
-                ) {
-                    Row(
-                        modifier = Modifier.padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.Lightbulb,
-                            contentDescription = null,
-                            tint = DoziBlue,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(Modifier.width(8.dp))
-                        Text(
-                            text = "İlaç ekledikten sonra stok sayısını da girmeyi unutma!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = DoziBlue,
-                            fontWeight = FontWeight.Medium
-                        )
-                    }
-                }
             }
         }
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(20.dp))
 
         // Şimdi Dene butonu (interaktif)
         Button(
