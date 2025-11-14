@@ -326,21 +326,6 @@ fun HomeScreen(
             }
         }
 
-        // FAB - Yeni Hatırlatma Ekle (sadece login olduysa)
-        if (uiState.isLoggedIn) {
-            FloatingActionButton(
-                onClick = { navController.navigate(Screen.AddReminder.route) },
-                containerColor = DoziTurquoise,
-                contentColor = Color.White,
-                shape = RoundedCornerShape(18.dp),
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(bottom = 80.dp, end = 16.dp) // BottomBar'dan uzakta
-                    .shadow(10.dp, RoundedCornerShape(18.dp))
-            ) {
-                Icon(Icons.Default.Add, contentDescription = "Yeni Hatırlatma")
-            }
-        }
     }
 
     // ✅ Dialog'lar (ViewModel ile entegre)

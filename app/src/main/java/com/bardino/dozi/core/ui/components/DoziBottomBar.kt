@@ -32,7 +32,8 @@ sealed class BottomNavItem(
 @Composable
 fun DoziBottomBar(
     currentRoute: String?,
-    onNavigate: (String) -> Unit
+    onNavigate: (String) -> Unit,
+    onLoginRequired: () -> Unit = {}
 ) {
     // Firebase Auth durumunu gerçek zamanlı kontrol et
     val auth = remember { FirebaseAuth.getInstance() }
@@ -62,6 +63,9 @@ fun DoziBottomBar(
         items.forEach { item ->
             val selected = currentRoute == item.route
 
+            // İlaçlarım ve Hatırlatmalar için login kontrolü
+            val requiresLogin = (item is BottomNavItem.Medicines || item is BottomNavItem.Reminders)
+
             NavigationBarItem(
                 icon = {
                     Icon(
@@ -79,14 +83,27 @@ fun DoziBottomBar(
                 selected = selected,
                 onClick = {
                     if (currentRoute != item.route) {
-                        onNavigate(item.route)
+                        // Login gerektiren özelliklere tıklandıysa ve login değilse
+                        if (requiresLogin && !isLoggedIn) {
+                            onLoginRequired()
+                        } else {
+                            onNavigate(item.route)
+                        }
                     }
                 },
                 colors = NavigationBarItemDefaults.colors(
                     selectedIconColor = DoziTurquoise,
                     selectedTextColor = DoziTurquoise,
-                    unselectedIconColor = Color.White.copy(alpha = 0.6f),
-                    unselectedTextColor = Color.White.copy(alpha = 0.6f),
+                    unselectedIconColor = if (requiresLogin && !isLoggedIn) {
+                        Color.White.copy(alpha = 0.4f)
+                    } else {
+                        Color.White.copy(alpha = 0.6f)
+                    },
+                    unselectedTextColor = if (requiresLogin && !isLoggedIn) {
+                        Color.White.copy(alpha = 0.4f)
+                    } else {
+                        Color.White.copy(alpha = 0.6f)
+                    },
                     indicatorColor = Color.White.copy(alpha = 0.15f)
                 )
             )

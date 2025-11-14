@@ -68,6 +68,16 @@ fun NavGraph(
                                 restoreState = true // ✅ State'i geri yükle
                             }
                         }
+                    },
+                    onLoginRequired = {
+                        // Login olmayan kullanıcılar profil sayfasına yönlendir (login ekranı)
+                        navController.navigate(Screen.Profile.route) {
+                            popUpTo(Screen.Home.route) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
                     }
                 )
             }
