@@ -338,5 +338,5 @@ class HomeViewModel(
 }
 
 enum class MedicineStatus {
-    TAKEN, SKIPPED, PLANNED, UPCOMING, NONE
+    TAKEN, SKIPPED, PARTIAL, PLANNED, UPCOMING, NONE
 }

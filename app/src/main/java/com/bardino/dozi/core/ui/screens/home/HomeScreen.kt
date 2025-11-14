@@ -64,33 +64,50 @@ import java.time.LocalTime
 import java.time.format.TextStyle
 import java.util.*
 
-// Helper function: Get medicine status for a specific date
+// Helper function: Get medicine status for a specific date with percentage-based logic
 fun getMedicineStatusForDate(context: Context, date: LocalDate, medicines: List<Medicine>): MedicineStatus {
     val dateString = "%02d/%02d/%d".format(date.dayOfMonth, date.monthValue, date.year)
     val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)
 
-    var hasTaken = false
-    var hasSkipped = false
-    var hasUpcoming = false
+    var totalDoses = 0
+    var takenCount = 0
+    var skippedCount = 0
+    var upcomingCount = 0
 
     medicines.forEach { medicine ->
         medicine.times.forEach { time ->
+            totalDoses++
             val key = "dose_${medicine.id}_${dateString}_$time"
             val status = prefs.getString(key, null)
 
             when {
-                status == "taken" -> hasTaken = true
-                status?.startsWith("skipped") == true -> hasSkipped = true
-                status == null && date >= LocalDate.now() -> hasUpcoming = true
+                status == "taken" -> takenCount++
+                status?.startsWith("skipped") == true -> skippedCount++
+                status == null && date >= LocalDate.now() -> upcomingCount++
             }
         }
     }
 
+    // Eğer hiç doz yoksa
+    if (totalDoses == 0) return MedicineStatus.NONE
+
+    // Yüzde hesapla
+    val takenPercentage = (takenCount * 100) / totalDoses
+
     return when {
-        hasTaken && !hasSkipped -> MedicineStatus.TAKEN
-        hasSkipped && !hasTaken -> MedicineStatus.SKIPPED
-        hasTaken && hasSkipped -> MedicineStatus.TAKEN // Partially taken
-        hasUpcoming -> if (date == LocalDate.now()) MedicineStatus.UPCOMING else MedicineStatus.PLANNED
+        // %100 alındı -> Yeşil
+        takenPercentage == 100 && skippedCount == 0 -> MedicineStatus.TAKEN
+
+        // Karışık durum: hem alındı hem atlandı -> Turuncu (PARTIAL)
+        takenCount > 0 && skippedCount > 0 -> MedicineStatus.PARTIAL
+
+        // Sadece atlandı -> Kırmızı
+        skippedCount > 0 && takenCount == 0 -> MedicineStatus.SKIPPED
+
+        // Gelecek ilaçlar
+        upcomingCount > 0 -> if (date == LocalDate.now()) MedicineStatus.UPCOMING else MedicineStatus.PLANNED
+
+        // Hiçbiri
         else -> MedicineStatus.NONE
     }
 }
@@ -650,8 +667,9 @@ private fun CalendarDayCircle(
 
     val color = when (status) {
         MedicineStatus.TAKEN -> SuccessGreen
+        MedicineStatus.PARTIAL -> WarningOrange
         MedicineStatus.SKIPPED -> ErrorRed
-        MedicineStatus.PLANNED -> WarningOrange
+        MedicineStatus.PLANNED -> DoziPurple.copy(alpha = 0.6f)
         MedicineStatus.UPCOMING -> DoziPurple
         else -> VeryLightGray
     }
@@ -713,6 +731,7 @@ private fun CalendarExpandedContent(
 
     val character = when (status) {
         MedicineStatus.TAKEN -> R.drawable.dozi_happy
+        MedicineStatus.PARTIAL -> R.drawable.dozi_ok
         MedicineStatus.SKIPPED -> R.drawable.dozi_unhappy
         MedicineStatus.PLANNED -> R.drawable.dozi_ok
         else -> R.drawable.dozi
