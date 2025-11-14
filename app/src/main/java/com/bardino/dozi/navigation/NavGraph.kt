@@ -256,7 +256,16 @@ fun NavGraph(
             composable(Screen.OnboardingName.route) {
                 OnboardingNameScreen(
                     onNext = { name ->
+                        // ✅ SharedPreferences'a kaydet
                         OnboardingPreferences.saveUserName(context, name)
+
+                        // ✅ Firebase User profiline de kaydet
+                        val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            userRepository.updateUserField("name", name)
+                            android.util.Log.d("OnboardingName", "✅ User name saved to Firebase: $name")
+                        }
+
                         navController.navigate(Screen.OnboardingReminder.route)
                     }
                 )

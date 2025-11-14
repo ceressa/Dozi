@@ -903,44 +903,42 @@ private fun MedicinePickerRow(
         verticalAlignment = Alignment.CenterVertically,
         horizontalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        OutlinedTextField(
-            value = selectedName,
-            onValueChange = {},
-            label = { Text("İlaç Seç") },
-            placeholder = { Text("Kayıtlı ilaçlardan seç") },
-            leadingIcon = {
-                Icon(Icons.Default.LocalPharmacy, contentDescription = null, tint = DoziCoral)
-            },
-            trailingIcon = {
-                Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = DoziCoral)
-            },
+        // ✅ Box wrapper ile click event'i yakala
+        Box(
             modifier = Modifier
                 .weight(1f)
                 .clickable(
                     interactionSource = remember { MutableInteractionSource() },
-                    indication = null,
+                    indication = rememberRipple(),
                     onClick = onSelect
+                )
+        ) {
+            OutlinedTextField(
+                value = selectedName,
+                onValueChange = {},
+                label = { Text("İlaç Seç") },
+                placeholder = { Text("Kayıtlı ilaçlardan seç") },
+                leadingIcon = {
+                    Icon(Icons.Default.LocalPharmacy, contentDescription = null, tint = DoziCoral)
+                },
+                trailingIcon = {
+                    Icon(Icons.Default.ArrowDropDown, contentDescription = null, tint = DoziCoral)
+                },
+                modifier = Modifier.fillMaxWidth(),
+                readOnly = true,
+                enabled = false, // ✅ Disabled ama görsel olarak düzgün
+                colors = OutlinedTextFieldDefaults.colors(
+                    disabledTextColor = TextPrimary, // ✅ Okunabilir
+                    disabledBorderColor = Gray200,
+                    disabledLabelColor = TextSecondary,
+                    disabledLeadingIconColor = DoziCoral,
+                    disabledTrailingIconColor = DoziCoral,
+                    disabledPlaceholderColor = TextSecondaryLight,
+                    disabledContainerColor = DoziCoral.copy(alpha = 0.05f)
                 ),
-            readOnly = true,
-            colors = OutlinedTextFieldDefaults.colors(
-                focusedTextColor = TextPrimary,
-                unfocusedTextColor = TextPrimary,
-                focusedBorderColor = DoziCoral,
-                unfocusedBorderColor = Gray200,
-                focusedLabelColor = DoziCoral,
-                unfocusedLabelColor = TextSecondary,
-                focusedLeadingIconColor = DoziCoral,
-                unfocusedLeadingIconColor = DoziCoral,
-                focusedTrailingIconColor = DoziCoral,
-                unfocusedTrailingIconColor = DoziCoral,
-                focusedPlaceholderColor = TextSecondaryLight,
-                unfocusedPlaceholderColor = TextSecondaryLight,
-                focusedContainerColor = DoziCoral.copy(alpha = 0.05f),
-                unfocusedContainerColor = DoziCoral.copy(alpha = 0.05f),
-                cursorColor = DoziCoral
-            ),
-            shape = MaterialTheme.shapes.medium
-        )
+                shape = MaterialTheme.shapes.medium
+            )
+        }
 
         FilledTonalIconButton(
             onClick = onAddNew,
