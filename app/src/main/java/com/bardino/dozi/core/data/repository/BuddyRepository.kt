@@ -36,8 +36,8 @@ class BuddyRepository(
         }
 
         val listener = db.collection("buddies")
-            .where("userId", "==", userId)
-            .where("status", "==", BuddyStatus.ACTIVE.name)
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("status", BuddyStatus.ACTIVE.name)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
@@ -81,9 +81,9 @@ class BuddyRepository(
 
         return try {
             val snapshot = db.collection("buddies")
-                .where("userId", "==", userId)
-                .where("buddyUserId", "==", otherUserId)
-                .where("status", "==", BuddyStatus.ACTIVE.name)
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("buddyUserId", otherUserId)
+                .whereEqualTo("status", BuddyStatus.ACTIVE.name)
                 .get()
                 .await()
 
@@ -187,7 +187,7 @@ class BuddyRepository(
     suspend fun findUserByBuddyCode(code: String): User? {
         return try {
             val snapshot = db.collection("users")
-                .where("buddyCode", "==", code)
+                .whereEqualTo("buddyCode", code)
                 .limit(1)
                 .get()
                 .await()
@@ -204,7 +204,7 @@ class BuddyRepository(
     suspend fun findUserByEmail(email: String): User? {
         return try {
             val snapshot = db.collection("users")
-                .where("email", "==", email)
+                .whereEqualTo("email", email)
                 .limit(1)
                 .get()
                 .await()
@@ -231,9 +231,9 @@ class BuddyRepository(
 
             // Daha önce istek gönderilmiş mi kontrol et
             val existingRequest = db.collection("buddy_requests")
-                .where("fromUserId", "==", userId)
-                .where("toUserId", "==", toUserId)
-                .where("status", "==", BuddyRequestStatus.PENDING.name)
+                .whereEqualTo("fromUserId", userId)
+                .whereEqualTo("toUserId", toUserId)
+                .whereEqualTo("status", BuddyRequestStatus.PENDING.name)
                 .get()
                 .await()
 
@@ -269,8 +269,8 @@ class BuddyRepository(
         }
 
         val listener = db.collection("buddy_requests")
-            .where("toUserId", "==", userId)
-            .where("status", "==", BuddyRequestStatus.PENDING.name)
+            .whereEqualTo("toUserId", userId)
+            .whereEqualTo("status", BuddyRequestStatus.PENDING.name)
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
