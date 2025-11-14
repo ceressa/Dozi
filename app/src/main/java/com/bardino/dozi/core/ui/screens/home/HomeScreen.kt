@@ -22,6 +22,8 @@ import androidx.compose.material.ripple.rememberRipple
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
+import androidx.lifecycle.ViewModel
+import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
@@ -159,9 +161,20 @@ fun HomeScreen(
     contentPadding: PaddingValues = PaddingValues(),
     onNavigateToMedicines: () -> Unit,
     onNavigateToReminders: () -> Unit,
-    onNavigateToProfile: () -> Unit,
-    viewModel: HomeViewModel = viewModel()
+    onNavigateToProfile: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    // ✅ ViewModelFactory ile context inject et
+    val viewModel: HomeViewModel = viewModel(
+        factory = object : ViewModelProvider.Factory {
+            @Suppress("UNCHECKED_CAST")
+            override fun <T : ViewModel> create(modelClass: Class<T>): T {
+                return HomeViewModel(context.applicationContext) as T
+            }
+        }
+    )
+
     // ✅ ViewModel'den state'leri al
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
@@ -171,7 +184,6 @@ fun HomeScreen(
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
-    val context = LocalContext.current
 
     // ✅ Context gerektiren ViewModel fonksiyonlarını çağır
     LaunchedEffect(context) {
@@ -536,11 +548,19 @@ fun HorizontalCalendar(
     val today = LocalDate.now()
     val context = LocalContext.current
 
-    // 🔹 Sadece 7 gün: bugünün 3 gün öncesi ve 3 gün sonrası
-    val dates = remember { (-3..3).map { today.plusDays(it.toLong()) } }
+    // 🔹 Ay başından ay sonuna kadar tüm günler
+    val dates = remember(today) {
+        val firstDayOfMonth = today.withDayOfMonth(1)
+        val lastDayOfMonth = today.withDayOfMonth(today.lengthOfMonth())
+        val daysBetween = java.time.temporal.ChronoUnit.DAYS.between(firstDayOfMonth, lastDayOfMonth).toInt()
+        (0..daysBetween).map { firstDayOfMonth.plusDays(it.toLong()) }
+    }
 
-    // 🔹 Bugünün listede ortada olması için başlangıç index'i 3
-    val listState = rememberLazyListState(initialFirstVisibleItemIndex = 3)
+    // 🔹 Bugünün listede görünmesi için index'i hesapla
+    val todayIndex = remember(today, dates) {
+        dates.indexOfFirst { it == today }.coerceAtLeast(0)
+    }
+    val listState = rememberLazyListState(initialFirstVisibleItemIndex = todayIndex)
     val coroutineScope = rememberCoroutineScope()
 
     // 🔹 Medicines listesini Firebase'den al
@@ -606,7 +626,7 @@ fun HorizontalCalendar(
                     modifier = Modifier.padding(vertical = 6.dp, horizontal = 8.dp)
                 )
 
-                // 🔹 Toplam 7 gün, bugün ortada
+                // 🔹 Ay başından ay sonuna kadar tüm günler
                 LazyRow(
                     state = listState,
                     modifier = Modifier
@@ -661,13 +681,14 @@ private fun CalendarDayCircle(
 ) {
     val interaction = remember { MutableInteractionSource() }
 
+    // 🔹 Yaşlılar için daha açık ve ayırt edici renkler
     val color = when (status) {
-        MedicineStatus.TAKEN -> SuccessGreen
-        MedicineStatus.PARTIAL -> WarningOrange
-        MedicineStatus.SKIPPED -> ErrorRed
-        MedicineStatus.PLANNED -> DoziPurple.copy(alpha = 0.6f)
-        MedicineStatus.UPCOMING -> DoziPurple
-        else -> VeryLightGray
+        MedicineStatus.TAKEN -> SuccessGreen          // ✅ Yeşil: Alındı
+        MedicineStatus.PARTIAL -> WarningOrange       // 🟠 Turuncu: Kısmen alındı
+        MedicineStatus.SKIPPED -> ErrorRed            // ❌ Kırmızı: Atlandı
+        MedicineStatus.PLANNED -> DoziBlue            // 📅 Mavi: İleride planlanmış
+        MedicineStatus.UPCOMING -> DoziTurquoise      // ⏰ Turkuaz: Bugün sırada
+        else -> Gray200                               // ⚪ Gri: İlaç yok
     }
 
     val displayDay = date.dayOfMonth.toString()
@@ -686,9 +707,9 @@ private fun CalendarDayCircle(
             modifier = Modifier
                 .size(if (isSelected) 52.dp else 44.dp)
                 .clip(CircleShape)
-                .background(color.copy(alpha = if (status == MedicineStatus.NONE) 0.2f else 0.35f))
+                .background(color.copy(alpha = if (status == MedicineStatus.NONE) 0.15f else 0.25f))
                 .border(
-                    width = if (isSelected) 3.dp else 1.dp,
+                    width = if (isSelected) 3.dp else 2.dp,
                     color = color,
                     shape = CircleShape
                 ),
@@ -696,9 +717,9 @@ private fun CalendarDayCircle(
         ) {
             Text(
                 text = displayDay,
-                color = if (status == MedicineStatus.NONE) TextSecondaryLight else Color.Black,
+                color = if (status == MedicineStatus.NONE) TextSecondaryLight else TextPrimary,
                 fontWeight = FontWeight.Bold,
-                fontSize = if (isSelected) 16.sp else 14.sp
+                fontSize = if (isSelected) 17.sp else 15.sp
             )
         }
 

@@ -1,10 +1,17 @@
 package com.bardino.dozi.core.data.repository
 
+import android.content.Context
+import android.util.Log
+import com.bardino.dozi.core.data.local.DoziDatabase
+import com.bardino.dozi.core.data.local.entity.MedicationLogEntity
+import com.bardino.dozi.core.data.local.entity.SyncQueueEntity
+import com.bardino.dozi.core.data.local.entity.SyncActionType
 import com.bardino.dozi.core.data.model.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
 import com.google.firebase.Timestamp
+import com.google.gson.Gson
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
@@ -13,29 +20,214 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * İlaç alma geçmişini yöneten repository
+ * İlaç alma geçmişini yöneten repository (Offline-first with Room DB)
  */
 class MedicationLogRepository(
+    private val context: Context,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
+    private val localDb = DoziDatabase.getDatabase(context)
+    private val medicationLogDao = localDb.medicationLogDao()
+    private val syncQueueDao = localDb.syncQueueDao()
+    private val gson = Gson()
+
     private val currentUserId: String?
         get() = auth.currentUser?.uid
 
+    companion object {
+        private const val TAG = "MedicationLogRepository"
+    }
+
     /**
-     * İlaç log'u oluştur
+     * İlaç log'u oluştur (Offline-first)
+     * 1. Room DB'ye kaydet (hemen)
+     * 2. Sync queue'ya ekle
+     * 3. Firestore'a sync et (online ise)
      */
     suspend fun createMedicationLog(log: MedicationLog): Result<String> {
         val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
 
         return try {
-            val logWithUser = log.copy(userId = userId)
-            val docRef = db.collection("medication_logs").add(logWithUser).await()
-            Result.success(docRef.id)
+            val logId = UUID.randomUUID().toString()
+            val now = System.currentTimeMillis()
+
+            // 1. ✅ Save to Room DB immediately (offline support)
+            val entity = MedicationLogEntity(
+                id = logId,
+                userId = userId,
+                medicineId = log.medicineId,
+                medicineName = log.medicineName,
+                dosage = log.dosage,
+                scheduledTime = log.scheduledTime?.toDate()?.time ?: now,
+                takenAt = log.takenAt?.toDate()?.time,
+                status = log.status.name,
+                notes = log.notes,
+                sideEffects = gson.toJson(log.sideEffects),
+                mood = log.mood,
+                locationLat = log.location?.latitude,
+                locationLng = log.location?.longitude,
+                createdAt = now,
+                updatedAt = now,
+                isSynced = false
+            )
+            medicationLogDao.insert(entity)
+
+            // 2. ✅ Queue for Firestore sync
+            val syncData = mapOf(
+                "logId" to logId,
+                "log" to gson.toJson(log.copy(id = logId, userId = userId))
+            )
+            queueForSync(SyncActionType.MEDICATION_TAKEN, syncData)
+
+            // 3. ✅ Try to sync immediately (if online)
+            syncPendingLogs()
+
+            Log.d(TAG, "✅ Medication log created: $logId")
+            Result.success(logId)
         } catch (e: Exception) {
+            Log.e(TAG, "❌ Error creating medication log", e)
             Result.failure(e)
         }
+    }
+
+    /**
+     * Quick helpers for common actions (used by HomeScreen)
+     */
+    suspend fun logMedicationTaken(
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        scheduledTime: Long,
+        notes: String? = null
+    ): Result<String> {
+        val log = MedicationLog(
+            medicineId = medicineId,
+            medicineName = medicineName,
+            dosage = dosage,
+            scheduledTime = Timestamp(Date(scheduledTime)),
+            takenAt = Timestamp(Date()),
+            status = MedicationStatus.TAKEN,
+            notes = notes
+        )
+        return createMedicationLog(log)
+    }
+
+    suspend fun logMedicationSkipped(
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        scheduledTime: Long,
+        reason: String? = null
+    ): Result<String> {
+        val log = MedicationLog(
+            medicineId = medicineId,
+            medicineName = medicineName,
+            dosage = dosage,
+            scheduledTime = Timestamp(Date(scheduledTime)),
+            status = MedicationStatus.SKIPPED,
+            notes = reason
+        )
+        return createMedicationLog(log)
+    }
+
+    suspend fun logMedicationSnoozed(
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        scheduledTime: Long,
+        snoozeMinutes: Int
+    ): Result<String> {
+        val log = MedicationLog(
+            medicineId = medicineId,
+            medicineName = medicineName,
+            dosage = dosage,
+            scheduledTime = Timestamp(Date(scheduledTime)),
+            status = MedicationStatus.SNOOZED,
+            notes = "Snoozed for $snoozeMinutes minutes"
+        )
+        return createMedicationLog(log)
+    }
+
+    /**
+     * Queue action for Firestore sync
+     */
+    private suspend fun queueForSync(actionType: String, data: Map<String, Any?>) {
+        try {
+            val userId = currentUserId ?: return
+            val action = SyncQueueEntity(
+                actionType = actionType,
+                dataJson = gson.toJson(data),
+                userId = userId,
+                retryCount = 0,
+                createdAt = System.currentTimeMillis()
+            )
+            syncQueueDao.insert(action)
+            Log.d(TAG, "📥 Queued for sync: $actionType")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error queuing for sync", e)
+        }
+    }
+
+    /**
+     * Sync pending logs to Firestore
+     */
+    suspend fun syncPendingLogs(): Int {
+        val userId = currentUserId ?: return 0
+
+        return try {
+            val pendingActions = syncQueueDao.getPendingWithRetries(userId)
+            var syncedCount = 0
+
+            pendingActions.forEach { action ->
+                try {
+                    val data = gson.fromJson(action.dataJson, Map::class.java) as Map<String, Any?>
+                    val logJson = data["log"] as? String
+                    val logId = data["logId"] as? String
+
+                    if (logJson != null && logId != null) {
+                        val log = gson.fromJson(logJson, MedicationLog::class.java)
+
+                        // Sync to Firestore
+                        db.collection("medication_logs")
+                            .document(logId)
+                            .set(log)
+                            .await()
+
+                        // Mark as synced in Room
+                        medicationLogDao.markAsSynced(logId)
+
+                        // Remove from sync queue
+                        syncQueueDao.deleteById(action.id)
+                        syncedCount++
+
+                        Log.d(TAG, "✅ Synced: ${action.actionType}")
+                    }
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Sync failed for action ${action.id}", e)
+                    syncQueueDao.incrementRetryCount(
+                        action.id,
+                        System.currentTimeMillis(),
+                        e.message
+                    )
+                }
+            }
+
+            Log.d(TAG, "🔄 Synced $syncedCount / ${pendingActions.size} logs to Firestore")
+            syncedCount
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error syncing pending logs", e)
+            0
+        }
+    }
+
+    /**
+     * Get unsynced logs count
+     */
+    suspend fun getUnsyncedCount(): Int {
+        val userId = currentUserId ?: return 0
+        return syncQueueDao.getPendingCount(userId)
     }
 
     /**

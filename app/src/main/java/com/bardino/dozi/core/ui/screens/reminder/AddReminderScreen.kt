@@ -906,8 +906,8 @@ private fun MedicinePickerRow(
         OutlinedTextField(
             value = selectedName,
             onValueChange = {},
-            label = { Text("İlaç Seç", color = TextSecondary) },
-            placeholder = { Text("Kayıtlı ilaçlardan seç", color = TextSecondaryLight) },
+            label = { Text("İlaç Seç") },
+            placeholder = { Text("Kayıtlı ilaçlardan seç") },
             leadingIcon = {
                 Icon(Icons.Default.LocalPharmacy, contentDescription = null, tint = DoziCoral)
             },
@@ -922,15 +922,22 @@ private fun MedicinePickerRow(
                     onClick = onSelect
                 ),
             readOnly = true,
-            enabled = false,
             colors = OutlinedTextFieldDefaults.colors(
-                disabledTextColor = TextPrimary,
-                disabledBorderColor = Gray200,
-                disabledLeadingIconColor = DoziCoral,
-                disabledTrailingIconColor = DoziCoral,
-                disabledLabelColor = TextSecondary,
-                disabledPlaceholderColor = TextSecondaryLight,
-                disabledContainerColor = DoziCoral.copy(alpha = 0.05f) // ✅ YENİ
+                focusedTextColor = TextPrimary,
+                unfocusedTextColor = TextPrimary,
+                focusedBorderColor = DoziCoral,
+                unfocusedBorderColor = Gray200,
+                focusedLabelColor = DoziCoral,
+                unfocusedLabelColor = TextSecondary,
+                focusedLeadingIconColor = DoziCoral,
+                unfocusedLeadingIconColor = DoziCoral,
+                focusedTrailingIconColor = DoziCoral,
+                unfocusedTrailingIconColor = DoziCoral,
+                focusedPlaceholderColor = TextSecondaryLight,
+                unfocusedPlaceholderColor = TextSecondaryLight,
+                focusedContainerColor = DoziCoral.copy(alpha = 0.05f),
+                unfocusedContainerColor = DoziCoral.copy(alpha = 0.05f),
+                cursorColor = DoziCoral
             ),
             shape = MaterialTheme.shapes.medium
         )
