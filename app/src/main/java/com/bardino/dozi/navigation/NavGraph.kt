@@ -248,7 +248,11 @@ fun NavGraph(
 
             composable(Screen.OnboardingMedicine.route) {
                 OnboardingMedicineScreen(
-                    onNext = { navController.navigate(Screen.OnboardingName.route) }
+                    onNext = { navController.navigate(Screen.OnboardingName.route) },
+                    onTryNow = {
+                        // İlaç ekleme ekranına git
+                        navController.navigate(Screen.MedicineLookup.route)
+                    }
                 )
             }
 
@@ -272,7 +276,11 @@ fun NavGraph(
 
             composable(Screen.OnboardingReminder.route) {
                 OnboardingReminderScreen(
-                    onNext = { navController.navigate(Screen.OnboardingHomeTour.route) }
+                    onNext = { navController.navigate(Screen.OnboardingHomeTour.route) },
+                    onTryNow = {
+                        // Hatırlatma ekleme ekranına git
+                        navController.navigate(Screen.AddReminder.route)
+                    }
                 )
             }
 
@@ -289,16 +297,8 @@ fun NavGraph(
                         OnboardingPreferences.setFirstTimeComplete(context)
                         // Google giriş yap
                         onGoogleSignInClick()
-                        // Profile ekranına git (login ekranı)
-                        navController.navigate(Screen.Profile.route) {
-                            popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
-                        }
-                    },
-                    onSkip = {
-                        // Onboarding tamamlandı olarak işaretle
-                        OnboardingPreferences.setFirstTimeComplete(context)
-                        // Profile ekranına git (login yapmak için)
-                        navController.navigate(Screen.Profile.route) {
+                        // Ana ekrana git
+                        navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
                         }
                     }

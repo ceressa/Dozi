@@ -22,11 +22,12 @@ import com.bardino.dozi.R
 import com.bardino.dozi.core.ui.theme.*
 
 /**
- * Onboarding - Hatırlatma Kurma Anlatımı (Dozi ile)
+ * Onboarding - Hatırlatma Kurma Anlatımı (Dozi ile - İnteraktif)
  */
 @Composable
 fun OnboardingReminderScreen(
-    onNext: () -> Unit
+    onNext: () -> Unit,
+    onTryNow: () -> Unit
 ) {
     Column(
         modifier = Modifier
@@ -35,18 +36,16 @@ fun OnboardingReminderScreen(
             .padding(24.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(60.dp))
+        Spacer(Modifier.height(40.dp))
 
-        // Dozi karakteri - Onaylayan Dozi (hatırlatma kuruyor)
+        // Dozi karakteri - Öğretici Dozi 2 (transparan arka plan)
         Image(
-            painter = painterResource(id = R.drawable.dozi_ok),
+            painter = painterResource(id = R.drawable.dozi_teach2),
             contentDescription = "Dozi",
-            modifier = Modifier
-                .size(140.dp)
-                .shadow(8.dp, CircleShape)
+            modifier = Modifier.size(140.dp)
         )
 
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(24.dp))
 
         // Ana kart
         Card(
@@ -144,11 +143,11 @@ fun OnboardingReminderScreen(
             }
         }
 
-        Spacer(Modifier.weight(1f))
+        Spacer(Modifier.height(24.dp))
 
-        // Devam butonu
+        // Şimdi Dene butonu (interaktif)
         Button(
-            onClick = onNext,
+            onClick = onTryNow,
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -157,6 +156,27 @@ fun OnboardingReminderScreen(
             ),
             shape = RoundedCornerShape(16.dp)
         ) {
+            Icon(Icons.Default.NotificationsActive, "Hatırlatma")
+            Spacer(Modifier.width(8.dp))
+            Text(
+                text = "Şimdi Dene!",
+                fontWeight = FontWeight.Bold
+            )
+        }
+
+        Spacer(Modifier.height(12.dp))
+
+        // Devam butonu
+        OutlinedButton(
+            onClick = onNext,
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(56.dp),
+            shape = RoundedCornerShape(16.dp),
+            colors = ButtonDefaults.outlinedButtonColors(
+                contentColor = DoziCoral
+            )
+        ) {
             Text(
                 text = "Anladım, Devam",
                 fontWeight = FontWeight.Bold
@@ -164,6 +184,8 @@ fun OnboardingReminderScreen(
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Default.ArrowForward, "İleri")
         }
+
+        Spacer(Modifier.weight(1f))
     }
 }
 

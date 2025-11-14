@@ -70,7 +70,7 @@ fun OnboardingHomeTourScreen(
     ) {
         Spacer(Modifier.height(40.dp))
 
-        // Dozi karakteri - Değişen ifadeler
+        // Dozi karakteri - Değişen ifadeler (transparan arka plan)
         AnimatedContent(
             targetState = currentStep,
             transitionSpec = {
@@ -81,16 +81,14 @@ fun OnboardingHomeTourScreen(
             Image(
                 painter = painterResource(
                     id = when (step) {
-                        0 -> R.drawable.dozi_happy2  // Ana ekran - heyecanlı
-                        1 -> R.drawable.dozi_ok      // Hatırlatmalar - onaylıyor
-                        2 -> R.drawable.dozi_noted   // İlaç listesi - not alıyor
-                        else -> R.drawable.dozi_happy // Buddy - mutlu
+                        0 -> R.drawable.dozi_teach3  // Ana ekran
+                        1 -> R.drawable.dozi_teach4  // Hatırlatmalar
+                        2 -> R.drawable.dozi_teach3  // İlaç listesi
+                        else -> R.drawable.dozi_teach4 // Buddy
                     }
                 ),
                 contentDescription = "Dozi",
-                modifier = Modifier
-                    .size(140.dp)
-                    .shadow(8.dp, CircleShape)
+                modifier = Modifier.size(140.dp)
             )
         }
 
