@@ -279,6 +279,7 @@ class BuddyRepository(
 
     /**
      * Bekleyen buddy isteklerini real-time dinle
+     * Not: respondedAt NULL olan (henüz yanıt verilmemiş) istekleri getir
      */
     fun getPendingBuddyRequestsFlow(): Flow<List<BuddyRequestWithUser>> = callbackFlow {
         val userId = currentUserId ?: run {
@@ -294,6 +295,7 @@ class BuddyRepository(
         val listener = db.collection("buddy_requests")
             .whereEqualTo("toUserId", userId)
             .whereEqualTo("status", BuddyRequestStatus.PENDING.name)
+            .whereEqualTo("respondedAt", null)  // SADECE yanıt verilmemiş olanlar
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -303,11 +305,17 @@ class BuddyRepository(
                 }
 
                 val requests = snapshot?.documents?.mapNotNull { doc ->
-                    android.util.Log.d("BuddyRepository", "Found pending request: ${doc.id} -> ${doc.data}")
-                    doc.toObject(BuddyRequest::class.java)?.copy(id = doc.id)
+                    val request = doc.toObject(BuddyRequest::class.java)?.copy(id = doc.id)
+                    if (request?.respondedAt != null) {
+                        android.util.Log.w("BuddyRepository", "Found request with respondedAt but still PENDING: ${doc.id}")
+                        null // Filtrele
+                    } else {
+                        android.util.Log.d("BuddyRepository", "Found valid pending request: ${doc.id}")
+                        request
+                    }
                 } ?: emptyList()
 
-                android.util.Log.d("BuddyRepository", "Total pending requests: ${requests.size}")
+                android.util.Log.d("BuddyRepository", "Total valid pending requests: ${requests.size}")
 
                 scope.launch {
                     val list = requests.map { request ->
@@ -413,6 +421,51 @@ class BuddyRepository(
             Result.success(Unit)
         } catch (e: Exception) {
             android.util.Log.e("BuddyRepository", "acceptBuddyRequest: ❌ Error", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Kirli buddy request kayıtlarını temizle
+     * (respondedAt varsa ama status hala PENDING olanları düzelt)
+     */
+    suspend fun cleanupStaleRequests(): Result<Int> {
+        val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
+
+        return try {
+            android.util.Log.d("BuddyRepository", "cleanupStaleRequests: Starting cleanup")
+
+            // Status=PENDING ama respondedAt olan kayıtları bul
+            val staleRequests = db.collection("buddy_requests")
+                .whereEqualTo("toUserId", userId)
+                .whereEqualTo("status", BuddyRequestStatus.PENDING.name)
+                .get()
+                .await()
+
+            val requestsToUpdate = staleRequests.documents.filter { doc ->
+                val respondedAt = doc.get("respondedAt")
+                respondedAt != null
+            }
+
+            android.util.Log.d("BuddyRepository", "cleanupStaleRequests: Found ${requestsToUpdate.size} stale requests")
+
+            if (requestsToUpdate.isEmpty()) {
+                return Result.success(0)
+            }
+
+            // Bu istekleri EXPIRED olarak işaretle (veya sil)
+            val batch = db.batch()
+            requestsToUpdate.forEach { doc ->
+                android.util.Log.d("BuddyRepository", "cleanupStaleRequests: Deleting stale request ${doc.id}")
+                batch.delete(doc.reference)
+            }
+
+            batch.commit().await()
+            android.util.Log.d("BuddyRepository", "cleanupStaleRequests: ✅ Cleaned up ${requestsToUpdate.size} stale requests")
+
+            Result.success(requestsToUpdate.size)
+        } catch (e: Exception) {
+            android.util.Log.e("BuddyRepository", "cleanupStaleRequests: ❌ Error", e)
             Result.failure(e)
         }
     }

@@ -52,23 +52,35 @@ class BuddyViewModel @Inject constructor(
     init {
         loadBuddies()
         loadPendingRequests()
-        // Duplicate buddy kayıtlarını temizle
-        cleanupDuplicates()
+        // Duplicate ve stale kayıtları temizle
+        cleanupData()
     }
 
     /**
-     * Duplicate buddy kayıtlarını temizle
+     * Duplicate buddy ve stale request kayıtlarını temizle
      */
-    private fun cleanupDuplicates() {
+    private fun cleanupData() {
         viewModelScope.launch {
-            buddyRepository.cleanupDuplicateBuddies()
+            // Stale request'leri temizle (ÖNCE!)
+            buddyRepository.cleanupStaleRequests()
                 .onSuccess { deletedCount ->
                     if (deletedCount > 0) {
-                        android.util.Log.d("BuddyViewModel", "Cleaned up $deletedCount duplicate buddies")
+                        android.util.Log.d("BuddyViewModel", "🧹 Cleaned up $deletedCount stale requests")
                     }
                 }
                 .onFailure { error ->
-                    android.util.Log.e("BuddyViewModel", "Cleanup failed", error as? Throwable)
+                    android.util.Log.e("BuddyViewModel", "Request cleanup failed", error as? Throwable)
+                }
+
+            // Duplicate buddy'leri temizle
+            buddyRepository.cleanupDuplicateBuddies()
+                .onSuccess { deletedCount ->
+                    if (deletedCount > 0) {
+                        android.util.Log.d("BuddyViewModel", "🧹 Cleaned up $deletedCount duplicate buddies")
+                    }
+                }
+                .onFailure { error ->
+                    android.util.Log.e("BuddyViewModel", "Buddy cleanup failed", error as? Throwable)
                 }
         }
     }
