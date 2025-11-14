@@ -64,8 +64,9 @@ class DoziMessagingService : FirebaseMessagingService() {
                 // Buddy isteği bildirimi
                 val fromUserName = data["fromUserName"] ?: "Biri"
                 handleNotificationMessage(
-                    "🤝 Yeni Buddy İsteği",
-                    "$fromUserName seni buddy olarak eklemek istiyor!"
+                    title = "🤝 Yeni Buddy İsteği",
+                    body = "$fromUserName seni buddy olarak eklemek istiyor!",
+                    type = "buddy_request"
                 )
             }
             "buddy_medication_reminder" -> {
@@ -74,8 +75,9 @@ class DoziMessagingService : FirebaseMessagingService() {
                 val medicineName = data["medicineName"] ?: "ilaç"
                 val time = data["time"] ?: ""
                 handleNotificationMessage(
-                    "💊 Buddy İlaç Hatırlatması",
-                    "$buddyName - $medicineName alma zamanı ($time)"
+                    title = "💊 Buddy İlaç Hatırlatması",
+                    body = "$buddyName - $medicineName alma zamanı ($time)",
+                    type = "buddy_medication_reminder"
                 )
             }
             "medication_taken" -> {
@@ -83,8 +85,9 @@ class DoziMessagingService : FirebaseMessagingService() {
                 val buddyName = data["buddyName"] ?: "Buddy'niz"
                 val medicineName = data["medicineName"] ?: "ilacını"
                 handleNotificationMessage(
-                    "✅ İlaç Alındı",
-                    "$buddyName $medicineName aldı"
+                    title = "✅ İlaç Alındı",
+                    body = "$buddyName $medicineName aldı",
+                    type = "medication_taken"
                 )
             }
             "medication_missed" -> {
@@ -92,14 +95,19 @@ class DoziMessagingService : FirebaseMessagingService() {
                 val buddyName = data["buddyName"] ?: "Buddy'niz"
                 val medicineName = data["medicineName"] ?: "ilacını"
                 handleNotificationMessage(
-                    "⚠️ İlaç Kaçırıldı",
-                    "$buddyName $medicineName kaçırdı"
+                    title = "⚠️ İlaç Kaçırıldı",
+                    body = "$buddyName $medicineName kaçırdı",
+                    type = "medication_missed"
                 )
             }
             "general_notification" -> {
                 val title = data["title"] ?: "Dozi"
                 val body = data["body"] ?: ""
-                handleNotificationMessage(title, body)
+                handleNotificationMessage(
+                    title = title,
+                    body = body,
+                    type = "general_notification"
+                )
             }
             else -> {
                 Log.w(TAG, "Unknown message type: $type")
@@ -110,13 +118,13 @@ class DoziMessagingService : FirebaseMessagingService() {
     /**
      * Basit notification mesajlarını işle
      */
-    private fun handleNotificationMessage(title: String?, body: String?) {
+    private fun handleNotificationMessage(title: String?, body: String?, type: String = "general") {
         if (!hasNotificationPermission()) {
             Log.w(TAG, "No notification permission")
             return
         }
 
-        Log.d(TAG, "Showing notification: $title - $body")
+        Log.d(TAG, "Showing notification: $title - $body (type: $type)")
 
         // Notification channel'ı oluştur
         NotificationHelper.createDoziChannel(this)
@@ -124,11 +132,20 @@ class DoziMessagingService : FirebaseMessagingService() {
         // Bildirim göster
         val notificationId = System.currentTimeMillis().toInt()
 
+        // Type'a göre navigation route belirle
+        val navigationRoute = when (type) {
+            "buddy_request" -> "buddy_list"
+            "medication_taken", "medication_missed", "buddy_medication_reminder" -> "buddy_list"
+            else -> null
+        }
+
         val contentIntent = PendingIntent.getActivity(
             this,
             0,
             Intent(this, com.bardino.dozi.MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                // Deep link için navigation route ekle
+                navigationRoute?.let { putExtra("navigation_route", it) }
             },
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
@@ -145,7 +162,7 @@ class DoziMessagingService : FirebaseMessagingService() {
         try {
             val notificationManager = androidx.core.app.NotificationManagerCompat.from(this)
             notificationManager.notify(notificationId, notification)
-            Log.d(TAG, "✅ Notification displayed with ID: $notificationId")
+            Log.d(TAG, "✅ Notification displayed with ID: $notificationId (route: $navigationRoute)")
         } catch (e: SecurityException) {
             Log.e(TAG, "❌ Notification permission denied", e)
         }
