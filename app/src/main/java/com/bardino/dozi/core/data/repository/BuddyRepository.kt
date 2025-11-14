@@ -32,9 +32,12 @@ class BuddyRepository(
      */
     fun getBuddiesFlow(): Flow<List<BuddyWithUser>> = callbackFlow {
         val userId = currentUserId ?: run {
+            android.util.Log.w("BuddyRepository", "getBuddiesFlow: No user logged in")
             close()
             return@callbackFlow
         }
+
+        android.util.Log.d("BuddyRepository", "getBuddiesFlow: Listening for buddies of userId=$userId")
 
         val scope = this
 
@@ -43,20 +46,28 @@ class BuddyRepository(
             .whereEqualTo("status", BuddyStatus.ACTIVE.name)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    android.util.Log.e("BuddyRepository", "getBuddiesFlow: Error", error)
                     close(error)
                     return@addSnapshotListener
                 }
 
                 val buddies = snapshot?.documents?.mapNotNull { doc ->
-                    doc.toObject(Buddy::class.java)
+                    val buddy = doc.toObject(Buddy::class.java)?.copy(id = doc.id)
+                    android.util.Log.d("BuddyRepository", "getBuddiesFlow: Found buddy record - id=${doc.id}, userId=${buddy?.userId}, buddyUserId=${buddy?.buddyUserId}")
+                    buddy
                 } ?: emptyList()
+
+                android.util.Log.d("BuddyRepository", "getBuddiesFlow: Total ${buddies.size} buddy records found")
 
                 // ❗ Suspend fonksiyon kullanacağımız için coroutine açıyoruz
                 scope.launch {
                     val list = buddies.map { buddy ->
+                        android.util.Log.d("BuddyRepository", "getBuddiesFlow: Fetching user info for buddyUserId=${buddy.buddyUserId}")
                         val user = getUserById(buddy.buddyUserId)
+                        android.util.Log.d("BuddyRepository", "getBuddiesFlow: Got user - uid=${user.uid}, name=${user.name}, email=${user.email}")
                         BuddyWithUser(buddy, user)
                     }
+                    android.util.Log.d("BuddyRepository", "getBuddiesFlow: Sending ${list.size} buddies to UI")
                     trySend(list).isSuccess
                 }
             }
@@ -481,12 +492,22 @@ class BuddyRepository(
 
     private suspend fun getUserById(userId: String): User {
         return try {
-            db.collection("users")
+            android.util.Log.d("BuddyRepository", "getUserById: Fetching user with userId=$userId")
+            val userDoc = db.collection("users")
                 .document(userId)
                 .get()
                 .await()
-                .toObject(User::class.java) ?: User(uid = userId, name = "Bilinmeyen")
+
+            val user = userDoc.toObject(User::class.java)
+            if (user != null) {
+                android.util.Log.d("BuddyRepository", "getUserById: Found user - uid=${user.uid}, name=${user.name}, email=${user.email}")
+                user
+            } else {
+                android.util.Log.w("BuddyRepository", "getUserById: User not found in Firestore, using placeholder")
+                User(uid = userId, name = "Bilinmeyen")
+            }
         } catch (e: Exception) {
+            android.util.Log.e("BuddyRepository", "getUserById: Error fetching user $userId", e)
             User(uid = userId, name = "Bilinmeyen")
         }
     }
