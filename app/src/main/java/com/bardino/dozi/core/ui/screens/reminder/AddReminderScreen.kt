@@ -390,10 +390,10 @@ private fun playStepSound(context: Context, step: Int, soundEnabled: Boolean) {
         }
 
         val soundResId = when (step) {
-            1 -> R.raw.step1
-            2 -> R.raw.step2
-            3 -> R.raw.step3
-            4 -> R.raw.step4
+            1 -> R.raw.dozi_kadin_reminder1
+            2 -> R.raw.dozi_kadin_reminder2
+            3 -> R.raw.dozi_kadin_reminder3
+            4 -> R.raw.dozi_kadin_reminder4
             else -> return
         }
 
