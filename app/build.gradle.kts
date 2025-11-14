@@ -116,9 +116,13 @@ dependencies {
     implementation("com.google.firebase:firebase-firestore-ktx")
     implementation("com.google.firebase:firebase-storage-ktx")
     implementation("com.google.firebase:firebase-messaging-ktx")
+    implementation("com.google.firebase:firebase-functions-ktx")
 
     // 🔑 Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.1.0")
+
+    // 🖼️ Coil (Image Loading)
+    implementation("io.coil-kt:coil-compose:2.5.0")
 
     // 📸 ML Kit Barcode / QR Code Scanner (Play Services)
     implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.1")
