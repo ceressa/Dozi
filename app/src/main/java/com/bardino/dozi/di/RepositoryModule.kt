@@ -1,5 +1,6 @@
 package com.bardino.dozi.di
 
+import android.content.Context
 import com.bardino.dozi.core.data.repository.*
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -8,6 +9,7 @@ import com.google.firebase.messaging.FirebaseMessaging
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
 import javax.inject.Singleton
 
@@ -30,10 +32,11 @@ object RepositoryModule {
     @Provides
     @Singleton
     fun provideMedicationLogRepository(
+        @ApplicationContext context: Context,
         auth: FirebaseAuth,
         firestore: FirebaseFirestore
     ): MedicationLogRepository {
-        return MedicationLogRepository(auth, firestore)
+        return MedicationLogRepository(context, auth, firestore)
     }
 
     @Provides
