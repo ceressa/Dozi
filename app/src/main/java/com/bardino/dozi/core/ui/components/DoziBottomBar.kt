@@ -20,6 +20,7 @@ sealed class BottomNavItem(
     object Home : BottomNavItem("home", Icons.Default.Home, "Ana Sayfa")
     object Medicines : BottomNavItem("medicine_list", Icons.Default.MedicalServices, "İlaçlarım")
     object Reminders : BottomNavItem("reminder_list", Icons.Default.Notifications, "Hatırlatmalar")
+    object Buddies : BottomNavItem("buddy_list", Icons.Default.People, "Buddy")
 
     // Dinamik - auth durumuna göre değişir
     class ProfileOrLogin(isLoggedIn: Boolean) : BottomNavItem(
@@ -52,6 +53,7 @@ fun DoziBottomBar(
         BottomNavItem.Home,
         BottomNavItem.Medicines,
         BottomNavItem.Reminders,
+        BottomNavItem.Buddies,
         BottomNavItem.ProfileOrLogin(isLoggedIn)
     )
 
@@ -63,8 +65,8 @@ fun DoziBottomBar(
         items.forEach { item ->
             val selected = currentRoute == item.route
 
-            // İlaçlarım ve Hatırlatmalar için login kontrolü
-            val requiresLogin = (item is BottomNavItem.Medicines || item is BottomNavItem.Reminders)
+            // İlaçlarım, Hatırlatmalar ve Buddy için login kontrolü
+            val requiresLogin = (item is BottomNavItem.Medicines || item is BottomNavItem.Reminders || item is BottomNavItem.Buddies)
 
             NavigationBarItem(
                 icon = {
