@@ -297,6 +297,12 @@ fun BuddyCard(
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
+                // DEBUG: uid bilgisini göster (geçici)
+                Text(
+                    "DEBUG - user.uid: ${buddy.user.uid.take(8)}... | buddy.buddyUserId: ${buddy.buddy.buddyUserId.take(8)}...",
+                    style = MaterialTheme.typography.labelSmall,
+                    color = MaterialTheme.colorScheme.error.copy(alpha = 0.7f)
+                )
 
                 // İzin durumu
                 Row(
