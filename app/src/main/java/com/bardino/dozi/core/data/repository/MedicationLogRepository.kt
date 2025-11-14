@@ -91,7 +91,7 @@ class MedicationLogRepository(
         }
 
         val listener = db.collection("medication_logs")
-            .where("userId", "==", userId)
+            .whereEqualTo("userId", userId)
             .orderBy("scheduledTime", Query.Direction.DESCENDING)
             .limit(100)
             .addSnapshotListener { snapshot, error ->
@@ -121,9 +121,9 @@ class MedicationLogRepository(
 
         return try {
             val snapshot = db.collection("medication_logs")
-                .where("userId", "==", userId)
-                .where("scheduledTime", ">=", startDate)
-                .where("scheduledTime", "<=", endDate)
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("scheduledTime", startDate)
+                .whereLessThanOrEqualTo("scheduledTime", endDate)
                 .orderBy("scheduledTime", Query.Direction.DESCENDING)
                 .get()
                 .await()
@@ -215,8 +215,8 @@ class MedicationLogRepository(
 
         return try {
             val snapshot = db.collection("medication_logs")
-                .where("userId", "==", userId)
-                .where("medicineId", "==", medicineId)
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("medicineId", medicineId)
                 .orderBy("scheduledTime", Query.Direction.DESCENDING)
                 .limit(50)
                 .get()
@@ -236,7 +236,7 @@ class MedicationLogRepository(
     suspend fun getBuddyMedicationLogs(buddyUserId: String): List<MedicationLog> {
         return try {
             val snapshot = db.collection("medication_logs")
-                .where("userId", "==", buddyUserId)
+                .whereEqualTo("userId", buddyUserId)
                 .orderBy("scheduledTime", Query.Direction.DESCENDING)
                 .limit(100)
                 .get()

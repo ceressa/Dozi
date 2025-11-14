@@ -76,7 +76,7 @@ class NotificationRepository(
         }
 
         val listener = db.collection("notifications")
-            .where("userId", "==", userId)
+            .whereEqualTo("userId", userId)
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .limit(50)
             .addSnapshotListener { snapshot, error ->
@@ -105,8 +105,8 @@ class NotificationRepository(
         }
 
         val listener = db.collection("notifications")
-            .where("userId", "==", userId)
-            .where("isRead", "==", false)
+            .whereEqualTo("userId", userId)
+            .whereEqualTo("isRead", false)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     close(error)
@@ -147,8 +147,8 @@ class NotificationRepository(
 
         return try {
             val snapshot = db.collection("notifications")
-                .where("userId", "==", userId)
-                .where("isRead", "==", false)
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("isRead", false)
                 .get()
                 .await()
 
@@ -273,7 +273,7 @@ class NotificationRepository(
 
         return try {
             val snapshot = db.collection("notifications")
-                .where("userId", "==", userId)
+                .whereEqualTo("userId", userId)
                 .get()
                 .await()
 
