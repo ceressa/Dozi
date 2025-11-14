@@ -23,5 +23,12 @@ data class Medicine(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val reminderEnabled: Boolean = true,
-    val icon: String = "💊"                     // Emoji icon for visual display
+    val icon: String = "💊",                    // Emoji icon for visual display
+
+    // 🤝 Buddy sistem için yeni alanlar
+    val sharedWithBuddies: List<String> = emptyList(), // Paylaşılan buddy userId'leri
+    val barcode: String? = null,                // Barkod/QR kod
+    val imageUrl: String? = null,               // İlaç fotoğrafı
+    val manufacturer: String? = null,           // Üretici firma
+    val activeIngredient: String? = null        // Etken madde
 )
