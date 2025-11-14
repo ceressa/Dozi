@@ -271,9 +271,12 @@ class BuddyRepository(
      */
     fun getPendingBuddyRequestsFlow(): Flow<List<BuddyRequestWithUser>> = callbackFlow {
         val userId = currentUserId ?: run {
+            android.util.Log.w("BuddyRepository", "getPendingBuddyRequestsFlow: No user logged in")
             close()
             return@callbackFlow
         }
+
+        android.util.Log.d("BuddyRepository", "getPendingBuddyRequestsFlow: Listening for requests to userId=$userId")
 
         val scope = this
 
@@ -283,19 +286,24 @@ class BuddyRepository(
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
+                    android.util.Log.e("BuddyRepository", "getPendingBuddyRequestsFlow error", error)
                     close(error)
                     return@addSnapshotListener
                 }
 
                 val requests = snapshot?.documents?.mapNotNull { doc ->
+                    android.util.Log.d("BuddyRepository", "Found pending request: ${doc.id} -> ${doc.data}")
                     doc.toObject(BuddyRequest::class.java)?.copy(id = doc.id)
                 } ?: emptyList()
+
+                android.util.Log.d("BuddyRepository", "Total pending requests: ${requests.size}")
 
                 scope.launch {
                     val list = requests.map { request ->
                         val user = getUserById(request.fromUserId)
                         BuddyRequestWithUser(request, user)
                     }
+                    android.util.Log.d("BuddyRepository", "Sending ${list.size} pending requests to UI")
                     trySend(list).isSuccess
                 }
             }

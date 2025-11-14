@@ -76,11 +76,14 @@ class BuddyViewModel @Inject constructor(
      */
     private fun loadPendingRequests() {
         viewModelScope.launch {
+            android.util.Log.d("BuddyViewModel", "Starting to load pending requests...")
             buddyRepository.getPendingBuddyRequestsFlow()
                 .catch { error ->
+                    android.util.Log.e("BuddyViewModel", "Error loading pending requests", error)
                     _uiState.update { it.copy(error = error.message) }
                 }
                 .collect { requests ->
+                    android.util.Log.d("BuddyViewModel", "Received ${requests.size} pending requests in ViewModel")
                     _uiState.update { it.copy(pendingRequests = requests) }
                 }
         }

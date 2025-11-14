@@ -37,6 +37,11 @@ fun BuddyListScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
+    // Log UI state changes
+    LaunchedEffect(uiState.pendingRequests.size, uiState.buddies.size) {
+        android.util.Log.d("BuddyListScreen", "UI State - Pending requests: ${uiState.pendingRequests.size}, Buddies: ${uiState.buddies.size}")
+    }
+
     Scaffold(
         topBar = {
             TopAppBar(
