@@ -27,6 +27,7 @@ import androidx.core.content.FileProvider
 import com.bardino.dozi.core.data.Ilac
 import com.bardino.dozi.core.data.Medicine
 import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 import com.google.mlkit.vision.common.InputImage
@@ -130,32 +131,40 @@ fun MedicineEditScreen(
             ?: selectedMedicine?.item?.Product_Name
             ?: ""
     ) }
-    var dosage by remember { mutableStateOf(
-        existing?.dosage
-            ?: selectedMedicine?.dosage
-            ?: ""
-    ) }
 
     // ✅ Stok bilgisini akıllıca belirle:
     // 1. Mevcut ilaç varsa -> onun stoğunu kullan
-    // 2. Yoksa ve selectedMedicine varsa -> isimden çıkart
-    // 3. Hiçbiri yoksa -> 0
+    // 2. Yoksa -> 0 (ad yazıldıkça otomatik güncellen ecek)
     var stock by remember { mutableStateOf(
-        existing?.stock?.toString()
-            ?: selectedMedicine?.item?.Product_Name?.let { extractStockFromName(it).toString() }
-            ?: "0"
+        existing?.stock?.toString() ?: "0"
     ) }
+
+    // İlaç adı değiştiğinde stok'u otomatik güncelle
+    LaunchedEffect(name) {
+        if (existing == null && name.isNotBlank()) {
+            val extracted = extractStockFromName(name)
+            if (extracted > 0) {
+                stock = extracted.toString()
+            }
+        }
+    }
 
     // Lookup'tan gelen veriyi temizle (bir kez okunsun diye)
     LaunchedEffect(selectedMedicine) {
         if (selectedMedicine != null) {
+            // Seçilen ilaçtan stok bilgisini çıkart
+            selectedMedicine.item.Product_Name?.let { productName ->
+                val extracted = extractStockFromName(productName)
+                if (extracted > 0 && existing == null) {
+                    stock = extracted.toString()
+                }
+            }
             savedStateHandle?.remove<IlacSearchResultParcelable>("selectedMedicine")
         }
     }
 
     // Hata durumları
     var nameError by remember { mutableStateOf(false) }
-    var dosageError by remember { mutableStateOf(false) }
     var stockError by remember { mutableStateOf(false) }
 
     // Animasyon
@@ -226,31 +235,6 @@ fun MedicineEditScreen(
 
                     if (nameError) ErrorCard("İlaç adı boş bırakılamaz.")
 
-                    // 🔹 Dozaj
-                    OutlinedTextField(
-                        value = dosage,
-                        onValueChange = { dosage = it; dosageError = it.isBlank() },
-                        label = { Text("Dozaj (örn: 500 mg) *", color = TextSecondaryLight) },
-                        leadingIcon = { Icon(Icons.Default.Medication, null, tint = DoziCoralDark) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFF9F9FB), RoundedCornerShape(12.dp))
-                            .padding(1.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = DoziCoralDark,
-                            unfocusedBorderColor = VeryLightGray,
-                            cursorColor = DoziCoralDark,
-                            focusedContainerColor = Color(0xFFF9F9FB),
-                            unfocusedContainerColor = Color(0xFFF9F9FB)
-                        ),
-                        singleLine = true,
-                        isError = dosageError,
-                        placeholder = { Text("Örneğin: 500 mg", color = TextSecondaryLight) }
-                    )
-
-                    if (dosageError) ErrorCard("Dozaj bilgisi boş bırakılamaz.")
-
                     // 🔹 Stok
                     OutlinedTextField(
                         value = stock,
@@ -297,12 +281,11 @@ fun MedicineEditScreen(
                 Button(
                     onClick = {
                         nameError = name.isBlank()
-                        dosageError = dosage.isBlank()
                         stockError = stock.isEmpty() || stock.toIntOrNull() == null
 
-                        if (!nameError && !dosageError && !stockError) {
+                        if (!nameError && !stockError) {
                             val newId = if (medicineId == "new") UUID.randomUUID().toString() else medicineId
-                            val updated = Medicine(newId, name.trim(), dosage.trim(), stock.toInt())
+                            val updated = Medicine(newId, name.trim(), stock = stock.toInt())
 
                             // İlaç doğrulama
                             val match = MedicineRepository.findByNameOrIngredient(name)
@@ -315,6 +298,13 @@ fun MedicineEditScreen(
                             }
 
                             MedicineRepository.saveMedicine(context, updated)
+
+                            // Onboarding state kontrolü
+                            if (OnboardingPreferences.isInOnboarding(context) &&
+                                OnboardingPreferences.getOnboardingStep(context) == "medicine") {
+                                OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
+                            }
+
                             onNavigateBack()
                         }
                     },

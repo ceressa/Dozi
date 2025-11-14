@@ -13,12 +13,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bardino.dozi.R
+import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.theme.*
 
 /**
@@ -29,6 +31,18 @@ fun OnboardingMedicineScreen(
     onNext: () -> Unit,
     onTryNow: () -> Unit
 ) {
+    val context = LocalContext.current
+
+    // Onboarding'e geri dönme kontrolü
+    LaunchedEffect(Unit) {
+        if (OnboardingPreferences.isInOnboarding(context) &&
+            OnboardingPreferences.getOnboardingStep(context) == "medicine_completed") {
+            // İlaç eklendi, state'i temizle ve devam et
+            OnboardingPreferences.clearOnboardingState(context)
+            onNext()
+        }
+    }
+
     Column(
         modifier = Modifier
             .fillMaxSize()
@@ -140,11 +154,15 @@ fun OnboardingMedicineScreen(
             }
         }
 
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(32.dp))
 
         // Şimdi Dene butonu (interaktif)
         Button(
-            onClick = onTryNow,
+            onClick = {
+                // Onboarding state'ini kaydet
+                OnboardingPreferences.setOnboardingStep(context, "medicine")
+                onTryNow()
+            },
             modifier = Modifier
                 .fillMaxWidth()
                 .height(56.dp),
@@ -181,8 +199,6 @@ fun OnboardingMedicineScreen(
             Spacer(Modifier.width(8.dp))
             Icon(Icons.Default.ArrowForward, "İleri")
         }
-
-        Spacer(Modifier.weight(1f))
     }
 }
 
