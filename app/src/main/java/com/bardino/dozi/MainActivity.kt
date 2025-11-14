@@ -36,10 +36,12 @@ import com.google.android.gms.auth.api.signin.GoogleSignInOptions
 import com.google.android.gms.common.api.ApiException
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.auth.GoogleAuthProvider
+import com.google.firebase.messaging.FirebaseMessaging
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -90,6 +92,15 @@ class MainActivity : ComponentActivity() {
                                     try {
                                         userRepository.createUserIfNotExists()
                                         Log.d("GOOGLE_AUTH", "Kullanıcı Firestore'a kaydedildi/güncellendi")
+
+                                        // ✅ FCM token'ı al ve kaydet
+                                        try {
+                                            val fcmToken = FirebaseMessaging.getInstance().token.await()
+                                            userRepository.updateUserField("fcmToken", fcmToken)
+                                            Log.d("GOOGLE_AUTH", "FCM token kaydedildi: $fcmToken")
+                                        } catch (e: Exception) {
+                                            Log.e("GOOGLE_AUTH", "FCM token kaydı başarısız: ${e.localizedMessage}")
+                                        }
                                     } catch (e: Exception) {
                                         Log.e("GOOGLE_AUTH", "Firestore kaydı başarısız: ${e.localizedMessage}")
                                     }
@@ -117,6 +128,20 @@ class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         currentIntent = intent
+
+        // ✅ Uygulama başlangıcında FCM token'ı kaydet (login olan kullanıcılar için)
+        CoroutineScope(Dispatchers.IO).launch {
+            val currentUser = FirebaseAuth.getInstance().currentUser
+            if (currentUser != null) {
+                try {
+                    val fcmToken = FirebaseMessaging.getInstance().token.await()
+                    userRepository.updateUserField("fcmToken", fcmToken)
+                    Log.d("MainActivity", "FCM token güncellendi: $fcmToken")
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "FCM token güncellemesi başarısız: ${e.localizedMessage}")
+                }
+            }
+        }
 
         setContent {
             DoziAppTheme {
