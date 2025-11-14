@@ -230,19 +230,13 @@ fun NavGraph(
             // Onboarding akışı
             composable(Screen.OnboardingWelcome.route) {
                 OnboardingWelcomeScreen(
-                    onStartTour = { navController.navigate(Screen.OnboardingIntro.route) },
+                    onStartTour = { navController.navigate(Screen.OnboardingMedicine.route) },
                     onSkip = {
                         OnboardingPreferences.skipOnboarding(context)
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
                         }
                     }
-                )
-            }
-
-            composable(Screen.OnboardingIntro.route) {
-                OnboardingIntroScreen(
-                    onNext = { navController.navigate(Screen.OnboardingMedicine.route) }
                 )
             }
 

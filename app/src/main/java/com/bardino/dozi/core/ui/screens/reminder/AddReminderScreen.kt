@@ -1661,9 +1661,10 @@ private fun saveMedicinesToFirestore(
     onSuccess: () -> Unit,
     onError: () -> Unit
 ) {
-    // Onboarding'deyse Firebase'e kaydetme, sadece simüle et
+    // Onboarding'deyse LOCAL'e kaydet (Firebase yerine)
     if (OnboardingPreferences.isInOnboarding(context)) {
-        android.util.Log.d("AddReminder", "✅ Onboarding mode: Skipping Firebase save")
+        android.util.Log.d("AddReminder", "✅ Onboarding mode: Saving to local storage")
+        saveRemindersToLocal(context, medicines, hour, minute, frequency, xValue, selectedDates, startDate)
         onSuccess()
         return
     }
@@ -1736,4 +1737,55 @@ private fun saveMedicinesToFirestore(
             }
         }
     }
+}
+
+// LOCAL KAYDETME - Onboarding sırasında kullanılır
+private fun saveRemindersToLocal(
+    context: Context,
+    medicines: List<MedicineEntry>,
+    hour: Int,
+    minute: Int,
+    frequency: String,
+    xValue: Int,
+    selectedDates: List<String>,
+    startDate: Long
+) {
+    val prefs = context.getSharedPreferences("local_reminders", Context.MODE_PRIVATE)
+    val existingReminders = prefs.getString("reminders", "[]") ?: "[]"
+
+    // JSON array olarak parse et
+    val remindersArray = try {
+        org.json.JSONArray(existingReminders)
+    } catch (e: Exception) {
+        org.json.JSONArray()
+    }
+
+    // Yeni hatırlatmaları ekle
+    medicines.forEach { medicineEntry ->
+        val dosage = if (medicineEntry.dosageType == "custom") {
+            medicineEntry.customDosage
+        } else {
+            medicineEntry.dosageType
+        }
+
+        val reminderJson = org.json.JSONObject().apply {
+            put("name", medicineEntry.name)
+            put("dosage", dosage)
+            put("unit", medicineEntry.unit)
+            put("hour", hour)
+            put("minute", minute)
+            put("frequency", frequency)
+            put("xValue", xValue)
+            put("selectedDates", org.json.JSONArray(selectedDates))
+            put("startDate", startDate)
+            put("createdAt", System.currentTimeMillis())
+        }
+
+        remindersArray.put(reminderJson)
+        android.util.Log.d("AddReminder", "💾 Saved to local: ${medicineEntry.name} at $hour:$minute")
+    }
+
+    // Kaydet
+    prefs.edit().putString("reminders", remindersArray.toString()).apply()
+    android.util.Log.d("AddReminder", "✅ Total local reminders: ${remindersArray.length()}")
 }

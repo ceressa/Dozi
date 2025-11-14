@@ -50,7 +50,17 @@ fun OnboardingReminderScreen(
             .padding(horizontal = 24.dp, vertical = 16.dp),
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Spacer(Modifier.height(24.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // Adım göstergesi
+        Text(
+            text = "Adım 3/4",
+            style = MaterialTheme.typography.labelLarge,
+            color = DoziCoral,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(16.dp))
 
         // Dozi karakteri - Öğretici Dozi 2 (transparan arka plan)
         Image(
