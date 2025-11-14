@@ -93,14 +93,8 @@ class MainActivity : ComponentActivity() {
                                         userRepository.createUserIfNotExists()
                                         Log.d("GOOGLE_AUTH", "Kullanıcı Firestore'a kaydedildi/güncellendi")
 
-                                        // ✅ FCM token'ı al ve kaydet
-                                        try {
-                                            val fcmToken = FirebaseMessaging.getInstance().token.await()
-                                            userRepository.updateUserField("fcmToken", fcmToken)
-                                            Log.d("GOOGLE_AUTH", "FCM token kaydedildi: $fcmToken")
-                                        } catch (e: Exception) {
-                                            Log.e("GOOGLE_AUTH", "FCM token kaydı başarısız: ${e.localizedMessage}")
-                                        }
+                                        // ✅ FCM token'ı al ve kaydet (retry logic ile)
+                                        saveFCMToken()
                                     } catch (e: Exception) {
                                         Log.e("GOOGLE_AUTH", "Firestore kaydı başarısız: ${e.localizedMessage}")
                                     }
@@ -133,13 +127,7 @@ class MainActivity : ComponentActivity() {
         CoroutineScope(Dispatchers.IO).launch {
             val currentUser = FirebaseAuth.getInstance().currentUser
             if (currentUser != null) {
-                try {
-                    val fcmToken = FirebaseMessaging.getInstance().token.await()
-                    userRepository.updateUserField("fcmToken", fcmToken)
-                    Log.d("MainActivity", "FCM token güncellendi: $fcmToken")
-                } catch (e: Exception) {
-                    Log.e("MainActivity", "FCM token güncellemesi başarısız: ${e.localizedMessage}")
-                }
+                saveFCMToken()
             }
         }
 
@@ -361,6 +349,44 @@ class MainActivity : ComponentActivity() {
                 data = Uri.parse("package:$packageName")
             }
             exactAlarmLauncher.launch(intent)
+        }
+    }
+
+    /**
+     * FCM token'ı al ve Firestore'a kaydet (retry logic ile)
+     */
+    private suspend fun saveFCMToken() {
+        var retryCount = 0
+        val maxRetries = 3
+
+        while (retryCount < maxRetries) {
+            try {
+                Log.d("FCM_TOKEN", "FCM token alınıyor... (Deneme: ${retryCount + 1})")
+
+                val fcmToken = FirebaseMessaging.getInstance().token.await()
+
+                if (fcmToken.isNullOrEmpty()) {
+                    Log.w("FCM_TOKEN", "FCM token boş geldi, tekrar deneniyor...")
+                    retryCount++
+                    kotlinx.coroutines.delay(2000) // 2 saniye bekle
+                    continue
+                }
+
+                // Token başarıyla alındı, Firestore'a kaydet
+                userRepository.updateUserField("fcmToken", fcmToken)
+                Log.d("FCM_TOKEN", "✅ FCM token başarıyla kaydedildi: ${fcmToken.take(20)}...")
+                return // Başarılı, fonksiyondan çık
+
+            } catch (e: Exception) {
+                Log.e("FCM_TOKEN", "FCM token alma hatası (Deneme ${retryCount + 1}): ${e.message}")
+                retryCount++
+
+                if (retryCount < maxRetries) {
+                    kotlinx.coroutines.delay(2000) // 2 saniye bekle ve tekrar dene
+                } else {
+                    Log.e("FCM_TOKEN", "❌ FCM token kaydı başarısız (${maxRetries} deneme sonrası)")
+                }
+            }
         }
     }
 }
