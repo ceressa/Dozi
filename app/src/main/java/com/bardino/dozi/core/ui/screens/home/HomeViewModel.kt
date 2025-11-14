@@ -32,6 +32,7 @@ class HomeViewModel(
      */
     data class HomeUiState(
         val user: User? = null,
+        val isLoggedIn: Boolean = false,
         val todaysMedicines: List<Medicine> = emptyList(),
         val upcomingMedicine: Pair<Medicine, String>? = null,
         val allUpcomingMedicines: List<Pair<Medicine, String>> = emptyList(),
@@ -64,10 +65,13 @@ class HomeViewModel(
             try {
                 // Kullanıcı verilerini çek
                 val userData = userRepository.getUserData()
-                _uiState.update { it.copy(user = userData) }
+                val isLoggedIn = userData != null
+                _uiState.update { it.copy(user = userData, isLoggedIn = isLoggedIn) }
 
-                // İlaç verilerini çek
-                refreshMedicines(null)
+                // İlaç verilerini çek (sadece login olduysa)
+                if (isLoggedIn) {
+                    refreshMedicines(null)
+                }
 
                 _uiState.update { it.copy(isLoading = false) }
             } catch (e: Exception) {
@@ -90,7 +94,8 @@ class HomeViewModel(
                 try {
                     // Kullanıcı verilerini güncelle
                     val userData = userRepository.getUserData()
-                    _uiState.update { it.copy(user = userData) }
+                    val isLoggedIn = userData != null
+                    _uiState.update { it.copy(user = userData, isLoggedIn = isLoggedIn) }
                 } catch (e: Exception) {
                     // Sessizce devam et
                 }
