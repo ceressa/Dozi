@@ -163,7 +163,12 @@ class MainActivity : ComponentActivity() {
     }
 
     private fun handleDeepLink(intent: Intent?, navController: androidx.navigation.NavHostController) {
+        Log.d("MainActivity", "handleDeepLink called with intent: $intent")
+        Log.d("MainActivity", "Intent extras: ${intent?.extras?.keySet()?.joinToString()}")
+
         val navigationRoute = intent?.getStringExtra("navigation_route")
+        Log.d("MainActivity", "navigationRoute from intent: $navigationRoute")
+
         if (!navigationRoute.isNullOrEmpty()) {
             Log.d("MainActivity", "Deep link detected: $navigationRoute")
             try {
@@ -178,6 +183,8 @@ class MainActivity : ComponentActivity() {
             } catch (e: Exception) {
                 Log.e("MainActivity", "Navigation failed: ${e.message}")
             }
+        } else {
+            Log.d("MainActivity", "No navigation_route in intent extras")
         }
     }
 
