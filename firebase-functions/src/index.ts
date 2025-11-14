@@ -1,5 +1,7 @@
-import * as functions from "firebase-functions";
 import * as admin from "firebase-admin";
+import {onDocumentCreated} from "firebase-functions/v2/firestore";
+import {onCall, HttpsError} from "firebase-functions/v2/https";
+import {onSchedule} from "firebase-functions/v2/scheduler";
 
 admin.initializeApp();
 
@@ -10,11 +12,16 @@ const messaging = admin.messaging();
  * 🤝 Buddy isteği oluşturulduğunda tetiklenir
  * Alıcıya push notification gönderir
  */
-export const onBuddyRequestCreated = functions.firestore
-  .document("buddy_requests/{requestId}")
-  .onCreate(async (snap, context) => {
-    const request = snap.data();
-    const requestId = context.params.requestId;
+export const onBuddyRequestCreated = onDocumentCreated(
+  "buddy_requests/{requestId}",
+  async (event) => {
+    const request = event.data?.data();
+    if (!request) {
+      console.warn("⚠️ Request data yok");
+      return;
+    }
+
+    const requestId = event.params.requestId;
 
     console.log(`📬 Yeni buddy isteği: ${requestId}`);
     const from = request.fromUserId;
@@ -28,12 +35,12 @@ export const onBuddyRequestCreated = functions.firestore
 
       if (!toUser) {
         console.warn("⚠️ Alıcı kullanıcı bulunamadı:", request.toUserId);
-        return null;
+        return;
       }
 
       if (!toUser.fcmToken) {
         console.warn("⚠️ Alıcının FCM token'ı yok:", request.toUserId);
-        return null;
+        return;
       }
 
       // Push notification gönder
@@ -82,24 +89,28 @@ export const onBuddyRequestCreated = functions.firestore
     } catch (error) {
       console.error("❌ Bildirim gönderme hatası:", error);
     }
-
-    return null;
-  });
+  }
+);
 
 /**
  * ✅ İlaç alındığında tetiklenir
  * Buddy'lere bildirim gönderir
  */
-export const onMedicationTaken = functions.firestore
-  .document("medication_logs/{logId}")
-  .onCreate(async (snap, context) => {
-    const log = snap.data();
-    const logId = context.params.logId;
+export const onMedicationTaken = onDocumentCreated(
+  "medication_logs/{logId}",
+  async (event) => {
+    const log = event.data?.data();
+    if (!log) {
+      console.warn("⚠️ Log data yok");
+      return;
+    }
+
+    const logId = event.params.logId;
 
     // Sadece "TAKEN" durumunda bildirim gönder
     if (log.status !== "TAKEN") {
       console.log(`⏭️ Log durumu TAKEN değil (${log.status}), atlıyorum`);
-      return null;
+      return;
     }
 
     console.log(`💊 İlaç alındı: ${log.medicineName} - ${log.userId}`);
@@ -113,7 +124,7 @@ export const onMedicationTaken = functions.firestore
 
       if (!user) {
         console.warn("⚠️ Kullanıcı bulunamadı:", userId);
-        return null;
+        return;
       }
 
       // Kullanıcının aktif buddy'lerini al
@@ -127,7 +138,7 @@ export const onMedicationTaken = functions.firestore
 
       if (buddiesSnapshot.empty) {
         console.log("ℹ️ Aktif buddy yok, bildirim gönderilmeyecek");
-        return null;
+        return;
       }
 
       const promises: Promise<unknown>[] = [];
@@ -213,26 +224,25 @@ export const onMedicationTaken = functions.firestore
     } catch (error) {
       console.error("❌ onMedicationTaken hatası:", error);
     }
-
-    return null;
-  });
+  }
+);
 
 /**
  * 💊 İlaç hatırlatması buddy'lere gönder
  * Android app'ten callable function olarak çağrılır
  */
-export const sendMedicationReminderToBuddies = functions.https.onCall(
-  async (data, context) => {
+export const sendMedicationReminderToBuddies = onCall(
+  async (request) => {
     // Auth kontrolü
-    if (!context.auth) {
-      throw new functions.https.HttpsError(
+    if (!request.auth) {
+      throw new HttpsError(
         "unauthenticated",
         "Kullanıcı giriş yapmamış"
       );
     }
 
-    const { medicineId, medicineName, dosage, time } = data;
-    const userId = context.auth.uid;
+    const {medicineId, medicineName, dosage, time} = request.data;
+    const userId = request.auth.uid;
 
     console.log(`💊 İlaç hatırlatması: ${medicineName} - ${userId}`);
 
@@ -242,7 +252,7 @@ export const sendMedicationReminderToBuddies = functions.https.onCall(
       const user = userDoc.data();
 
       if (!user) {
-        throw new functions.https.HttpsError("not-found", "Kullanıcı bulunamadı");
+        throw new HttpsError("not-found", "Kullanıcı bulunamadı");
       }
 
       // Kullanıcının aktif buddy'lerini al
@@ -347,7 +357,7 @@ export const sendMedicationReminderToBuddies = functions.https.onCall(
       };
     } catch (error) {
       console.error("❌ sendMedicationReminderToBuddies hatası:", error);
-      throw new functions.https.HttpsError("internal", "Bildirim gönderilemedi");
+      throw new HttpsError("internal", "Bildirim gönderilemedi");
     }
   }
 );
@@ -356,9 +366,9 @@ export const sendMedicationReminderToBuddies = functions.https.onCall(
  * ⚠️ İlaç kaçırma kontrolü
  * Her 15 dakikada bir çalışır
  */
-export const checkMissedMedications = functions.pubsub
-  .schedule("every 15 minutes")
-  .onRun(async () => {
+export const checkMissedMedications = onSchedule(
+  "every 15 minutes",
+  async () => {
     console.log("🔍 Kaçırılan ilaçlar kontrol ediliyor...");
 
     try {
@@ -376,7 +386,7 @@ export const checkMissedMedications = functions.pubsub
 
       if (missedLogsSnapshot.empty) {
         console.log("✅ Kaçırılan ilaç yok");
-        return null;
+        return;
       }
 
       const promises: Promise<unknown>[] = [];
@@ -407,7 +417,10 @@ export const checkMissedMedications = functions.pubsub
           }
 
           // Buddy'nin FCM token'ını al
-          const buddyUserDoc = await db.collection("users").doc(buddy.buddyUserId).get();
+          const buddyUserDoc = await db
+            .collection("users")
+            .doc(buddy.buddyUserId)
+            .get();
           const buddyUser = buddyUserDoc.data();
 
           if (!buddyUser || !buddyUser.fcmToken) continue;
@@ -460,7 +473,5 @@ export const checkMissedMedications = functions.pubsub
     } catch (error) {
       console.error("❌ checkMissedMedications hatası:", error);
     }
-
-    return null;
-  });
-
+  }
+);
