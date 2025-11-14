@@ -43,15 +43,10 @@ export const onBuddyRequestCreated = onDocumentCreated(
         return;
       }
 
-      // Push notification gönder
+      // Push notification gönder (data-only message)
       const fromName = request.fromUserName;
-      const notifBody = `${fromName} seni buddy olarak eklemek istiyor!`;
       const message = {
         token: toUser.fcmToken,
-        notification: {
-          title: "🤝 Yeni Buddy İsteği",
-          body: notifBody,
-        },
         data: {
           type: "buddy_request",
           requestId: requestId,
@@ -60,11 +55,6 @@ export const onBuddyRequestCreated = onDocumentCreated(
         },
         android: {
           priority: "high" as const,
-          notification: {
-            sound: "default",
-            channelId: "dozi_med_channel",
-            clickAction: "FLUTTER_NOTIFICATION_CLICK",
-          },
         },
       };
 
@@ -75,8 +65,8 @@ export const onBuddyRequestCreated = onDocumentCreated(
       await db.collection("notifications").add({
         userId: request.toUserId,
         type: "BUDDY_REQUEST",
-        title: message.notification.title,
-        body: message.notification.body,
+        title: "🤝 Yeni Buddy İsteği",
+        body: `${fromName} seni buddy olarak eklemek istiyor!`,
         data: message.data,
         isRead: false,
         isSent: true,

@@ -316,13 +316,23 @@ class BuddyRepository(
      * Buddy isteğini kabul et
      */
     suspend fun acceptBuddyRequest(requestId: String): Result<Unit> {
-        val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
+        val userId = currentUserId ?: run {
+            android.util.Log.e("BuddyRepository", "acceptBuddyRequest: User not logged in")
+            return Result.failure(Exception("User not logged in"))
+        }
 
         return try {
+            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: Getting request $requestId")
+
             // İsteği al
             val requestDoc = db.collection("buddy_requests").document(requestId).get().await()
             val request = requestDoc.toObject(BuddyRequest::class.java)
-                ?: return Result.failure(Exception("Request not found"))
+                ?: run {
+                    android.util.Log.e("BuddyRepository", "acceptBuddyRequest: Request not found")
+                    return Result.failure(Exception("Request not found"))
+                }
+
+            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: From ${request.fromUserId} to $userId")
 
             // İki yönlü buddy ilişkisi oluştur
             val buddy1 = Buddy(
@@ -337,12 +347,17 @@ class BuddyRepository(
                 status = BuddyStatus.ACTIVE
             )
 
+            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: Creating buddies - buddy1(userId=${buddy1.userId}, buddyUserId=${buddy1.buddyUserId}), buddy2(userId=${buddy2.userId}, buddyUserId=${buddy2.buddyUserId})")
+
             // Firestore batch işlemi
             val batch = db.batch()
 
             // Buddy ilişkilerini ekle
-            batch.set(db.collection("buddies").document(), buddy1)
-            batch.set(db.collection("buddies").document(), buddy2)
+            val buddy1Ref = db.collection("buddies").document()
+            val buddy2Ref = db.collection("buddies").document()
+
+            batch.set(buddy1Ref, buddy1)
+            batch.set(buddy2Ref, buddy2)
 
             // İstek durumunu güncelle
             batch.update(
@@ -353,9 +368,13 @@ class BuddyRepository(
                 )
             )
 
+            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: Committing batch...")
             batch.commit().await()
+
+            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: ✅ Success - Buddy relationship created")
             Result.success(Unit)
         } catch (e: Exception) {
+            android.util.Log.e("BuddyRepository", "acceptBuddyRequest: ❌ Error", e)
             Result.failure(e)
         }
     }
