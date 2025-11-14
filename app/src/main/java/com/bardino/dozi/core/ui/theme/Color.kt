@@ -133,7 +133,7 @@ val TextSecondaryDark = Color(0xFFD1D5DB)      // İkincil metinler (dark mode)
 /**
  * Light Mode (Aydınlık Mod)
  */
-val BackgroundLight = Color(0xFFF9F9FB)         // Ana arka plan
+val BackgroundLight = Color(0xFFF0F4F7)         // Ana arka plan - hafif turkuaz-gri
 val SurfaceLight = Color(0xFFFFFFFF)            // Kartlar, yüzeyler
 
 /**
