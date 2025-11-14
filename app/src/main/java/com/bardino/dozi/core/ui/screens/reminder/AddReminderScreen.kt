@@ -75,6 +75,15 @@ fun AddReminderScreen(
 
     // Edit mode kontrolü
     val isEditMode = medicineId != null
+
+    // Onboarding'den hatırlatma eklendikten sonra geri dönme kontrolü
+    LaunchedEffect(Unit) {
+        if (OnboardingPreferences.isInOnboarding(context) &&
+            OnboardingPreferences.getOnboardingStep(context) == "reminder_completed") {
+            // Hatırlatma eklendi, onboarding'e geri dön
+            onNavigateBack()
+        }
+    }
     var isLoading by remember { mutableStateOf(isEditMode) }
 
     // State'ler
@@ -314,6 +323,7 @@ fun AddReminderScreen(
                             4 -> {
                                 // Tüm ilaçları kaydet
                                 saveMedicinesToFirestore(
+                                    context = context,
                                     medicines = medicines,
                                     hour = hour,
                                     minute = minute,
@@ -1640,6 +1650,7 @@ private fun ReminderSuccessDialog(
 
 // KAYDETME - Multiple Medicines to Firestore
 private fun saveMedicinesToFirestore(
+    context: Context,
     medicines: List<MedicineEntry>,
     hour: Int,
     minute: Int,
@@ -1650,6 +1661,13 @@ private fun saveMedicinesToFirestore(
     onSuccess: () -> Unit,
     onError: () -> Unit
 ) {
+    // Onboarding'deyse Firebase'e kaydetme, sadece simüle et
+    if (OnboardingPreferences.isInOnboarding(context)) {
+        android.util.Log.d("AddReminder", "✅ Onboarding mode: Skipping Firebase save")
+        onSuccess()
+        return
+    }
+
     val medicineRepository = FirestoreMedicineRepository()
 
     // Zamanları hesapla
