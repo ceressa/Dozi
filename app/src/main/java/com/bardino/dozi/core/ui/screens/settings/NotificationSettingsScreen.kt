@@ -114,7 +114,7 @@ fun NotificationSettingsScreen(
                                 text = if (hasNotificationPermission) "Bildirimler Aktif ✓" else "Bildirim İzni Gerekli ⚠️",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Spacer(modifier = Modifier.height(4.dp))
                             Text(
@@ -123,7 +123,7 @@ fun NotificationSettingsScreen(
                                 else
                                     "İzin vermek için ayarlara gidin",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -165,7 +165,7 @@ fun NotificationSettingsScreen(
                         text = "🔔 Bildirim Türleri",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     NotificationTypeItem(
@@ -242,26 +242,26 @@ fun NotificationSettingsScreen(
                                 text = "İpuçları",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
 
                         Text(
                             text = "• Bildirimleri sessize almak için telefon ayarlarınızdan 'Sessiz' modunu kullanın",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Text(
                             text = "• Titreşimi kapatmak için Ayarlar > Bildirimler bölümünden değişiklik yapabilirsiniz",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
 
                         Text(
                             text = "• Bildirimlerin gösterilmemesi için cihaz ayarlarından 'Rahatsız Etme' modunu aktif edin",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -304,13 +304,13 @@ private fun NotificationTypeItem(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }

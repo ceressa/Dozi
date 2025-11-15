@@ -295,7 +295,7 @@ fun MedicineLookupScreen(
                         )
                         Text(
                             if (searchMode == "barcode") "Barkod okunuyor..." else "Aranıyor...",
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 

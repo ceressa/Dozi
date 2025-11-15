@@ -72,7 +72,7 @@ fun AnalyticsDashboardScreen(
                     text = "Premium Özeti",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -99,7 +99,7 @@ fun AnalyticsDashboardScreen(
                             Text(
                                 text = "Analytics verileri yükleniyor...",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }
@@ -112,7 +112,11 @@ fun AnalyticsDashboardScreen(
                     text = "Günlük İstatistikler (Son 7 Gün)",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
+
+                    color = MaterialTheme.colorScheme.onSurface,
+
                     color = MaterialTheme.colorScheme.onSurface
+                  
                     modifier = Modifier.padding(top = 16.dp)
                 )
             }
@@ -141,7 +145,7 @@ fun AnalyticsDashboardScreen(
                         Text(
                             text = "Bu veriler Firestore'daki analytics ve daily_analytics koleksiyonlarından gelir. Manuel olarak güncellenmelidir.",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -223,7 +227,7 @@ private fun PremiumBreakdownCard(analytics: PremiumAnalytics) {
                 text = "Plan Dağılımı",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             PlanBreakdownRow("Haftalık", analytics.weeklyUsers, DoziRose)
@@ -249,7 +253,7 @@ private fun DailyAnalyticsCard(daily: DailyAnalytics) {
                 text = daily.date,
                 style = MaterialTheme.typography.titleSmall,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Row(
@@ -267,7 +271,7 @@ private fun DailyAnalyticsCard(daily: DailyAnalytics) {
             Text(
                 text = "Retention: 1d ${(daily.retention1Day * 100).toInt()}% | 7d ${(daily.retention7Day * 100).toInt()}% | 30d ${(daily.retention30Day * 100).toInt()}%",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -298,7 +302,7 @@ private fun MetricRow(
             Text(
                 text = label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Text(
@@ -333,14 +337,14 @@ private fun PlanBreakdownRow(
             Text(
                 text = planName,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
         Text(
             text = count.toString(),
             style = MaterialTheme.typography.bodyLarge,
             fontWeight = FontWeight.Bold,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -364,7 +368,7 @@ private fun SmallMetric(
         Text(
             text = label,
             style = MaterialTheme.typography.labelSmall,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }

@@ -746,7 +746,7 @@ private fun CalendarDayCircle(
                 }
                 Text(
                     text = displayDay,
-                    color = if (status == MedicineStatus.NONE) TextSecondaryLight else TextPrimary,
+                    color = if (status == MedicineStatus.NONE) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.Bold,
                     fontSize = if (isSelected) 17.sp else if (isToday) 16.sp else 15.sp,
                     modifier = if (isToday) Modifier.offset(y = (-1).dp) else Modifier
@@ -757,7 +757,7 @@ private fun CalendarDayCircle(
         Text(
             text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("tr", "TR")),
             style = MaterialTheme.typography.labelSmall,
-            color = if (isToday) DoziTurquoise else TextSecondaryLight,
+            color = if (isToday) DoziTurquoise else MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier.padding(top = 2.dp)
         )
@@ -856,7 +856,7 @@ private fun CalendarExpandedContent(
                                     MedicineStatus.TAKEN -> SuccessGreen
                                     MedicineStatus.SKIPPED -> ErrorRed
                                     MedicineStatus.UPCOMING -> DoziPurple
-                                    else -> TextSecondaryLight
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 },
                                 modifier = Modifier.size(18.dp)
                             )
@@ -1573,7 +1573,7 @@ private fun TimelineItem(
                                 TimelineStatus.SKIPPED -> ErrorRed
                                 TimelineStatus.SNOOZED -> WarningOrange
                                 TimelineStatus.CURRENT -> DoziRed
-                                else -> TextSecondaryLight
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
                             },
                             fontWeight = if (status == TimelineStatus.CURRENT) FontWeight.Bold else FontWeight.Normal
                         )
@@ -1593,7 +1593,7 @@ private fun TimelineItem(
                     color = when (status) {
                         TimelineStatus.CURRENT -> DoziRed
                         TimelineStatus.COMPLETED -> DoziTurquoise
-                        else -> TextSecondaryLight
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
             }
@@ -1700,7 +1700,7 @@ private fun SnoozeOption(
         Text(
             "$minutes dakika",
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            color = if (selected) WarningOrange else TextPrimaryLight,
+            color = if (selected) WarningOrange else MaterialTheme.colorScheme.onSurface,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
     }
@@ -1870,7 +1870,7 @@ private fun ReasonChip(
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (selected) DoziTurquoise else TextSecondaryLight,
+                color = if (selected) DoziTurquoise else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
             )
         }
@@ -2071,7 +2071,7 @@ private fun StreakAndDailySummaryCard(
                         "$takenCount/$totalDoses ilaç",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }

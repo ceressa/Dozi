@@ -261,7 +261,7 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
                                 else
                                     "Konum limiti doldu (5/5)",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -293,7 +293,7 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
             text = {
                 Text(
                     text = "“${deleting.name}” konumunu silmek istediğinize emin misiniz?",
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             },
             confirmButton = {
@@ -397,7 +397,11 @@ private fun EmptyLocationsState(
             text = "Henüz konum eklemedin",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
+
+            color = MaterialTheme.colorScheme.onSurface,
+
             color = MaterialTheme.colorScheme.onSurface
+
             textAlign = TextAlign.Center
         )
 
@@ -406,7 +410,11 @@ private fun EmptyLocationsState(
         Text(
             text = "Ev, iş, okul gibi sık gittiğin yerleri ekle. Bu konumlara vardığında ilaç hatırlatması yapalım! 📍",
             style = MaterialTheme.typography.bodyLarge,
+
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+
             color = MaterialTheme.colorScheme.onSurfaceVariant
+
             textAlign = TextAlign.Center
         )
 
@@ -475,14 +483,18 @@ private fun LocationCard(
                     text = place.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 if (place.address.isNotBlank()) {
                     Spacer(Modifier.height(4.dp))
                     Text(
                         text = place.address,
                         style = MaterialTheme.typography.bodySmall,
+
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+
                         maxLines = 1
                     )
                 }
@@ -490,7 +502,11 @@ private fun LocationCard(
                 Text(
                     text = "📍 ${String.format("%.4f", place.lat)}, ${String.format("%.4f", place.lng)}",
                     style = MaterialTheme.typography.labelSmall,
+
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+
                     color = MaterialTheme.colorScheme.onSurfaceVariantcopy(alpha = 0.7f)
+
                 )
             }
 
@@ -726,7 +742,7 @@ private fun MapPickerSheet(
                         Text(
                             text = address,
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextPrimary
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                 }

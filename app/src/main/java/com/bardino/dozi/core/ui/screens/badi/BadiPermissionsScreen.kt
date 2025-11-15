@@ -305,12 +305,16 @@ private fun BadiInfoCard(user: User) {
                         text = user.name,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = user.email,
                         style = MaterialTheme.typography.bodyMedium,
+
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+
                         color = MaterialTheme.colorScheme.onSurfaceVariant
+
                         fontSize = 14.sp
                     )
                 }
@@ -368,7 +372,11 @@ private fun RoleSelectionCard(
             Text(
                 text = "Önceden tanımlı rolleri kullanarak hızlıca izin ayarlayabilirsiniz",
                 style = MaterialTheme.typography.bodySmall,
+
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+
                 fontSize = 13.sp
             )
 
@@ -412,12 +420,16 @@ private fun RoleOption(
                 text = role.toTurkish(),
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                color = if (isSelected) DoziTurquoise else TextPrimary
+                color = if (isSelected) DoziTurquoise else MaterialTheme.colorScheme.onSurface
             )
             Text(
                 text = role.toDescription(),
                 style = MaterialTheme.typography.bodySmall,
+
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+
                 fontSize = 12.sp
             )
         }
@@ -476,7 +488,10 @@ private fun PermissionCard(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
+
                     color = MaterialTheme.colorScheme.onSurface
+                 color = MaterialTheme.colorScheme.onSurface
+                  
                     fontSize = 15.sp
                 )
                 if (isWarning) {
@@ -491,7 +506,11 @@ private fun PermissionCard(
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
+
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+
                 color = MaterialTheme.colorScheme.onSurfaceVariant
+
                 fontSize = 12.sp
             )
         }

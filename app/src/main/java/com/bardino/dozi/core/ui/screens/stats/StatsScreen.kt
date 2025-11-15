@@ -150,7 +150,7 @@ private fun WeeklySummaryCard(weeklyData: List<DayLog>) {
                 "Son 7 Gün",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(8.dp))
 
@@ -181,7 +181,7 @@ private fun WeeklyDayRow(day: DayLog) {
                 day.dayName,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 day.date,
@@ -231,7 +231,7 @@ private fun AchievementsCard(stats: UserStats?) {
                 "🏆 Başarımlar",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (unlockedAchievements.isEmpty()) {
@@ -290,7 +290,7 @@ private fun AchievementItem(
                     title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (isUnlocked) TextPrimary else TextSecondaryLight
+                    color = if (isUnlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     description,
@@ -379,7 +379,7 @@ private fun StatItem(label: String, value: String, icon: androidx.compose.ui.gra
             value,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             label,

@@ -87,7 +87,7 @@ fun MedicationActionScreen(
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
                     containerColor = Color.White,
-                    titleContentColor = TextPrimaryLight
+                    titleContentColor = MaterialTheme.colorScheme.onSurface
                 )
             )
         },
