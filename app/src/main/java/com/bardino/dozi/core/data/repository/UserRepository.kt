@@ -1,7 +1,5 @@
 package com.bardino.dozi.core.data.repository
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.bardino.dozi.core.data.model.User
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -12,7 +10,6 @@ class UserRepository(
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
 
-    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getUserData(): User? {
         val user = auth.currentUser ?: return null
         val doc = db.collection("users").document(user.uid).get().await()
