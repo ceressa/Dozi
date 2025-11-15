@@ -319,17 +319,14 @@ private fun ModernMedicineCard(
     )
 
     Card(
-        modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
-        modifier = Modifier
-            .fillMaxWidth()
-            .shadow(8.dp, RoundedCornerShape(24.dp)),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Column {
-            Box(modifier = Modifier.clickable(onClick = onClick)) {
+            Box {
                 // Dekoratif background pattern
                 Box(
                     modifier = Modifier
@@ -368,18 +365,6 @@ private fun ModernMedicineCard(
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.Bold,
                                 color = MaterialTheme.colorScheme.onSurface
-        Box {
-            // Üstte renkli gradient border (Secondary-Accent gradient - MedicineCard ile aynı)
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .background(
-                        brush = Brush.horizontalGradient(
-                            listOf(
-                                DoziSecondary,
-                                DoziAccent,
-                                DoziPrimary
                             )
                             Text(
                                 text = medicine.dosage,
@@ -430,22 +415,6 @@ private fun ModernMedicineCard(
             if (reminders.isNotEmpty() || onAddReminder != null) {
                 HorizontalDivider(color = Gray200.copy(alpha = 0.5f))
 
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(top = 6.dp)
-                    .background(
-                        brush = Brush.verticalGradient(
-                            colors = listOf(
-                                DoziSecondaryLight.copy(alpha = 0.05f),
-                                Color.White
-                            )
-                        )
-                    )
-                    .padding(20.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
-            ) {
-                // Başlık kısmı
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -469,9 +438,6 @@ private fun ModernMedicineCard(
                             style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
                             color = DoziCoral
-                            color = Gray900,
-                            maxLines = 1,
-                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                     }
                     Icon(
@@ -504,10 +470,6 @@ private fun ModernMedicineCard(
                             style = MaterialTheme.typography.bodySmall,
                             color = Gray600,
                             modifier = Modifier.padding(vertical = 8.dp)
-                            text = medicine.dosage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Gray600,
-                            fontWeight = FontWeight.Medium
                         )
                     } else {
                         reminders.forEach { reminder ->
@@ -593,51 +555,6 @@ private fun ReminderListItem(
                     text = "${reminder.dosage} ${reminder.unit} • ${reminder.frequency}",
                     style = MaterialTheme.typography.bodySmall,
                     color = Gray600
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(6.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        // Edit butonu
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = DoziSecondary.copy(alpha = 0.15f)
-                        ) {
-                            IconButton(onClick = onEdit) {
-                                Icon(
-                                    Icons.Default.Edit,
-                                    contentDescription = "Düzenle",
-                                    tint = DoziSecondaryDark,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-
-                        // Delete butonu
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = ErrorRed.copy(alpha = 0.15f)
-                        ) {
-                            IconButton(onClick = onDelete) {
-                                Icon(
-                                    Icons.Default.Delete,
-                                    contentDescription = "Sil",
-                                    tint = ErrorRed,
-                                    modifier = Modifier.size(20.dp)
-                                )
-                            }
-                        }
-                    }
-                }
-
-                // Stok bilgisi - daha belirgin
-                InfoTag(
-                    Icons.Default.Inventory,
-                    "Stok: ${medicine.stock} adet",
-                    when {
-                        medicine.stock < 5 -> ErrorRed
-                        medicine.stock < 10 -> Color(0xFFF59E0B) // Daha koyu amber
-                        else -> Color(0xFF059669) // Daha koyu yeşil
-                    }
                 )
             }
             Icon(
@@ -649,6 +566,7 @@ private fun ReminderListItem(
         }
     }
 }
+
 
 @Composable
 private fun InfoTag(
