@@ -13,10 +13,6 @@
           "order": "ASCENDING"
         },
         {
-          "fieldPath": "respondedAt",
-          "order": "ASCENDING"
-        },
-        {
           "fieldPath": "createdAt",
           "order": "DESCENDING"
         }

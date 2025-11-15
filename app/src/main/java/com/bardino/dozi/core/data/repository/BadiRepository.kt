@@ -280,6 +280,7 @@ class BadiRepository(
     /**
      * Bekleyen badi isteklerini real-time dinle
      * Not: respondedAt NULL olan (henüz yanıt verilmemiş) istekleri getir
+     * Firestore null değerleri index'lemediği için client-side filtreleme yapıyoruz
      */
     fun getPendingBadiRequestsFlow(): Flow<List<BadiRequestWithUser>> = callbackFlow {
         val userId = currentUserId ?: run {
@@ -295,7 +296,6 @@ class BadiRepository(
         val listener = db.collection("buddy_requests")
             .whereEqualTo("toUserId", userId)
             .whereEqualTo("status", BadiRequestStatus.PENDING.name)
-            .whereEqualTo("respondedAt", null)  // SADECE yanıt verilmemiş olanlar
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -304,6 +304,7 @@ class BadiRepository(
                     return@addSnapshotListener
                 }
 
+                // Client-side filtreleme: SADECE respondedAt NULL olanları al
                 val requests = snapshot?.documents?.mapNotNull { doc ->
                     val request = doc.toObject(BadiRequest::class.java)?.copy(id = doc.id)
                     if (request?.respondedAt != null) {
