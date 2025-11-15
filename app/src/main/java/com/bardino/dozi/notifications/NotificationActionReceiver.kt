@@ -56,6 +56,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     NotificationHelper.showMedicationNotification(context, med)
                 }
             }
+            ReminderScheduler.ACTION_REMINDER_TRIGGER -> {
+                // 🔔 Zamanlanmış hatırlatma tetiklendi
+                val medicineId = intent.getStringExtra(ReminderScheduler.EXTRA_MEDICINE_ID) ?: return
+                val medicineName = intent.getStringExtra(ReminderScheduler.EXTRA_MEDICINE_NAME) ?: "İlaç"
+                val reminderTime = intent.getStringExtra(ReminderScheduler.EXTRA_TIME) ?: ""
+
+                handleReminderTrigger(context, medicineId, medicineName, reminderTime, nm)
+            }
         }
     }
 
@@ -180,6 +188,42 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 CoroutineScope(Dispatchers.Main).launch {
                     showToast(context, "❌ Hata: ${e.message}")
                 }
+            }
+        }
+    }
+
+    private fun handleReminderTrigger(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        time: String,
+        nm: NotificationManagerCompat
+    ) {
+        android.util.Log.d("NotificationActionReceiver", "🔔 Hatırlatma tetiklendi: $medicineName ($time)")
+
+        // Bildirim izni kontrolü
+        if (!hasNotificationPermission(context)) {
+            android.util.Log.w("NotificationActionReceiver", "⚠️ Bildirim izni yok")
+            return
+        }
+
+        // Bildirim göster
+        NotificationHelper.showMedicationNotification(context, medicineName)
+
+        // 🔄 Sonraki alarmı planla (çünkü setExactAndAllowWhileIdle tekrarlanmaz)
+        // Medicine bilgilerini al ve yeniden planla
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val medicineRepository = com.bardino.dozi.core.data.repository.MedicineRepository()
+                val medicine = medicineRepository.getMedicine(medicineId)
+
+                if (medicine != null && medicine.reminderEnabled) {
+                    // Bir sonraki günün alarmını kur
+                    ReminderScheduler.scheduleReminders(context, medicine)
+                    android.util.Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı: $medicineName")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("NotificationActionReceiver", "❌ Sonraki alarm planlanırken hata", e)
             }
         }
     }

@@ -15,19 +15,15 @@ class BootReceiver : BroadcastReceiver() {
         if (intent.action == Intent.ACTION_BOOT_COMPLETED ||
             intent.action == "android.intent.action.QUICKBOOT_POWERON"
         ) {
-            Log.d("BootReceiver", "Cihaz yeniden başladı - Alarmlar yeniden planlanıyor")
+            Log.d("BootReceiver", "🔄 Cihaz yeniden başladı - Alarmlar yeniden planlanıyor")
 
             // Notification channel'ı oluştur
             NotificationHelper.createDoziChannel(context)
 
-            // TODO: Veritabanından zamanlanmış ilaçları çek ve alarmları tekrar kur
-            // Örnek:
-            // val medicines = getMedicinesFromDatabase()
-            // medicines.forEach { medicine ->
-            //     NotificationHelper.scheduleSnooze(context, medicine.name, medicine.minutesUntilNext)
-            // }
+            // ✅ Tüm ilaçların alarmlarını yeniden planla
+            ReminderScheduler.rescheduleAllReminders(context)
 
-            Log.d("BootReceiver", "Alarmlar başarıyla yeniden planlandı")
+            Log.d("BootReceiver", "✅ Boot receiver tamamlandı, alarmlar başarıyla yeniden planlandı")
         }
     }
 }

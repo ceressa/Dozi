@@ -1746,6 +1746,10 @@ private fun saveMedicinesToFirestore(
             val success = medicineRepository.addMedicine(medicine)
             if (!success) {
                 allSuccess = false
+            } else {
+                // ✅ İlaç başarıyla kaydedildi, şimdi alarmları planla
+                com.bardino.dozi.notifications.ReminderScheduler.scheduleReminders(context, medicine)
+                android.util.Log.d("AddReminderScreen", "✅ ${medicine.name} için alarmlar planlandı")
             }
         }
 
