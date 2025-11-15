@@ -1,6 +1,7 @@
 package com.bardino.dozi.core.ui.screens.settings
 
 import android.media.RingtoneManager
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
