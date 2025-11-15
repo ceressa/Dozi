@@ -193,22 +193,26 @@ private fun MedicineCard(
 
     Card(
         modifier = Modifier
-            .fillMaxWidth(),
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box {
-            // Dekoratif top border
+            // Renkli gradient top border
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
+                    .height(6.dp)
                     .background(
                         brush = Brush.horizontalGradient(
                             listOf(
-                                DoziBlue.copy(alpha = 0.8f),
-                                DoziTurquoise.copy(alpha = 0.6f)
+                                DoziPrimary,
+                                DoziSecondary,
+                                DoziAccent
                             )
                         ),
                         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
@@ -218,7 +222,15 @@ private fun MedicineCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
+                    .padding(top = 6.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                DoziPrimaryLight.copy(alpha = 0.05f),
+                                Color.White
+                            )
+                        )
+                    )
                     .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
@@ -234,17 +246,28 @@ private fun MedicineCard(
                     ) {
                         Row(
                             verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            horizontalArrangement = Arrangement.spacedBy(12.dp)
                         ) {
+                            // İkon arka planı - gradient
                             androidx.compose.material3.Surface(
-                                shape = androidx.compose.foundation.shape.CircleShape,
-                                color = DoziTurquoise.copy(alpha = 0.15f),
-                                modifier = Modifier.size(40.dp)
+                                shape = RoundedCornerShape(14.dp),
+                                color = Color.Transparent,
+                                modifier = Modifier.size(48.dp)
                             ) {
-                                Box(contentAlignment = Alignment.Center) {
+                                Box(
+                                    modifier = Modifier.background(
+                                        brush = Brush.linearGradient(
+                                            colors = listOf(
+                                                DoziPrimary.copy(alpha = 0.2f),
+                                                DoziSecondary.copy(alpha = 0.15f)
+                                            )
+                                        )
+                                    ),
+                                    contentAlignment = Alignment.Center
+                                ) {
                                     Text(
                                         text = medicine.icon,
-                                        style = MaterialTheme.typography.titleMedium
+                                        style = MaterialTheme.typography.headlineMedium
                                     )
                                 }
                             }
@@ -254,14 +277,14 @@ private fun MedicineCard(
                                     text = medicine.name,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = MaterialTheme.colorScheme.onSurface,
+                                    color = Gray900,
                                     maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "${medicine.dosage} ${medicine.unit}",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = Gray600,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -269,19 +292,19 @@ private fun MedicineCard(
                     }
 
                     Row(
-                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         // Edit butonu
                         androidx.compose.material3.Surface(
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                            color = DoziBlue.copy(alpha = 0.1f)
+                            shape = RoundedCornerShape(12.dp),
+                            color = DoziPrimary.copy(alpha = 0.15f)
                         ) {
                             IconButton(onClick = onEdit) {
                                 Icon(
                                     Icons.Default.Edit,
                                     contentDescription = "Düzenle",
-                                    tint = DoziBlue,
+                                    tint = DoziPrimaryDark,
                                     modifier = Modifier.size(20.dp)
                                 )
                             }
@@ -289,8 +312,8 @@ private fun MedicineCard(
 
                         // Delete butonu
                         androidx.compose.material3.Surface(
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                            color = ErrorRed.copy(alpha = 0.1f)
+                            shape = RoundedCornerShape(12.dp),
+                            color = ErrorRed.copy(alpha = 0.15f)
                         ) {
                             IconButton(onClick = { showDeleteDialog = true }) {
                                 Icon(
@@ -314,23 +337,23 @@ private fun MedicineCard(
                         InfoTag(
                             icon = Icons.Default.Schedule,
                             text = time,
-                            color = DoziBlue
+                            color = DoziPrimaryDark
                         )
                     }
                     if (medicine.times.size > 3) {
                         androidx.compose.material3.Surface(
-                            shape = androidx.compose.foundation.shape.CircleShape,
-                            color = DoziBlue.copy(alpha = 0.12f)
+                            shape = RoundedCornerShape(12.dp),
+                            color = DoziPrimary.copy(alpha = 0.15f)
                         ) {
                             Box(
-                                modifier = Modifier.padding(8.dp),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Text(
                                     text = "+${medicine.times.size - 3}",
                                     style = MaterialTheme.typography.labelMedium,
                                     fontWeight = FontWeight.Bold,
-                                    color = DoziBlue
+                                    color = DoziPrimaryDark
                                 )
                             }
                         }
@@ -345,7 +368,7 @@ private fun MedicineCard(
                         "İstediğim tarihlerde" -> "${medicine.days.size} tarih seçildi"
                         else -> medicine.frequency
                     },
-                    color = SuccessGreen,
+                    color = Color(0xFF059669), // Daha koyu yeşil
                     fullWidth = true
                 )
 
@@ -361,7 +384,7 @@ private fun MedicineCard(
                 InfoTag(
                     icon = Icons.Default.Schedule,
                     text = "Başlangıç: $startDateText",
-                    color = DoziBlue,
+                    color = DoziSecondaryDark,
                     fullWidth = true
                 )
             }
@@ -481,9 +504,10 @@ private fun InfoTag(
     fullWidth: Boolean = false
 ) {
     androidx.compose.material3.Surface(
-        color = color.copy(alpha = 0.12f),
+        color = color.copy(alpha = 0.15f),
         shape = RoundedCornerShape(12.dp),
-        modifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier
+        modifier = if (fullWidth) Modifier.fillMaxWidth() else Modifier,
+        border = BorderStroke(1.dp, color.copy(alpha = 0.3f))
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -500,7 +524,7 @@ private fun InfoTag(
                 text = text,
                 color = color,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         }
     }
