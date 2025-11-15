@@ -237,7 +237,7 @@ fun AddBadiScreen(
                                     "Kullanıcı Bulundu",
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.ExtraBold,
-                                    color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurface
+                                    color = MaterialTheme.colorScheme.onSurface
                                 )
                             }
 
@@ -268,12 +268,12 @@ fun AddBadiScreen(
                                         user.name,
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = FontWeight.Bold,
-                                        color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurface
+                                        color = MaterialTheme.colorScheme.onSurface
                                     )
                                     Text(
                                         user.email,
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -384,23 +384,23 @@ fun AddBadiScreen(
                                 "İpuçları",
                                 style = MaterialTheme.typography.titleLarge,
                                 fontWeight = FontWeight.ExtraBold,
-                                color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurface
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                         Text(
                             "• Badi kodunuz ile arkadaşlarınız sizi kolayca bulabilir",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             "• Email ile arama yapmak için kayıtlı email adresi gereklidir",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             "• Badi istekleri 7 gün geçerlidir",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -456,14 +456,14 @@ fun MyBadiCodeCard(onClick: () -> Unit) {
                             "Kodumu Göster",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.ExtraBold,
-                            color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurface
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                     }
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         "Arkadaşlarınız bu kodu kullanarak sizi bulabilir",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
                 Box(
