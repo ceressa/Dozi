@@ -17,6 +17,8 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
+import java.time.LocalDate
+import java.time.ZoneId
 import java.util.*
 
 /**
@@ -326,6 +328,19 @@ class MedicationLogRepository(
         } catch (e: Exception) {
             emptyList()
         }
+    }
+
+    /**
+     * Belirli bir LocalDate için ilaç loglarını getir
+     */
+    suspend fun getMedicationLogsForDate(date: LocalDate): List<MedicationLog> {
+        val startOfDay = date.atStartOfDay(ZoneId.systemDefault())
+        val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault())
+
+        val startTimestamp = Timestamp(Date.from(startOfDay.toInstant()))
+        val endTimestamp = Timestamp(Date.from(endOfDay.toInstant()))
+
+        return getMedicationLogsByDateRange(startTimestamp, endTimestamp)
     }
 
     /**

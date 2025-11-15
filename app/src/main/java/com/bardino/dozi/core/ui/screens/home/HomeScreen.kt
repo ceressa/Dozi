@@ -226,7 +226,13 @@ fun HomeScreen(
                     .fillMaxSize()
                     .verticalScroll(scrollState)
             ) {
-                Spacer(Modifier.height(4.dp))
+                Spacer(Modifier.height(12.dp))
+
+                // 🔥 Streak ve Günlük Özet Kartı
+                if (uiState.isLoggedIn) {
+                    StreakAndDailySummaryCard(context = context, medicines = uiState.todaysMedicines)
+                    Spacer(Modifier.height(12.dp))
+                }
 
                 HorizontalCalendar(
                     selectedDate = selectedDate,
@@ -1845,6 +1851,111 @@ private fun EditNameDialog(
         }
     }
 }
+/**
+ * 🔥 Streak ve Günlük Özet Kartı
+ */
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun StreakAndDailySummaryCard(context: Context, medicines: List<Medicine>) {
+    val today = getCurrentDateString()
+    val takenCount = medicines.count { medicine ->
+        medicine.times.any { time ->
+            getMedicineStatus(context, medicine.id, today, time) == "taken"
+        }
+    }
+    val totalDoses = medicines.sumOf { it.times.size }
+    val progress = if (totalDoses > 0) takenCount.toFloat() / totalDoses else 0f
+
+    // Streak bilgisi (SharedPreferences'tan basit okuma)
+    val prefs = context.getSharedPreferences("dozi_streak", Context.MODE_PRIVATE)
+    val currentStreak = prefs.getInt("current_streak", 0)
+
+    Card(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = Color.White
+        ),
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(4.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            // Sol: Günlük Özet
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Text(
+                    "Bugün",
+                    style = MaterialTheme.typography.labelLarge,
+                    color = TextSecondaryLight,
+                    fontWeight = FontWeight.Bold
+                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        "$takenCount",
+                        style = MaterialTheme.typography.displaySmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = DoziTurquoise
+                    )
+                    Text(
+                        "/ $totalDoses",
+                        style = MaterialTheme.typography.titleLarge,
+                        color = TextSecondaryLight
+                    )
+                }
+                LinearProgressIndicator(
+                    progress = { progress },
+                    modifier = Modifier
+                        .fillMaxWidth(0.7f)
+                        .height(8.dp)
+                        .clip(RoundedCornerShape(4.dp)),
+                    color = DoziTurquoise,
+                    trackColor = DoziTurquoise.copy(alpha = 0.2f),
+                )
+                Text(
+                    "${(progress * 100).toInt()}% tamamlandı",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondaryLight
+                )
+            }
+
+            // Sağ: Streak
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
+                Text(
+                    "🔥",
+                    style = MaterialTheme.typography.displayMedium
+                )
+                Text(
+                    "$currentStreak",
+                    style = MaterialTheme.typography.headlineLarge,
+                    fontWeight = FontWeight.ExtraBold,
+                    color = DoziRed
+                )
+                Text(
+                    "gün",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = TextSecondaryLight,
+                    fontWeight = FontWeight.Medium
+                )
+            }
+        }
+    }
+}
+
 // MultiMedicineCard - Aynı saatte birden fazla ilaç olduğunda
 @Composable
 private fun MultiMedicineCard(
