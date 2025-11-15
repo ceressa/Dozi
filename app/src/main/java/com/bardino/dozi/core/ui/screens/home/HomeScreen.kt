@@ -876,6 +876,7 @@ private fun ClickableReminderText(onNavigateToReminders: () -> Unit, isLoggedIn:
 }
 
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun CurrentMedicineCard(
     medicine: Medicine,
@@ -887,6 +888,16 @@ private fun CurrentMedicineCard(
 ) {
     val context = LocalContext.current
     var remainingSeconds by remember { mutableStateOf(0) }
+
+    // ⏰ Zaman kontrolü
+    val currentTime = LocalTime.now()
+    val (hour, minute) = time.split(":").map { it.toInt() }
+    val medicineTime = LocalTime.of(hour, minute)
+
+    // 30 dakika öncesinden itibaren "AL" aktif olsun
+    val minutesUntilMedicine = java.time.Duration.between(currentTime, medicineTime).toMinutes()
+    val canTakeMedicine = minutesUntilMedicine <= 30
+    val canSnooze = minutesUntilMedicine <= 60 && minutesUntilMedicine > -15 // 1 saat önceden, 15 dk sonrasına kadar
 
     // ✅ Pulsing animation for the badge
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -1008,6 +1019,36 @@ private fun CurrentMedicineCard(
 
             HorizontalDivider(color = VeryLightGray, thickness = 1.dp)
 
+            // Henüz vakit değilse uyarı göster
+            if (!canTakeMedicine && minutesUntilMedicine > 0) {
+                Surface(
+                    color = DoziTurquoise.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Row(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalArrangement = Arrangement.Center,
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = DoziTurquoise,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "İlaç vaktinize ${if (minutesUntilMedicine < 60) "${minutesUntilMedicine} dakika" else "${minutesUntilMedicine / 60} saat ${minutesUntilMedicine % 60} dakika"} var",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = DoziTurquoise,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.spacedBy(10.dp)
@@ -1015,16 +1056,18 @@ private fun CurrentMedicineCard(
                 ActionButton(
                     text = "AL",
                     icon = Icons.Default.Check,
-                    color = SuccessGreen,
+                    color = if (canTakeMedicine) SuccessGreen else Gray200,
                     modifier = Modifier.weight(1f),
+                    enabled = canTakeMedicine,
                     onClick = onTaken
                 )
 
                 ActionButton(
                     text = "ERTELE",
                     icon = Icons.Default.AccessTime,
-                    color = WarningOrange,
+                    color = if (canSnooze) WarningOrange else Gray200,
                     modifier = Modifier.weight(1f),
+                    enabled = canSnooze,
                     onClick = {
                         SoundHelper.playSound(context, SoundHelper.SoundType.ERTELE)
                         onSnooze()
@@ -1165,6 +1208,7 @@ private fun ActionButton(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     color: Color,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
     onClick: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
@@ -1179,6 +1223,7 @@ private fun ActionButton(
 
     Button(
         onClick = onClick,
+        enabled = enabled,
         modifier = modifier
             .height(54.dp)
             .graphicsLayer {
@@ -1194,7 +1239,10 @@ private fun ActionButton(
                     }
                 )
             },
-        colors = ButtonDefaults.buttonColors(containerColor = color),
+        colors = ButtonDefaults.buttonColors(
+            containerColor = color,
+            disabledContainerColor = color.copy(alpha = 0.4f)
+        ),
         shape = RoundedCornerShape(14.dp),
         elevation = ButtonDefaults.buttonElevation(4.dp)
     ) {
@@ -1638,16 +1686,17 @@ private fun SkipReasonDialog(
     onConfirm: (String) -> Unit
 ) {
     var selectedReason by remember { mutableStateOf<String?>(null) }
+    var customNote by remember { mutableStateOf("") }
+    var showCustomNoteField by remember { mutableStateOf(false) }
 
     val reasons = listOf(
-        "Zaten aldım",
-        "Daha sonra alacağım",
-        "İlacım bitti",
-        "Yan etki yaşadım",
-        "Unutmuşum",
-        "Doktor değiştirdi",
-        "Kendimi iyi hissediyorum",
-        "Diğer"
+        "💊 İlacım bitti",
+        "😴 Unutmuşum",
+        "🏥 Doktor değiştirdi",
+        "🤢 Yan etki yaşıyorum",
+        "✨ Kendimi iyi hissediyorum",
+        "🕐 Daha sonra alacağım",
+        "✏️ Başka bir neden (not yaz)"
     )
 
     Dialog(onDismissRequest = onDismiss) {
@@ -1659,18 +1708,30 @@ private fun SkipReasonDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
-                Text(
-                    "Neden Atlamak İstiyorsun?",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = TextPrimaryLight
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Info,
+                        contentDescription = null,
+                        tint = WarningOrange,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        "Neden Atlamak İstiyorsun?",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimaryLight
+                    )
+                }
 
                 Text(
-                    "İlaç takibini daha iyi yapabilmem için nedenini öğrenmek isterim.",
+                    "Sebebini bilmek, ilaç takibini daha iyi yapmamı sağlar.",
                     style = MaterialTheme.typography.bodyMedium,
                     color = TextSecondaryLight
                 )
@@ -1680,9 +1741,29 @@ private fun SkipReasonDialog(
                         ReasonChip(
                             text = reason,
                             selected = selectedReason == reason,
-                            onClick = { selectedReason = reason }
+                            onClick = {
+                                selectedReason = reason
+                                showCustomNoteField = reason.contains("Başka bir neden")
+                            }
                         )
                     }
+                }
+
+                // Özel not alanı
+                AnimatedVisibility(visible = showCustomNoteField) {
+                    OutlinedTextField(
+                        value = customNote,
+                        onValueChange = { customNote = it },
+                        label = { Text("Notunuz (opsiyonel)") },
+                        placeholder = { Text("Örn: Bugün mide bulantım var") },
+                        modifier = Modifier.fillMaxWidth(),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = DoziTurquoise,
+                            focusedLabelColor = DoziTurquoise
+                        ),
+                        maxLines = 3
+                    )
                 }
 
                 Row(
@@ -1692,23 +1773,32 @@ private fun SkipReasonDialog(
                     OutlinedButton(
                         onClick = onDismiss,
                         modifier = Modifier.weight(1f),
-                        shape = RoundedCornerShape(12.dp)
+                        shape = RoundedCornerShape(12.dp),
+                        border = BorderStroke(2.dp, Gray200)
                     ) {
-                        Text("İptal")
+                        Text("İptal", color = TextSecondaryLight)
                     }
 
                     Button(
                         onClick = {
-                            selectedReason?.let { onConfirm(it) }
+                            val finalReason = if (showCustomNoteField && customNote.isNotBlank()) {
+                                "Diğer: $customNote"
+                            } else {
+                                selectedReason ?: ""
+                            }
+                            onConfirm(finalReason)
                         },
                         modifier = Modifier.weight(1f),
                         enabled = selectedReason != null,
                         colors = ButtonDefaults.buttonColors(
-                            containerColor = DoziRed
+                            containerColor = WarningOrange,
+                            disabledContainerColor = Gray200
                         ),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Atla")
+                        Icon(Icons.Default.Close, contentDescription = null, modifier = Modifier.size(18.dp))
+                        Spacer(Modifier.width(4.dp))
+                        Text("Atla", fontWeight = FontWeight.Bold)
                     }
                 }
             }
@@ -1725,18 +1815,33 @@ private fun ReasonChip(
     Surface(
         onClick = onClick,
         shape = RoundedCornerShape(12.dp),
-        color = if (selected) DoziRed.copy(alpha = 0.1f) else VeryLightGray,
+        color = if (selected) DoziTurquoise.copy(alpha = 0.15f) else Color.White,
         border = BorderStroke(
-            width = if (selected) 2.dp else 1.dp,
-            color = if (selected) DoziRed else Color.Transparent
-        )
+            width = 2.dp,
+            color = if (selected) DoziTurquoise else Gray200
+        ),
+        shadowElevation = if (selected) 4.dp else 0.dp
     ) {
-        Text(
-            text,
-            modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            color = if (selected) DoziRed else TextPrimaryLight,
-            fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
-        )
+        Row(
+            modifier = Modifier.padding(14.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(10.dp)
+        ) {
+            if (selected) {
+                Icon(
+                    Icons.Default.CheckCircle,
+                    contentDescription = null,
+                    tint = DoziTurquoise,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
+            Text(
+                text = text,
+                style = MaterialTheme.typography.bodyLarge,
+                color = if (selected) DoziTurquoise else TextSecondaryLight,
+                fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
+            )
+        }
     }
 }
 
@@ -1877,80 +1982,87 @@ private fun StreakAndDailySummaryCard(context: Context, medicines: List<Medicine
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(2.dp)
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(12.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Sol: Günlük Özet
-            Column(
-                modifier = Modifier.weight(1f),
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            // Sol: Günlük Özet (Kompakt)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                modifier = Modifier.weight(1f)
             ) {
-                Text(
-                    "Bugün",
-                    style = MaterialTheme.typography.labelLarge,
-                    color = TextSecondaryLight,
-                    fontWeight = FontWeight.Bold
-                )
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
+                // Progress bar circle
+                Box(contentAlignment = Alignment.Center) {
+                    CircularProgressIndicator(
+                        progress = { progress },
+                        modifier = Modifier.size(48.dp),
+                        color = DoziTurquoise,
+                        strokeWidth = 4.dp,
+                        trackColor = DoziTurquoise.copy(alpha = 0.15f)
+                    )
                     Text(
                         "$takenCount",
-                        style = MaterialTheme.typography.displaySmall,
+                        style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
                         color = DoziTurquoise
                     )
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
                     Text(
-                        "/ $totalDoses",
-                        style = MaterialTheme.typography.titleLarge,
+                        "Bugün",
+                        style = MaterialTheme.typography.labelSmall,
                         color = TextSecondaryLight
                     )
+                    Text(
+                        "$takenCount/$totalDoses ilaç",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
                 }
-                LinearProgressIndicator(
-                    progress = { progress },
-                    modifier = Modifier
-                        .fillMaxWidth(0.7f)
-                        .height(8.dp)
-                        .clip(RoundedCornerShape(4.dp)),
-                    color = DoziTurquoise,
-                    trackColor = DoziTurquoise.copy(alpha = 0.2f),
-                )
-                Text(
-                    "${(progress * 100).toInt()}% tamamlandı",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondaryLight
-                )
             }
 
-            // Sağ: Streak
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(4.dp)
+            // Divider
+            VerticalDivider(
+                modifier = Modifier
+                    .height(40.dp)
+                    .width(1.dp),
+                color = Gray200
+            )
+
+            // Sağ: Streak (Kompakt)
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                modifier = Modifier.padding(start = 8.dp)
             ) {
                 Text(
                     "🔥",
-                    style = MaterialTheme.typography.displayMedium
+                    style = MaterialTheme.typography.headlineMedium
                 )
-                Text(
-                    "$currentStreak",
-                    style = MaterialTheme.typography.headlineLarge,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = DoziRed
-                )
-                Text(
-                    "gün",
-                    style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondaryLight,
-                    fontWeight = FontWeight.Medium
-                )
+                Column(
+                    horizontalAlignment = Alignment.Start,
+                    verticalArrangement = Arrangement.spacedBy(0.dp)
+                ) {
+                    Text(
+                        "$currentStreak gün",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = DoziRed
+                    )
+                    Text(
+                        "seri",
+                        style = MaterialTheme.typography.labelSmall,
+                        color = TextSecondaryLight
+                    )
+                }
             }
         }
     }
