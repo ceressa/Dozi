@@ -335,6 +335,9 @@ fun NavGraph(
                     onNavigateToAddBadi = { navController.navigate(Screen.AddBadi.route) },
                     onNavigateToBadiDetail = { badiId ->
                         navController.navigate(Screen.BadiMedicationTracking.createRoute(badiId))
+                    },
+                    onNavigateToBadiPermissions = { badiId ->
+                        navController.navigate(Screen.BadiPermissions.createRoute(badiId))
                     }
                 )
             }

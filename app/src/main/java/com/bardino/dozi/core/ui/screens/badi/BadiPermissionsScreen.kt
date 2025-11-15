@@ -66,10 +66,29 @@ fun BadiPermissionsScreen(
 
     Scaffold(
         topBar = {
-            DoziTopBar(
-                title = "${currentBadi.user.name} İzinleri",
-                canNavigateBack = true,
-                onNavigateBack = onNavigateBack,
+            androidx.compose.material3.TopAppBar(
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Security,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Text(
+                            "${currentBadi.user.name} İzinleri",
+                            color = Color.White,
+                            fontWeight = FontWeight.ExtraBold
+                        )
+                    }
+                },
+                navigationIcon = {
+                    IconButton(onClick = onNavigateBack) {
+                        Icon(Icons.Default.ArrowBack, "Geri", tint = Color.White)
+                    }
+                },
                 actions = {
                     if (hasChanges) {
                         TextButton(onClick = {
@@ -77,18 +96,26 @@ fun BadiPermissionsScreen(
                             hasChanges = false
                             onNavigateBack()
                         }) {
-                            Text("Kaydet", color = DoziTurquoise, fontWeight = FontWeight.Bold)
+                            Text("Kaydet", color = Color.White, fontWeight = FontWeight.ExtraBold)
                         }
                     }
-                }
+                },
+                colors = androidx.compose.material3.TopAppBarDefaults.topAppBarColors(
+                    containerColor = Color.Transparent
+                ),
+                modifier = Modifier.background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(DoziTurquoise, DoziPurple)
+                    )
+                )
             )
-        }
+        },
+        containerColor = androidx.compose.ui.graphics.Color(0xFFF5F7FA)
     ) { padding ->
         Column(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .background(BackgroundLight)
                 .verticalScroll(rememberScrollState())
                 .padding(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
@@ -219,44 +246,75 @@ fun BadiPermissionsScreen(
 
 @Composable
 private fun BadiInfoCard(user: User) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    androidx.compose.material3.Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color.White),
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        // Avatar placeholder
         Box(
             modifier = Modifier
-                .size(48.dp)
-                .clip(RoundedCornerShape(12.dp))
-                .background(DoziTurquoise.copy(alpha = 0.1f)),
-            contentAlignment = Alignment.Center
+                .fillMaxWidth()
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(
+                            DoziTurquoise.copy(alpha = 0.08f),
+                            DoziPurple.copy(alpha = 0.08f)
+                        )
+                    )
+                )
         ) {
-            Icon(
-                Icons.Default.Person,
-                contentDescription = null,
-                tint = DoziTurquoise,
-                modifier = Modifier.size(24.dp)
-            )
-        }
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(14.dp)
+            ) {
+                // Avatar with gradient border
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(DoziTurquoise, DoziPurple)
+                            ),
+                            shape = androidx.compose.foundation.shape.CircleShape
+                        )
+                        .padding(2.dp),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(androidx.compose.foundation.shape.CircleShape)
+                            .background(DoziTurquoise.copy(alpha = 0.1f)),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Person,
+                            contentDescription = null,
+                            tint = DoziTurquoise,
+                            modifier = Modifier.size(28.dp)
+                        )
+                    }
+                }
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = user.name,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-            Text(
-                text = user.email,
-                style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
-                fontSize = 13.sp
-            )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = user.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = TextPrimary
+                    )
+                    Text(
+                        text = user.email,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary,
+                        fontSize = 14.sp
+                    )
+                }
+            }
         }
     }
 }
@@ -266,33 +324,61 @@ private fun RoleSelectionCard(
     currentRole: BadiRole,
     onRoleChange: (BadiRole) -> Unit
 ) {
-    Column(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .padding(16.dp),
-        verticalArrangement = Arrangement.spacedBy(12.dp)
+    androidx.compose.material3.Card(
+        shape = RoundedCornerShape(20.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color.White),
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 4.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
-        Text(
-            text = "Hızlı Rol Seçimi",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .size(32.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(DoziTurquoise, DoziPurple)
+                            ),
+                            shape = androidx.compose.foundation.shape.CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.AdminPanelSettings,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(18.dp)
+                    )
+                }
+                Text(
+                    text = "Hızlı Rol Seçimi",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.ExtraBold
+                )
+            }
 
-        Text(
-            text = "Önceden tanımlı rolleri kullanarak hızlıca izin ayarlayabilirsiniz",
-            style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary,
-            fontSize = 13.sp
-        )
-
-        BadiRole.values().forEach { role ->
-            RoleOption(
-                role = role,
-                isSelected = currentRole == role,
-                onClick = { onRoleChange(role) }
+            Text(
+                text = "Önceden tanımlı rolleri kullanarak hızlıca izin ayarlayabilirsiniz",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                fontSize = 13.sp
             )
+
+            BadiRole.values().forEach { role ->
+                RoleOption(
+                    role = role,
+                    isSelected = currentRole == role,
+                    onClick = { onRoleChange(role) }
+                )
+            }
         }
     }
 }
@@ -348,15 +434,19 @@ private fun PermissionCard(
     color: Color,
     isWarning: Boolean = false
 ) {
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
-            .padding(16.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    androidx.compose.material3.Card(
+        shape = RoundedCornerShape(16.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(containerColor = Color.White),
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(defaultElevation = 3.dp),
+        modifier = Modifier.fillMaxWidth()
     ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
         // Icon
         Box(
             modifier = Modifier
@@ -406,14 +496,15 @@ private fun PermissionCard(
             )
         }
 
-        // Toggle
-        Switch(
-            checked = isEnabled,
-            onCheckedChange = onToggle,
-            colors = SwitchDefaults.colors(
-                checkedThumbColor = color,
-                checkedTrackColor = color.copy(alpha = 0.5f)
+            // Toggle
+            Switch(
+                checked = isEnabled,
+                onCheckedChange = onToggle,
+                colors = SwitchDefaults.colors(
+                    checkedThumbColor = color,
+                    checkedTrackColor = color.copy(alpha = 0.5f)
+                )
             )
-        )
+        }
     }
 }
