@@ -91,91 +91,80 @@ service cloud.firestore {
     // └─────────────────────────────────────────────────────────────────────┘
 
     /**
-     * Belirli bir kullanıcı için badi permissions dokümanını getirir.
-     *
-     * @param targetUserId - İzinleri kontrol edilecek kullanıcı ID'si
-     * @returns {Map} Badi permissions objesi
-     */
-    function getBuddyPermissions(targetUserId) {
-      let buddyId = request.auth.uid + '_' + targetUserId;
-      return get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions;
-    }
-
-    /**
      * Badi'nin belirli bir kullanıcının ilaçlarını görüntüleme izni var mı?
-     *
-     * @param targetUserId - İlaçları görüntülenecek kullanıcı ID'si
-     * @returns {boolean} true eğer izin varsa
      */
     function canViewRemindersOf(targetUserId) {
-      return isBuddyOf(targetUserId) &&
-             getBuddyPermissions(targetUserId).canViewReminders == true;
+      let buddyId = request.auth.uid + '_' + targetUserId;
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/buddies/$(buddyId)) &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.status == 'ACTIVE' &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions.canViewReminders == true;
     }
 
     /**
      * Badi'nin belirli bir kullanıcının ilaçlarını "alındı" olarak işaretleme izni var mı?
-     *
-     * @param targetUserId - İlaçları işaretlenecek kullanıcı ID'si
-     * @returns {boolean} true eğer izin varsa
      */
     function canMarkAsTakenFor(targetUserId) {
-      return isBuddyOf(targetUserId) &&
-             getBuddyPermissions(targetUserId).canMarkAsTaken == true;
+      let buddyId = request.auth.uid + '_' + targetUserId;
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/buddies/$(buddyId)) &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.status == 'ACTIVE' &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions.canMarkAsTaken == true;
     }
 
     /**
      * Badi'nin belirli bir kullanıcının hatırlatıcılarını düzenleme izni var mı?
-     *
-     * @param targetUserId - Hatırlatıcıları düzenlenecek kullanıcı ID'si
-     * @returns {boolean} true eğer izin varsa
      */
     function canEditRemindersOf(targetUserId) {
-      return isBuddyOf(targetUserId) &&
-             getBuddyPermissions(targetUserId).canEditReminders == true;
+      let buddyId = request.auth.uid + '_' + targetUserId;
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/buddies/$(buddyId)) &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.status == 'ACTIVE' &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions.canEditReminders == true;
     }
 
     /**
      * Badi'nin belirli bir kullanıcıya ilaç ekleme izni var mı?
-     *
-     * @param targetUserId - İlaç eklenecek kullanıcı ID'si
-     * @returns {boolean} true eğer izin varsa
      */
     function canAddMedicineFor(targetUserId) {
-      return isBuddyOf(targetUserId) &&
-             getBuddyPermissions(targetUserId).canAddMedicine == true;
+      let buddyId = request.auth.uid + '_' + targetUserId;
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/buddies/$(buddyId)) &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.status == 'ACTIVE' &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions.canAddMedicine == true;
     }
 
     /**
      * Badi'nin belirli bir kullanıcının ilacını silme izni var mı?
-     *
-     * @param targetUserId - İlaç silinecek kullanıcı ID'si
-     * @returns {boolean} true eğer izin varsa
      */
     function canDeleteMedicineOf(targetUserId) {
-      return isBuddyOf(targetUserId) &&
-             getBuddyPermissions(targetUserId).canDeleteMedicine == true;
+      let buddyId = request.auth.uid + '_' + targetUserId;
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/buddies/$(buddyId)) &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.status == 'ACTIVE' &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions.canDeleteMedicine == true;
     }
 
     /**
      * Badi'nin belirli bir kullanıcının ilaç geçmişini görüntüleme izni var mı?
-     *
-     * @param targetUserId - Geçmişi görüntülenecek kullanıcı ID'si
-     * @returns {boolean} true eğer izin varsa
      */
     function canViewMedicationHistoryOf(targetUserId) {
-      return isBuddyOf(targetUserId) &&
-             getBuddyPermissions(targetUserId).canViewMedicationHistory == true;
+      let buddyId = request.auth.uid + '_' + targetUserId;
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/buddies/$(buddyId)) &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.status == 'ACTIVE' &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions.canViewMedicationHistory == true;
     }
 
     /**
      * Badi'nin belirli bir kullanıcının diğer badilerini yönetme izni var mı?
-     *
-     * @param targetUserId - Badileri yönetilecek kullanıcı ID'si
-     * @returns {boolean} true eğer izin varsa
      */
     function canManageBadisOf(targetUserId) {
-      return isBuddyOf(targetUserId) &&
-             getBuddyPermissions(targetUserId).canManageBadis == true;
+      let buddyId = request.auth.uid + '_' + targetUserId;
+      return isAuthenticated() &&
+             exists(/databases/$(database)/documents/buddies/$(buddyId)) &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.status == 'ACTIVE' &&
+             get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions.canManageBadis == true;
     }
 
     // ┌─────────────────────────────────────────────────────────────────────┐
