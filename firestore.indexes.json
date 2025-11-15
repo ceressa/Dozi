@@ -19,6 +19,24 @@
       ]
     },
     {
+      "collectionGroup": "buddy_requests",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "fromUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "toUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "buddies",
       "queryScope": "COLLECTION",
       "fields": [
@@ -33,11 +51,47 @@
       ]
     },
     {
+      "collectionGroup": "buddies",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "buddyUserId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "status",
+          "order": "ASCENDING"
+        }
+      ]
+    },
+    {
       "collectionGroup": "medication_logs",
       "queryScope": "COLLECTION",
       "fields": [
         {
           "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "scheduledTime",
+          "order": "DESCENDING"
+        }
+      ]
+    },
+    {
+      "collectionGroup": "medication_logs",
+      "queryScope": "COLLECTION",
+      "fields": [
+        {
+          "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "medicineId",
           "order": "ASCENDING"
         },
         {
@@ -80,10 +134,6 @@
       "fields": [
         {
           "fieldPath": "userId",
-          "order": "ASCENDING"
-        },
-        {
-          "fieldPath": "isRead",
           "order": "ASCENDING"
         },
         {
@@ -98,6 +148,10 @@
       "fields": [
         {
           "fieldPath": "userId",
+          "order": "ASCENDING"
+        },
+        {
+          "fieldPath": "isRead",
           "order": "ASCENDING"
         },
         {
