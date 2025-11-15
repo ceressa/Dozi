@@ -30,7 +30,10 @@ object NotificationHelper {
     const val ACTION_BUDDY_ACCEPT = "ACTION_BUDDY_ACCEPT"
     const val ACTION_BUDDY_REJECT = "ACTION_BUDDY_REJECT"
     const val EXTRA_MEDICINE = "EXTRA_MEDICINE"
+    const val EXTRA_MEDICINE_ID = "EXTRA_MEDICINE_ID"
+    const val EXTRA_DOSAGE = "EXTRA_DOSAGE"
     const val EXTRA_TIME = "EXTRA_TIME"
+    const val EXTRA_SCHEDULED_TIME = "EXTRA_SCHEDULED_TIME"
     const val EXTRA_REQUEST_ID = "EXTRA_REQUEST_ID"
     const val EXTRA_FROM_USER_NAME = "EXTRA_FROM_USER_NAME"
 
@@ -38,8 +41,10 @@ object NotificationHelper {
     fun showMedicationNotification(
         context: Context,
         medicineName: String,
+        medicineId: String = "",
         dosage: String = "",
-        time: String = getCurrentTime()
+        time: String = getCurrentTime(),
+        scheduledTime: Long = System.currentTimeMillis()
     ) {
         createDoziChannel(context)
         val nm = NotificationManagerCompat.from(context)
@@ -56,9 +61,9 @@ object NotificationHelper {
         )
 
         // Aksiyonlar
-        val takenPending = createActionPendingIntent(context, ACTION_TAKEN, medicineName, time, 1)
-        val snoozePending = createActionPendingIntent(context, ACTION_SNOOZE, medicineName, time, 2)
-        val skipPending = createActionPendingIntent(context, ACTION_SKIP, medicineName, time, 3)
+        val takenPending = createActionPendingIntent(context, ACTION_TAKEN, medicineName, medicineId, dosage, time, scheduledTime, 1)
+        val snoozePending = createActionPendingIntent(context, ACTION_SNOOZE, medicineName, medicineId, dosage, time, scheduledTime, 2)
+        val skipPending = createActionPendingIntent(context, ACTION_SKIP, medicineName, medicineId, dosage, time, scheduledTime, 3)
 
         // Dozi large icon
         val largeIcon = BitmapFactory.decodeResource(context.resources, R.drawable.dozi)
@@ -111,7 +116,10 @@ object NotificationHelper {
         context: Context,
         action: String,
         medicineName: String,
+        medicineId: String,
+        dosage: String,
         time: String,
+        scheduledTime: Long,
         requestCode: Int
     ): PendingIntent {
         return PendingIntent.getBroadcast(
@@ -120,7 +128,10 @@ object NotificationHelper {
             Intent(context, NotificationActionReceiver::class.java).apply {
                 this.action = action
                 putExtra(EXTRA_MEDICINE, medicineName)
+                putExtra(EXTRA_MEDICINE_ID, medicineId)
+                putExtra(EXTRA_DOSAGE, dosage)
                 putExtra(EXTRA_TIME, time)
+                putExtra(EXTRA_SCHEDULED_TIME, scheduledTime)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
         )
