@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.bardino.dozi.core.data.model.*
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
@@ -33,7 +33,7 @@ fun BadiPermissionsScreen(
     badiId: String,
     onNavigateBack: () -> Unit
 ) {
-    val viewModel: BadiViewModel = viewModel()
+    val viewModel: BadiViewModel = hiltViewModel()
     val badis by viewModel.badis.collectAsState()
 
     val currentBadi = badis.find { it.badi.id == badiId }
