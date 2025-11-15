@@ -225,21 +225,10 @@ service cloud.firestore {
       allow read: if isAuthenticated();
 
       // ✏️ OLUŞTURMA: Sadece kendi kullanıcı profilini oluşturabilir
-      // - UID ile userId eşleşmeli
-      // - Email geçerli formatta olmalı
-      // - İsim 1-100 karakter arası olmalı
-      allow create: if isAuthenticated() &&
-                       request.auth.uid == userId &&
-                       isValidEmail(request.resource.data.email) &&
-                       isValidString(request.resource.data.name, 100);
+      allow create: if isAuthenticated() && request.auth.uid == userId;
 
       // 🔄 GÜNCELLEME: Sadece kendi profilini güncelleyebilir
-      // - userId değiştirilemez (immutable)
-      // - Email geçerli formatta olmalı
-      // - İsim 1-100 karakter arası olmalı
-      allow update: if isOwner(userId) &&
-                       request.resource.data.email == resource.data.email && // Email değiştirilemez
-                       isValidString(request.resource.data.name, 100);
+      allow update: if isOwner(userId);
 
       // 🗑️ SİLME: Sadece kendi profilini silebilir
       allow delete: if isOwner(userId);
@@ -327,13 +316,10 @@ service cloud.firestore {
       // - fromUserId giriş yapan kullanıcı olmalı
       // - toUserId farklı bir kullanıcı olmalı (kendine istek gönderilemez)
       // - Status başlangıçta PENDING olmalı
-      // - fromUserId ve toUserId geçerli string olmalı
       allow create: if isAuthenticated() &&
                        request.auth.uid == request.resource.data.fromUserId &&
                        request.resource.data.fromUserId != request.resource.data.toUserId &&
-                       request.resource.data.status == 'PENDING' &&
-                       isValidString(request.resource.data.fromUserId, 128) &&
-                       isValidString(request.resource.data.toUserId, 128);
+                       request.resource.data.status == 'PENDING';
 
       // 🔄 GÜNCELLEME: İstek alan kişi kabul/red edebilir, gönderen kişi iptal edebilir
       // - fromUserId değiştirilemez
@@ -377,28 +363,17 @@ service cloud.firestore {
       );
 
       // ✏️ OLUŞTURMA: Kullanıcı kendi ilacını veya badi olarak izin varsa ekleyebilir
-      // - userId giriş yapan kullanıcı olmalı VEYA badi olarak izin olmalı
-      // - İlaç adı 1-200 karakter arası olmalı
-      // - Dozaj 1-100 karakter arası olmalı
-      // - Form geçerli bir string olmalı
       allow create: if isAuthenticated() && (
         isOwner(request.resource.data.userId) ||
         canAddMedicineFor(request.resource.data.userId)
-      ) &&
-      isValidString(request.resource.data.name, 200) &&
-      isValidString(request.resource.data.dosage, 100);
+      );
 
       // 🔄 GÜNCELLEME: Kullanıcı kendi ilacını veya badi olarak izin varsa güncelleyebilir
-      // - userId değiştirilemez (immutable)
-      // - İlaç adı 1-200 karakter arası olmalı
-      // - Dozaj 1-100 karakter arası olmalı
       allow update: if isAuthenticated() && (
         isOwner(resource.data.userId) ||
         canEditRemindersOf(resource.data.userId)
       ) &&
-      request.resource.data.userId == resource.data.userId &&
-      isValidString(request.resource.data.name, 200) &&
-      isValidString(request.resource.data.dosage, 100);
+      request.resource.data.userId == resource.data.userId;
 
       // 🗑️ SİLME: Kullanıcı kendi ilacını veya badi olarak izin varsa silebilir
       allow delete: if isAuthenticated() && (
@@ -432,25 +407,17 @@ service cloud.firestore {
       );
 
       // ✏️ OLUŞTURMA: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa ekleyebilir
-      // - userId giriş yapan kullanıcı olmalı VEYA badi olarak izin olmalı
-      // - medicineId geçerli bir string olmalı
-      // - time alanı geçerli olmalı
       allow create: if isAuthenticated() && (
         isOwner(request.resource.data.userId) ||
         canEditRemindersOf(request.resource.data.userId)
-      ) &&
-      isValidString(request.resource.data.medicineId, 128) &&
-      isValidString(request.resource.data.time, 50);
+      );
 
       // 🔄 GÜNCELLEME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa güncelleyebilir
-      // - userId değiştirilemez (immutable)
-      // - medicineId değiştirilemez (immutable)
       allow update: if isAuthenticated() && (
         isOwner(resource.data.userId) ||
         canEditRemindersOf(resource.data.userId)
       ) &&
-      request.resource.data.userId == resource.data.userId &&
-      request.resource.data.medicineId == resource.data.medicineId;
+      request.resource.data.userId == resource.data.userId;
 
       // 🗑️ SİLME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa silebilir
       allow delete: if isAuthenticated() && (
@@ -483,14 +450,10 @@ service cloud.firestore {
       );
 
       // ✏️ OLUŞTURMA: Kullanıcı kendi loğunu veya badi olarak izin varsa oluşturabilir
-      // - userId giriş yapan kullanıcı olmalı VEYA badi olarak izin olmalı
-      // - medicineId geçerli bir string olmalı
-      // - status geçerli değerlerden biri olmalı: TAKEN, SKIPPED, MISSED
       allow create: if isAuthenticated() && (
         isOwner(request.resource.data.userId) ||
         canMarkAsTakenFor(request.resource.data.userId)
       ) &&
-      isValidString(request.resource.data.medicineId, 128) &&
       request.resource.data.status in ['TAKEN', 'SKIPPED', 'MISSED'];
 
       // 🔄 GÜNCELLEME: Kullanıcı kendi loğunu veya badi olarak izin varsa güncelleyebilir
@@ -527,11 +490,7 @@ service cloud.firestore {
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
 
       // ✏️ OLUŞTURMA: Herkes kendi bildirimi veya Cloud Functions oluşturabilir
-      // (Cloud Functions için auth == null kontrol edilebilir, ama authenticated kullanıcılar da oluşturabilir)
-      allow create: if isAuthenticated() &&
-                       isOwner(request.resource.data.userId) &&
-                       isValidString(request.resource.data.title, 200) &&
-                       isValidString(request.resource.data.message, 1000);
+      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
 
       // 🔄 GÜNCELLEME: Sadece kullanıcı kendi bildirimini güncelleyebilir
       // - userId değiştirilemez (immutable)
