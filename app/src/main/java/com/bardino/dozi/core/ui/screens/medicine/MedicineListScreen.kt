@@ -308,12 +308,9 @@ fun MedicineListScreen(
 private fun ModernMedicineCard(
     medicine: Medicine,
     onClick: () -> Unit,
-
     reminders: List<com.bardino.dozi.core.data.model.Medicine> = emptyList(),
     onAddReminder: (() -> Unit)? = null,
     onReminderClick: ((String) -> Unit)? = null
-    onEdit: () -> Unit = {},
-    onDelete: () -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(
