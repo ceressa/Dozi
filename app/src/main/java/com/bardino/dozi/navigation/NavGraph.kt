@@ -33,7 +33,6 @@ import com.bardino.dozi.core.ui.screens.badi.BadiPermissionsScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
 import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
-import com.bardino.dozi.onboarding.screens.OnboardingIntroScreen
 import com.bardino.dozi.onboarding.screens.OnboardingMedicineScreen
 import com.bardino.dozi.onboarding.screens.OnboardingNameScreen
 import com.bardino.dozi.onboarding.screens.OnboardingPremiumScreen

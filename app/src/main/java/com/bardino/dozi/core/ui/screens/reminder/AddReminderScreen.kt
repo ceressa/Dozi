@@ -42,7 +42,6 @@ import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.repository.MedicineRepository as FirestoreMedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
-import com.bardino.dozi.core.ui.screens.profile.addGeofence
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.navigation.Screen
@@ -1554,7 +1553,7 @@ private fun NavigationButtons(
                 }
             }
             Button(
-                onClick = onNext as () -> Unit,
+                onClick = onNext,
                 modifier = Modifier.weight(1f).height(56.dp),
                 shape = MaterialTheme.shapes.medium,
                 colors = ButtonDefaults.buttonColors(containerColor = DoziCoral)

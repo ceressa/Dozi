@@ -19,15 +19,11 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import com.bardino.dozi.R
-import com.bardino.dozi.notifications.NotificationHelper
 import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.core.data.repository.BadiRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import java.util.*
-import kotlin.random.Random
 
 class NotificationActionReceiver : BroadcastReceiver() {
 
