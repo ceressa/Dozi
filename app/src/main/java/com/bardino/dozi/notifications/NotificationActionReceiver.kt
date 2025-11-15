@@ -14,6 +14,7 @@ import android.os.Vibrator
 import android.speech.tts.TextToSpeech
 import android.view.WindowManager
 import android.widget.Toast
+import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -32,6 +33,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     private var tts: TextToSpeech? = null
 
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onReceive(context: Context, intent: Intent) {
         val med = intent.getStringExtra(NotificationHelper.EXTRA_MEDICINE) ?: "İlaç"
         val time = intent.getStringExtra(NotificationHelper.EXTRA_TIME) ?: "Bilinmiyor"

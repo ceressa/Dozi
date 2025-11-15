@@ -5,6 +5,7 @@ import android.app.PendingIntent
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
+import androidx.annotation.RequiresPermission
 import androidx.core.content.ContextCompat
 import com.bardino.dozi.MainActivity
 import com.bardino.dozi.core.data.repository.UserRepository
@@ -44,6 +45,7 @@ class DoziMessagingService : FirebaseMessagingService() {
     /**
      * Data mesajlarını işle (server'dan özel format)
      */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun handleDataMessage(data: Map<String, String>) {
         val type = data["type"]
 
