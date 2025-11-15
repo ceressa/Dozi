@@ -230,7 +230,11 @@ fun HomeScreen(
 
                 // 🔥 Streak ve Günlük Özet Kartı
                 if (uiState.isLoggedIn) {
-                    StreakAndDailySummaryCard(context = context, medicines = uiState.todaysMedicines)
+                    StreakAndDailySummaryCard(
+                        context = context,
+                        medicines = uiState.todaysMedicines,
+                        onNavigateToStats = { navController.navigate(Screen.Stats.route) }
+                    )
                     Spacer(Modifier.height(12.dp))
                 }
 
@@ -686,6 +690,8 @@ private fun CalendarDayCircle(
     onClick: () -> Unit
 ) {
     val interaction = remember { MutableInteractionSource() }
+    val today = LocalDate.now()
+    val isToday = date == today
 
     // 🔹 Yaşlılar için daha açık ve ayırt edici renkler
     val color = when (status) {
@@ -721,18 +727,34 @@ private fun CalendarDayCircle(
                 ),
             contentAlignment = Alignment.Center
         ) {
-            Text(
-                text = displayDay,
-                color = if (status == MedicineStatus.NONE) TextSecondaryLight else TextPrimary,
-                fontWeight = FontWeight.Bold,
-                fontSize = if (isSelected) 17.sp else 15.sp
-            )
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.Center
+            ) {
+                // Bugün ise küçük Dozi emoji göster
+                if (isToday) {
+                    Text(
+                        text = "💊",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontSize = 10.sp,
+                        modifier = Modifier.offset(y = (-2).dp)
+                    )
+                }
+                Text(
+                    text = displayDay,
+                    color = if (status == MedicineStatus.NONE) TextSecondaryLight else TextPrimary,
+                    fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.Bold,
+                    fontSize = if (isSelected) 17.sp else if (isToday) 16.sp else 15.sp,
+                    modifier = if (isToday) Modifier.offset(y = (-1).dp) else Modifier
+                )
+            }
         }
 
         Text(
             text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("tr", "TR")),
             style = MaterialTheme.typography.labelSmall,
-            color = TextSecondaryLight,
+            color = if (isToday) DoziTurquoise else TextSecondaryLight,
+            fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier.padding(top = 2.dp)
         )
     }
@@ -1961,7 +1983,11 @@ private fun EditNameDialog(
  */
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun StreakAndDailySummaryCard(context: Context, medicines: List<Medicine>) {
+private fun StreakAndDailySummaryCard(
+    context: Context,
+    medicines: List<Medicine>,
+    onNavigateToStats: () -> Unit
+) {
     val today = getCurrentDateString()
     val takenCount = medicines.count { medicine ->
         medicine.times.any { time ->
@@ -1978,7 +2004,12 @@ private fun StreakAndDailySummaryCard(context: Context, medicines: List<Medicine
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = rememberRipple(color = DoziTurquoise),
+                onClick = onNavigateToStats
+            ),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),

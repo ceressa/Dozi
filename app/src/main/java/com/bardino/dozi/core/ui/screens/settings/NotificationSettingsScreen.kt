@@ -45,10 +45,10 @@ fun NotificationSettingsScreen(
                 title = "Bildirim Ayarları",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                backgroundColor = Color.White
+                backgroundColor = DoziTurquoise
             )
         },
-        containerColor = BackgroundLight
+        containerColor = androidx.compose.ui.graphics.Color(0xFFF5F7FA)
     ) { padding ->
         Column(
             modifier = Modifier
@@ -62,39 +62,70 @@ fun NotificationSettingsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(
-                    containerColor = if (hasNotificationPermission) Color(0xFF4CAF50).copy(alpha = 0.1f)
-                    else Color(0xFFFF9800).copy(alpha = 0.1f)
+                    containerColor = Color.White
                 ),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Row(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                        .background(
+                            androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                if (hasNotificationPermission) {
+                                    listOf(SuccessGreen.copy(alpha = 0.15f), DoziTurquoise.copy(alpha = 0.15f))
+                                } else {
+                                    listOf(WarningOrange.copy(alpha = 0.15f), ErrorRed.copy(alpha = 0.15f))
+                                }
+                            )
+                        )
                 ) {
-                    Icon(
-                        if (hasNotificationPermission) Icons.Default.CheckCircle else Icons.Default.Warning,
-                        contentDescription = null,
-                        tint = if (hasNotificationPermission) Color(0xFF4CAF50) else Color(0xFFFF9800),
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = if (hasNotificationPermission) "Bildirimler Aktif" else "Bildirim İzni Gerekli",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
-                        )
-                        Text(
-                            text = if (hasNotificationPermission)
-                                "İlaç hatırlatmaları alabilirsiniz"
-                            else
-                                "İzin vermek için ayarlara gidin",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondary
-                        )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(16.dp)
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(56.dp)
+                                .background(
+                                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                        if (hasNotificationPermission) {
+                                            listOf(SuccessGreen, DoziTurquoise)
+                                        } else {
+                                            listOf(WarningOrange, ErrorRed)
+                                        }
+                                    ),
+                                    shape = androidx.compose.foundation.shape.CircleShape
+                                ),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                if (hasNotificationPermission) Icons.Default.CheckCircle else Icons.Default.Warning,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(32.dp)
+                            )
+                        }
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = if (hasNotificationPermission) "Bildirimler Aktif ✓" else "Bildirim İzni Gerekli ⚠️",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = if (hasNotificationPermission)
+                                    "İlaç hatırlatmaları alabilirsiniz"
+                                else
+                                    "İzin vermek için ayarlara gidin",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = TextSecondary
+                            )
+                        }
                     }
                 }
             }
@@ -121,37 +152,41 @@ fun NotificationSettingsScreen(
             Card(
                 modifier = Modifier.fillMaxWidth(),
                 colors = CardDefaults.cardColors(containerColor = Color.White),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                        .padding(20.dp),
+                    verticalArrangement = Arrangement.spacedBy(18.dp)
                 ) {
                     Text(
-                        text = "Bildirim Türleri",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
+                        text = "🔔 Bildirim Türleri",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
                         color = TextPrimary
                     )
 
                     NotificationTypeItem(
                         icon = Icons.Default.MedicalServices,
                         title = "İlaç Hatırlatmaları",
-                        description = "İlaç alma saatlerinde bildirim"
+                        description = "İlaç alma saatlerinde bildirim",
+                        color = DoziTurquoise
                     )
 
                     NotificationTypeItem(
                         icon = Icons.Default.Schedule,
                         title = "Planlı Hatırlatmalar",
-                        description = "Önceden ayarladığınız zamanlar"
+                        description = "Önceden ayarladığınız zamanlar",
+                        color = DoziPurple
                     )
 
                     NotificationTypeItem(
                         icon = Icons.Default.Info,
                         title = "Bilgilendirmeler",
-                        description = "İlaç stoku ve sağlık bilgileri"
+                        description = "İlaç stoku ve sağlık bilgileri",
+                        color = DoziBlue
                     )
                 }
             }
@@ -159,49 +194,76 @@ fun NotificationSettingsScreen(
             // Bildirim Ayarları İpuçları
             Card(
                 modifier = Modifier.fillMaxWidth(),
-                colors = CardDefaults.cardColors(containerColor = DoziTurquoise.copy(alpha = 0.1f)),
-                elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
             ) {
-                Column(
+                Box(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            Icons.Default.Lightbulb,
-                            contentDescription = null,
-                            tint = DoziTurquoise
+                        .background(
+                            androidx.compose.ui.graphics.Brush.verticalGradient(
+                                listOf(
+                                    WarningOrange.copy(alpha = 0.08f),
+                                    DoziTurquoise.copy(alpha = 0.08f)
+                                )
+                            )
                         )
+                ) {
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(20.dp),
+                        verticalArrangement = Arrangement.spacedBy(14.dp)
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(10.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(40.dp)
+                                    .background(
+                                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                            listOf(WarningOrange, DoziTurquoise)
+                                        ),
+                                        shape = androidx.compose.foundation.shape.CircleShape
+                                    ),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.Lightbulb,
+                                    contentDescription = null,
+                                    tint = Color.White,
+                                    modifier = Modifier.size(22.dp)
+                                )
+                            }
+                            Text(
+                                text = "İpuçları",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.ExtraBold,
+                                color = TextPrimary
+                            )
+                        }
+
                         Text(
-                            text = "İpuçları",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = TextPrimary
+                            text = "• Bildirimleri sessize almak için telefon ayarlarınızdan 'Sessiz' modunu kullanın",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+
+                        Text(
+                            text = "• Titreşimi kapatmak için Ayarlar > Bildirimler bölümünden değişiklik yapabilirsiniz",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+
+                        Text(
+                            text = "• Bildirimlerin gösterilmemesi için cihaz ayarlarından 'Rahatsız Etme' modunu aktif edin",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
                         )
                     }
-
-                    Text(
-                        text = "• Bildirimleri sessize almak için telefon ayarlarınızdan 'Sessiz' modunu kullanın",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-
-                    Text(
-                        text = "• Titreşimi kapatmak için Ayarlar > Bildirimler bölümünden değişiklik yapabilirsiniz",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
-
-                    Text(
-                        text = "• Bildirimlerin gösterilmemesi için cihaz ayarlarından 'Rahatsız Etme' modunu aktif edin",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
-                    )
                 }
             }
         }
@@ -212,31 +274,42 @@ fun NotificationSettingsScreen(
 private fun NotificationTypeItem(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
-    description: String
+    description: String,
+    color: androidx.compose.ui.graphics.Color = DoziTurquoise
 ) {
     Row(
         verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(12.dp)
+        horizontalArrangement = Arrangement.spacedBy(14.dp)
     ) {
-        Surface(
-            modifier = Modifier.size(40.dp),
-            shape = androidx.compose.foundation.shape.CircleShape,
-            color = DoziTurquoise.copy(alpha = 0.15f)
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .background(
+                    brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                        listOf(color.copy(alpha = 0.2f), color.copy(alpha = 0.1f))
+                    ),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(12.dp)
+                ),
+            contentAlignment = Alignment.Center
         ) {
-            Box(contentAlignment = Alignment.Center) {
-                Icon(icon, contentDescription = null, tint = DoziTurquoise, modifier = Modifier.size(20.dp))
-            }
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(24.dp)
+            )
         }
         Column(modifier = Modifier.weight(1f)) {
             Text(
                 text = title,
                 style = MaterialTheme.typography.bodyLarge,
-                fontWeight = FontWeight.Medium,
+                fontWeight = FontWeight.Bold,
                 color = TextPrimary
             )
+            Spacer(modifier = Modifier.height(2.dp))
             Text(
                 text = description,
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = TextSecondary
             )
         }
