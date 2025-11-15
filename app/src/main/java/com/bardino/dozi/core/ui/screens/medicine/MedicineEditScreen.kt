@@ -117,6 +117,7 @@ private fun processImageFromUri(
 fun MedicineEditScreen(
     medicineId: String,
     onNavigateBack: () -> Unit,
+    onNavigateToReminder: ((String) -> Unit)? = null,
     savedStateHandle: androidx.lifecycle.SavedStateHandle? = null
 ) {
     val context = LocalContext.current
@@ -169,6 +170,10 @@ fun MedicineEditScreen(
     // Hata durumları
     var nameError by remember { mutableStateOf(false) }
     var stockError by remember { mutableStateOf(false) }
+
+    // Hatırlatma dialog'u
+    var showReminderDialog by remember { mutableStateOf(false) }
+    var savedMedicineId by remember { mutableStateOf<String?>(null) }
 
     // Animasyon
     var isVisible by remember { mutableStateOf(false) }
@@ -308,7 +313,13 @@ fun MedicineEditScreen(
                                 OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
                             }
 
-                            onNavigateBack()
+                            // Yeni ilaç eklendiyse hatırlatma dialog'unu göster
+                            if (medicineId == "new" && onNavigateToReminder != null) {
+                                savedMedicineId = newId
+                                showReminderDialog = true
+                            } else {
+                                onNavigateBack()
+                            }
                         }
                     },
                     modifier = Modifier
@@ -330,6 +341,77 @@ fun MedicineEditScreen(
             }
         }
     }
+
+    // Hatırlatma ekleme dialog'u
+    if (showReminderDialog && savedMedicineId != null) {
+        AddReminderDialog(
+            medicineName = name,
+            onAddReminder = {
+                showReminderDialog = false
+                onNavigateToReminder?.invoke(savedMedicineId!!)
+            },
+            onDismiss = {
+                showReminderDialog = false
+                onNavigateBack()
+            }
+        )
+    }
+}
+
+// Hatırlatma ekleme dialog'u
+@Composable
+private fun AddReminderDialog(
+    medicineName: String,
+    onAddReminder: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(
+                Icons.Default.Notifications,
+                contentDescription = null,
+                tint = DoziTurquoise,
+                modifier = Modifier.size(48.dp)
+            )
+        },
+        title = {
+            Text(
+                text = "Hatırlatma Ekle",
+                fontWeight = FontWeight.Bold,
+                style = MaterialTheme.typography.titleLarge
+            )
+        },
+        text = {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Text(
+                    text = "$medicineName için bir hatırlatma kurmak ister misin?",
+                    style = MaterialTheme.typography.bodyLarge
+                )
+                Spacer(modifier = Modifier.height(8.dp))
+                Text(
+                    text = "Hatırlatma kurarak ilaçlarını düzenli alabilirsin!",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+            }
+        },
+        confirmButton = {
+            Button(
+                onClick = onAddReminder,
+                colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise)
+            ) {
+                Icon(Icons.Default.Add, contentDescription = null)
+                Spacer(Modifier.width(8.dp))
+                Text("Evet, Ekle", fontWeight = FontWeight.Bold)
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("Şimdi Değil", color = MaterialTheme.colorScheme.onSurfaceVariant)
+            }
+        }
+    )
 }
 
 // --------------------------------------------------------------------

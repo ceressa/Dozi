@@ -117,6 +117,12 @@ fun NavGraph(
                     },
                     onNavigateToAddMedicine = {
                         navController.navigate(Screen.MedicineLookup.route)
+                    },
+                    onNavigateToAddReminder = { medicineId ->
+                        navController.navigate("editReminder/$medicineId")
+                    },
+                    onNavigateToReminderDetail = { reminderId ->
+                        navController.navigate("editReminder/$reminderId")
                     }
                 )
             }
@@ -146,6 +152,12 @@ fun NavGraph(
                 MedicineEditScreen(
                     medicineId = id,
                     onNavigateBack = { navController.popBackStack() },
+                    onNavigateToReminder = { savedMedicineId ->
+                        // İlaç eklendikten sonra hatırlatma ekranına git
+                        navController.navigate("editReminder/$savedMedicineId") {
+                            popUpTo(Screen.MedicineList.route)
+                        }
+                    },
                     savedStateHandle = navController.previousBackStackEntry?.savedStateHandle
                 )
             }

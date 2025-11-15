@@ -73,8 +73,9 @@ fun AddReminderScreen(
     val focusManager = LocalFocusManager.current
     var selectedPlace by remember { mutableStateOf<String?>(null) }
 
-    // Edit mode kontrolü
+    // Edit mode kontrolü veya medicineId ile direkt ilaç seçimi
     val isEditMode = medicineId != null
+    val isPreselectedMedicine = medicineId != null
 
     // Onboarding'den hatırlatma eklendikten sonra geri dönme kontrolü
     LaunchedEffect(Unit) {
@@ -84,7 +85,7 @@ fun AddReminderScreen(
             onNavigateBack()
         }
     }
-    var isLoading by remember { mutableStateOf(isEditMode) }
+    var isLoading by remember { mutableStateOf(false) }
 
     // State'ler
     var step by remember { mutableStateOf(1) }
@@ -102,6 +103,31 @@ fun AddReminderScreen(
             .loadMedicines(context).map { it.name }
     }
     var selectedMedicineIndex by remember { mutableStateOf(-1) }
+
+    // MedicineId ile geldiyse, o ilacın adını yükle ve otomatik seç
+    LaunchedEffect(medicineId) {
+        if (isPreselectedMedicine && medicineId != null) {
+            isLoading = true
+            try {
+                // Local repository'den ilaç adını al
+                val localMedicine = MedicineRepository.getMedicine(context, medicineId)
+                if (localMedicine != null) {
+                    medicines = listOf(MedicineEntry(
+                        id = 0,
+                        name = localMedicine.name,
+                        dosageType = "1",
+                        customDosage = "",
+                        unit = "hap"
+                    ))
+                    android.util.Log.d("AddReminder", "✅ Pre-selected medicine: ${localMedicine.name}")
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("AddReminder", "Error loading pre-selected medicine", e)
+            } finally {
+                isLoading = false
+            }
+        }
+    }
 
     // Ses kontrolü
     var soundEnabled by remember {

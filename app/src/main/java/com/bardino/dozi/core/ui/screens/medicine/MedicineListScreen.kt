@@ -2,6 +2,7 @@ package com.bardino.dozi.core.ui.screens.medicine
 
 import android.widget.Toast
 import androidx.compose.animation.*
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.foundation.*
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
@@ -15,6 +16,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -30,6 +32,9 @@ import com.bardino.dozi.core.data.Medicine
 import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -37,18 +42,32 @@ fun MedicineListScreen(
     onNavigateBack: () -> Unit,
     onNavigateToDetail: (String) -> Unit,
     onNavigateToAddMedicine: (String) -> Unit = {},
+    onNavigateToAddReminder: ((String) -> Unit)? = null,
+    onNavigateToReminderDetail: ((String) -> Unit)? = null,
     showAddButton: Boolean = true
 ) {
     val context = LocalContext.current
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
+    var medicineReminders by remember { mutableStateOf<Map<String, List<com.bardino.dozi.core.data.model.Medicine>>>(emptyMap()) }
     var isVisible by remember { mutableStateOf(false) }
 
     LaunchedEffect(Unit) {
         isVisible = true
         try {
             medicines = MedicineRepository.loadMedicines(context)
+
+            // Firestore'dan hatırlatmaları yükle
+            val firestoreRepo = com.bardino.dozi.core.data.repository.MedicineRepository()
+            val allReminders = firestoreRepo.getAllMedicines()
+
+            // Her ilaç adına göre grupla
+            val remindersMap = mutableMapOf<String, List<com.bardino.dozi.core.data.model.Medicine>>()
+            medicines.forEach { localMedicine ->
+                remindersMap[localMedicine.name] = allReminders.filter { it.name == localMedicine.name }
+            }
+            medicineReminders = remindersMap
         } catch (e: Exception) {
-            // Handle error
+            android.util.Log.e("MedicineList", "Error loading medicines/reminders", e)
         }
     }
 
@@ -163,6 +182,84 @@ fun MedicineListScreen(
                             visible = isVisible && !dismissed,
                             enter = fadeIn() + slideInVertically(initialOffsetY = { 40 })
                         ) {
+                            val dismissState = rememberSwipeToDismissBoxState(
+                                confirmValueChange = { value ->
+                                    when (value) {
+                                        SwipeToDismissBoxValue.StartToEnd -> {
+                                            showDeleteConfirm = true
+                                            false
+                                        }
+                                        SwipeToDismissBoxValue.EndToStart -> {
+                                            onNavigateToDetail(medicine.id)
+                                            false
+                                        }
+                                        else -> false
+                                    }
+                                }
+                            )
+
+                            SwipeToDismissBox(
+                                state = dismissState,
+                                backgroundContent = {
+                                    val direction = dismissState.targetValue
+                                    val bgColor = when (direction) {
+                                        SwipeToDismissBoxValue.StartToEnd -> DoziRed.copy(alpha = 0.15f)
+                                        SwipeToDismissBoxValue.EndToStart -> DoziTurquoise.copy(alpha = 0.15f)
+                                        else -> Color.Transparent
+                                    }
+                                    val iconColor = when (direction) {
+                                        SwipeToDismissBoxValue.StartToEnd -> DoziRed
+                                        SwipeToDismissBoxValue.EndToStart -> DoziTurquoise
+                                        else -> Color.Transparent
+                                    }
+                                    val icon = when (direction) {
+                                        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
+                                        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Edit
+                                        else -> null
+                                    }
+
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxSize()
+                                            .background(bgColor, shape = RoundedCornerShape(20.dp))
+                                            .padding(horizontal = 24.dp),
+                                        contentAlignment = when (direction) {
+                                            SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
+                                            SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
+                                            else -> Alignment.Center
+                                        }
+                                    ) {
+                                        icon?.let {
+                                            Surface(
+                                                modifier = Modifier.size(48.dp),
+                                                color = iconColor.copy(alpha = 0.2f),
+                                                shape = CircleShape
+                                            ) {
+                                                Box(contentAlignment = Alignment.Center) {
+                                                    Icon(
+                                                        imageVector = it,
+                                                        contentDescription = null,
+                                                        tint = iconColor,
+                                                        modifier = Modifier.size(26.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                },
+                                enableDismissFromStartToEnd = true,
+                                enableDismissFromEndToStart = true,
+                                content = {
+                                    ModernMedicineCard(
+                                        medicine = medicine,
+                                        onClick = { onNavigateToDetail(medicine.id) },
+                                        reminders = medicineReminders[medicine.name] ?: emptyList(),
+                                        onAddReminder = onNavigateToAddReminder?.let { callback ->
+                                            { callback(medicine.id) }
+                                        },
+                                        onReminderClick = onNavigateToReminderDetail
+                                    )
+                                }
                             ModernMedicineCard(
                                 medicine = medicine,
                                 onClick = { onNavigateToDetail(medicine.id) },
@@ -201,10 +298,21 @@ fun MedicineListScreen(
 private fun ModernMedicineCard(
     medicine: Medicine,
     onClick: () -> Unit,
+
+    reminders: List<com.bardino.dozi.core.data.model.Medicine> = emptyList(),
+    onAddReminder: (() -> Unit)? = null,
+    onReminderClick: ((String) -> Unit)? = null
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {}
 ) {
+    var expanded by remember { mutableStateOf(false) }
+    val rotationAngle by animateFloatAsState(
+        targetValue = if (expanded) 180f else 0f,
+        label = "rotation"
+    )
+
     Card(
+        modifier = Modifier.fillMaxWidth(),
         onClick = onClick,
         modifier = Modifier
             .fillMaxWidth()
@@ -213,6 +321,46 @@ private fun ModernMedicineCard(
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
+        Column {
+            Box(modifier = Modifier.clickable(onClick = onClick)) {
+                // Dekoratif background pattern
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(8.dp)
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                listOf(
+                                    DoziTurquoise.copy(alpha = 0.8f),
+                                    DoziBlue.copy(alpha = 0.6f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                        )
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(top = 8.dp)
+                        .padding(horizontal = 20.dp, vertical = 20.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // Başlık kısmı
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = Alignment.Top
+                    ) {
+                        Column(
+                            modifier = Modifier.weight(1f),
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
+                        ) {
+                            Text(
+                                text = medicine.name,
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
         Box {
             // Üstte renkli gradient border (Secondary-Accent gradient - MedicineCard ile aynı)
             Box(
@@ -226,10 +374,54 @@ private fun ModernMedicineCard(
                                 DoziAccent,
                                 DoziPrimary
                             )
-                        ),
-                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                    )
-            )
+                            Text(
+                                text = medicine.dosage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+
+                        Surface(
+                            shape = CircleShape,
+                            color = DoziTurquoise.copy(alpha = 0.1f)
+                        ) {
+                            Box(
+                                modifier = Modifier.padding(10.dp),
+                                contentAlignment = Alignment.Center
+                            ) {
+                                Icon(
+                                    Icons.Default.ChevronRight,
+                                    contentDescription = null,
+                                    tint = DoziTurquoise,
+                                    modifier = Modifier.size(24.dp)
+                                )
+                            }
+                        }
+                    }
+
+                    // Bilgi Satırları
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(10.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        InfoTag(
+                            Icons.Default.Inventory,
+                            "Stok: ${medicine.stock}",
+                            when {
+                                medicine.stock < 5 -> DoziRed
+                                medicine.stock < 10 -> WarningOrange
+                                else -> SuccessGreen
+                            }
+                        )
+                    }
+                }
+            }
+
+            // Hatırlatmalar bölümü
+            if (reminders.isNotEmpty() || onAddReminder != null) {
+                HorizontalDivider(color = Gray200.copy(alpha = 0.5f))
 
             Column(
                 modifier = Modifier
@@ -248,30 +440,152 @@ private fun ModernMedicineCard(
             ) {
                 // Başlık kısmı
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .clickable { expanded = !expanded }
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.Top
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Column(
-                        modifier = Modifier.weight(1f),
-                        verticalArrangement = Arrangement.spacedBy(6.dp)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
+                        Icon(
+                            Icons.Default.NotificationsActive,
+                            contentDescription = null,
+                            tint = DoziCoral,
+                            modifier = Modifier.size(20.dp)
+                        )
                         Text(
-                            text = medicine.name,
-                            style = MaterialTheme.typography.titleLarge,
+                            text = "Hatırlatmalar (${reminders.size})",
+                            style = MaterialTheme.typography.bodyMedium,
                             fontWeight = FontWeight.Bold,
+                            color = DoziCoral
                             color = Gray900,
                             maxLines = 1,
                             overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
+                    }
+                    Icon(
+                        Icons.Default.ExpandMore,
+                        contentDescription = if (expanded) "Kapat" else "Aç",
+                        tint = DoziCoral,
+                        modifier = Modifier
+                            .size(24.dp)
+                            .rotate(rotationAngle)
+                    )
+                }
+            }
+
+            // Expandable hatırlatma listesi
+            AnimatedVisibility(
+                visible = expanded,
+                enter = expandVertically() + fadeIn(),
+                exit = shrinkVertically() + fadeOut()
+            ) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(Gray100.copy(alpha = 0.3f))
+                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    if (reminders.isEmpty()) {
                         Text(
+                            text = "Henüz hatırlatma eklenmemiş",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Gray600,
+                            modifier = Modifier.padding(vertical = 8.dp)
                             text = medicine.dosage,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Gray600,
                             fontWeight = FontWeight.Medium
                         )
+                    } else {
+                        reminders.forEach { reminder ->
+                            ReminderListItem(
+                                reminder = reminder,
+                                onClick = { onReminderClick?.invoke(reminder.id) }
+                            )
+                        }
                     }
 
+                    // Yeni hatırlatma ekle butonu
+                    if (onAddReminder != null) {
+                        OutlinedButton(
+                            onClick = onAddReminder,
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = DoziCoral
+                            ),
+                            border = BorderStroke(
+                                1.dp,
+                                DoziCoral
+                            )
+                        ) {
+                            Icon(
+                                Icons.Default.Add,
+                                contentDescription = null,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Spacer(Modifier.width(8.dp))
+                            Text(
+                                "Yeni Hatırlatma Ekle",
+                                fontWeight = FontWeight.Medium,
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ReminderListItem(
+    reminder: com.bardino.dozi.core.data.model.Medicine,
+    onClick: () -> Unit
+) {
+    Surface(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
+        shape = RoundedCornerShape(12.dp),
+        color = Color.White,
+        shadowElevation = 2.dp
+    ) {
+        Row(
+            modifier = Modifier.padding(12.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Column(
+                verticalArrangement = Arrangement.spacedBy(4.dp),
+                modifier = Modifier.weight(1f)
+            ) {
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = DoziCoral,
+                        modifier = Modifier.size(16.dp)
+                    )
+                    Text(
+                        text = reminder.times.joinToString(", "),
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = Gray900
+                    )
+                }
+                Text(
+                    text = "${reminder.dosage} ${reminder.unit} • ${reminder.frequency}",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Gray600
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(6.dp),
                         verticalAlignment = Alignment.CenterVertically
@@ -319,6 +633,12 @@ private fun ModernMedicineCard(
                     }
                 )
             }
+            Icon(
+                Icons.Default.ChevronRight,
+                contentDescription = null,
+                tint = Gray400,
+                modifier = Modifier.size(20.dp)
+            )
         }
     }
 }
