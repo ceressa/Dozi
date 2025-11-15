@@ -45,28 +45,46 @@ fun BadiListScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("🤝 Badilerim") },
+                title = {
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.People,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Text("Badilerim", color = Color.White, fontWeight = FontWeight.ExtraBold)
+                    }
+                },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
-                        Icon(Icons.Default.ArrowBack, "Geri")
+                        Icon(Icons.Default.ArrowBack, "Geri", tint = Color.White)
                     }
                 },
                 actions = {
                     IconButton(onClick = onNavigateToAddBadi) {
-                        Icon(Icons.Default.PersonAdd, "Badi Ekle")
+                        Icon(Icons.Default.PersonAdd, "Badi Ekle", tint = Color.White)
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
-                    containerColor = MaterialTheme.colorScheme.primaryContainer
+                    containerColor = Color.Transparent
+                ),
+                modifier = Modifier.background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(com.bardino.dozi.core.ui.theme.DoziTurquoise, com.bardino.dozi.core.ui.theme.DoziPurple)
+                    )
                 )
             )
         },
+        containerColor = androidx.compose.ui.graphics.Color(0xFFF5F7FA),
         floatingActionButton = {
             FloatingActionButton(
                 onClick = onNavigateToAddBadi,
-                containerColor = MaterialTheme.colorScheme.primary
+                containerColor = com.bardino.dozi.core.ui.theme.DoziTurquoise
             ) {
-                Icon(Icons.Default.PersonAdd, "Badi Ekle")
+                Icon(Icons.Default.PersonAdd, "Badi Ekle", tint = Color.White)
             }
         }
     ) { padding ->
@@ -134,15 +152,44 @@ fun PendingRequestsSection(
     Column(
         modifier = Modifier
             .fillMaxWidth()
-            .background(MaterialTheme.colorScheme.secondaryContainer.copy(alpha = 0.3f))
+            .background(
+                androidx.compose.ui.graphics.Brush.verticalGradient(
+                    listOf(
+                        com.bardino.dozi.core.ui.theme.WarningOrange.copy(alpha = 0.1f),
+                        com.bardino.dozi.core.ui.theme.DoziTurquoise.copy(alpha = 0.08f)
+                    )
+                )
+            )
             .padding(16.dp)
     ) {
-        Text(
-            "📬 Bekleyen İstekler (${requests.size})",
-            style = MaterialTheme.typography.titleMedium,
-            fontWeight = FontWeight.Bold
-        )
-        Spacer(modifier = Modifier.height(8.dp))
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(36.dp)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(com.bardino.dozi.core.ui.theme.WarningOrange, com.bardino.dozi.core.ui.theme.DoziTurquoise)
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "📬",
+                    style = MaterialTheme.typography.titleMedium
+                )
+            }
+            Text(
+                "Bekleyen İstekler (${requests.size})",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = com.bardino.dozi.core.ui.theme.TextPrimary
+            )
+        }
+        Spacer(modifier = Modifier.height(12.dp))
 
         requests.forEach { request ->
             BadiRequestCard(
@@ -163,73 +210,118 @@ fun BadiRequestCard(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(12.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(
+                            com.bardino.dozi.core.ui.theme.WarningOrange.copy(alpha = 0.08f),
+                            com.bardino.dozi.core.ui.theme.DoziTurquoise.copy(alpha = 0.08f)
+                        )
+                    )
+                )
         ) {
-            // Profil fotoğrafı
-            AsyncImage(
-                model = request.fromUser.photoUrl,
-                contentDescription = "Profil",
+            Row(
                 modifier = Modifier
-                    .size(48.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-            )
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Profil fotoğrafı
+                Box(
+                    modifier = Modifier
+                        .size(56.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(com.bardino.dozi.core.ui.theme.WarningOrange, com.bardino.dozi.core.ui.theme.DoziTurquoise)
+                            ),
+                            shape = CircleShape
+                        )
+                        .padding(2.dp)
+                ) {
+                    AsyncImage(
+                        model = request.fromUser.photoUrl,
+                        contentDescription = "Profil",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(Color.White)
+                    )
+                }
 
-            Spacer(modifier = Modifier.width(12.dp))
+                Spacer(modifier = Modifier.width(14.dp))
 
-            // Kullanıcı bilgisi
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    request.fromUser.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    request.fromUser.email,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                request.request.message?.let { message ->
+                // Kullanıcı bilgisi
+                Column(modifier = Modifier.weight(1f)) {
                     Text(
-                        message,
+                        request.fromUser.name,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = com.bardino.dozi.core.ui.theme.TextPrimary
+                    )
+                    Text(
+                        request.fromUser.email,
                         style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.8f)
+                        color = com.bardino.dozi.core.ui.theme.TextSecondary
                     )
+                    request.request.message?.let { message ->
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            "\"$message\"",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = com.bardino.dozi.core.ui.theme.TextSecondary,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
                 }
-            }
 
-            // Butonlar
-            Column {
-                IconButton(
-                    onClick = onAccept,
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color(0xFF4CAF50)
-                    )
+                // Butonlar
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(6.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Check,
-                        "Kabul Et",
-                        tint = Color.White
-                    )
-                }
-                IconButton(
-                    onClick = onReject,
-                    colors = IconButtonDefaults.iconButtonColors(
-                        containerColor = Color(0xFFF44336)
-                    )
-                ) {
-                    Icon(
-                        Icons.Default.Close,
-                        "Reddet",
-                        tint = Color.White
-                    )
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(com.bardino.dozi.core.ui.theme.SuccessGreen, com.bardino.dozi.core.ui.theme.DoziTurquoise)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable(onClick = onAccept),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Check,
+                            "Kabul Et",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                    Box(
+                        modifier = Modifier
+                            .size(44.dp)
+                            .background(
+                                brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                    listOf(com.bardino.dozi.core.ui.theme.ErrorRed, com.bardino.dozi.core.ui.theme.WarningOrange)
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .clickable(onClick = onReject),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Icon(
+                            Icons.Default.Close,
+                            "Reddet",
+                            tint = Color.White,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
                 }
             }
         }
@@ -264,81 +356,116 @@ fun BadiCard(
         modifier = Modifier
             .fillMaxWidth()
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp)
+        shape = RoundedCornerShape(20.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
     ) {
-        Row(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
-            verticalAlignment = Alignment.CenterVertically
+                .background(
+                    androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(
+                            com.bardino.dozi.core.ui.theme.DoziTurquoise.copy(alpha = 0.08f),
+                            com.bardino.dozi.core.ui.theme.DoziPurple.copy(alpha = 0.08f)
+                        )
+                    )
+                )
         ) {
-            // Profil fotoğrafı
-            AsyncImage(
-                model = badi.user.photoUrl,
-                contentDescription = "Profil",
+            Row(
                 modifier = Modifier
-                    .size(56.dp)
-                    .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.primary.copy(alpha = 0.2f))
-            )
-
-            Spacer(modifier = Modifier.width(16.dp))
-
-            // Kullanıcı bilgisi
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    badi.badi.nickname ?: badi.user.name,
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold
-                )
-                Text(
-                    badi.user.email,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
-                )
-                // DEBUG: Match kontrolü
-                Text(
-                    "🔍 MATCH: ${badi.user.uid == badi.badi.buddyUserId} | uid:...${badi.user.uid.takeLast(4)} vs buddyId:...${badi.badi.buddyUserId.takeLast(4)}",
-                    style = MaterialTheme.typography.labelSmall,
-                    color = Color.Red,
-                    fontWeight = FontWeight.Bold
-                )
-
-                // İzin durumu
-                Row(
-                    modifier = Modifier.padding(top = 4.dp),
-                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    .fillMaxWidth()
+                    .padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Profil fotoğrafı
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(com.bardino.dozi.core.ui.theme.DoziTurquoise, com.bardino.dozi.core.ui.theme.DoziPurple)
+                            ),
+                            shape = CircleShape
+                        )
+                        .padding(3.dp)
                 ) {
-                    if (badi.badi.permissions.canViewReminders) {
-                        Chip(text = "📋 Hatırlatmalar")
-                    }
-                    if (badi.badi.notificationPreferences.onMedicationTime) {
-                        Chip(text = "🔔 Bildirimler")
+                    AsyncImage(
+                        model = badi.user.photoUrl,
+                        contentDescription = "Profil",
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .clip(CircleShape)
+                            .background(Color.White)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                // Kullanıcı bilgisi
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        badi.badi.nickname ?: badi.user.name,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = com.bardino.dozi.core.ui.theme.TextPrimary
+                    )
+                    Text(
+                        badi.user.email,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = com.bardino.dozi.core.ui.theme.TextSecondary
+                    )
+
+                    // İzin durumu
+                    Row(
+                        modifier = Modifier.padding(top = 6.dp),
+                        horizontalArrangement = Arrangement.spacedBy(6.dp)
+                    ) {
+                        if (badi.badi.permissions.canViewReminders) {
+                            Chip(text = "📋 İlaçlar", color = com.bardino.dozi.core.ui.theme.DoziTurquoise)
+                        }
+                        if (badi.badi.notificationPreferences.onMedicationTime) {
+                            Chip(text = "🔔 Bildirim", color = com.bardino.dozi.core.ui.theme.DoziPurple)
+                        }
                     }
                 }
-            }
 
-            Icon(
-                Icons.Default.ChevronRight,
-                "Detay",
-                tint = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.4f)
-            )
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(com.bardino.dozi.core.ui.theme.DoziTurquoise, com.bardino.dozi.core.ui.theme.DoziPurple)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.ChevronRight,
+                        "Detay",
+                        tint = Color.White,
+                        modifier = Modifier.size(24.dp)
+                    )
+                }
+            }
         }
     }
 }
 
 @Composable
-fun Chip(text: String) {
+fun Chip(text: String, color: Color = com.bardino.dozi.core.ui.theme.DoziTurquoise) {
     Surface(
-        shape = RoundedCornerShape(16.dp),
-        color = MaterialTheme.colorScheme.primaryContainer,
+        shape = RoundedCornerShape(12.dp),
+        color = color.copy(alpha = 0.15f),
         modifier = Modifier.padding(2.dp)
     ) {
         Text(
             text,
-            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
-            style = MaterialTheme.typography.labelSmall
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            style = MaterialTheme.typography.labelSmall,
+            fontWeight = FontWeight.Bold,
+            color = color
         )
     }
 }
@@ -351,27 +478,70 @@ fun EmptyBadiState(onAddBadi: () -> Unit) {
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+            verticalArrangement = Arrangement.spacedBy(20.dp),
+            modifier = Modifier.padding(32.dp)
         ) {
+            Box(
+                modifier = Modifier
+                    .size(120.dp)
+                    .background(
+                        brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(
+                                com.bardino.dozi.core.ui.theme.DoziTurquoise.copy(alpha = 0.2f),
+                                com.bardino.dozi.core.ui.theme.DoziPurple.copy(alpha = 0.2f)
+                            )
+                        ),
+                        shape = CircleShape
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Text(
+                    "🤝",
+                    style = MaterialTheme.typography.displayLarge
+                )
+            }
             Text(
-                "🤝",
-                style = MaterialTheme.typography.displayLarge
-            )
-            Text(
-                "Henüz badiniz yok",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold
+                "Henüz Badiniz Yok",
+                style = MaterialTheme.typography.headlineSmall,
+                fontWeight = FontWeight.ExtraBold,
+                color = com.bardino.dozi.core.ui.theme.TextPrimary
             )
             Text(
                 "Sevdiklerinizi badi olarak ekleyin\nilaç takibinizi birlikte yönetin",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
+                style = MaterialTheme.typography.bodyLarge,
+                color = com.bardino.dozi.core.ui.theme.TextSecondary,
+                textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = onAddBadi) {
-                Icon(Icons.Default.PersonAdd, "Ekle")
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Badi Ekle")
+            Button(
+                onClick = onAddBadi,
+                modifier = Modifier
+                    .fillMaxWidth(0.7f)
+                    .height(56.dp),
+                colors = ButtonDefaults.buttonColors(
+                    containerColor = Color.Transparent
+                ),
+                contentPadding = PaddingValues(0.dp)
+            ) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                listOf(com.bardino.dozi.core.ui.theme.DoziTurquoise, com.bardino.dozi.core.ui.theme.DoziPurple)
+                            ),
+                            shape = RoundedCornerShape(16.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.PersonAdd, "Ekle", tint = Color.White)
+                        Text("Badi Ekle", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
             }
         }
     }
