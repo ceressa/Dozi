@@ -36,6 +36,17 @@ fun NotificationSoundSettingsScreen(
     var showPremiumDialog by remember { mutableStateOf(false) }
     val context = LocalContext.current
 
+    // Sistem sesleri listesi
+    val systemSounds = remember {
+        listOf(
+            "Notification 1" to "android.resource://com.android.providers.settings/notification1",
+            "Notification 2" to "android.resource://com.android.providers.settings/notification2",
+            "Notification 3" to "android.resource://com.android.providers.settings/notification3",
+            "Gentle Bell" to "android.resource://com.android.providers.settings/gentle_bell",
+            "Soft Chime" to "android.resource://com.android.providers.settings/soft_chime"
+        )
+    }
+
     // Premium değilse gate göster
     if (!isPremium && showPremiumDialog) {
         PremiumGateDialog(
@@ -135,16 +146,6 @@ fun NotificationSoundSettingsScreen(
             }
 
             // Sistem sesleri
-            val systemSounds = remember {
-                listOf(
-                    "Notification 1" to "android.resource://com.android.providers.settings/notification1",
-                    "Notification 2" to "android.resource://com.android.providers.settings/notification2",
-                    "Notification 3" to "android.resource://com.android.providers.settings/notification3",
-                    "Gentle Bell" to "android.resource://com.android.providers.settings/gentle_bell",
-                    "Soft Chime" to "android.resource://com.android.providers.settings/soft_chime"
-                )
-            }
-
             items(systemSounds) { (name, uri) ->
                 SoundItem(
                     name = name,
