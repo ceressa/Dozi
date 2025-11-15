@@ -5,9 +5,9 @@ import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 
 /**
- * Buddy isteğini temsil eder
+ * Badi isteğini temsil eder
  */
-data class BuddyRequest(
+data class BadiRequest(
     @DocumentId
     val id: String = "",
     val fromUserId: String = "",              // İsteği gönderen
@@ -16,7 +16,7 @@ data class BuddyRequest(
     val fromUserPhoto: String = "",           // Gönderenin fotoğrafı
     val toUserEmail: String? = null,          // Email ile gönderildiyse
     val toBuddyCode: String? = null,          // Kod ile gönderildiyse
-    val status: BuddyRequestStatus = BuddyRequestStatus.PENDING,
+    val status: BadiRequestStatus = BadiRequestStatus.PENDING,
     val message: String? = null,              // Özel mesaj
     @ServerTimestamp
     val createdAt: Timestamp? = null,
@@ -26,9 +26,9 @@ data class BuddyRequest(
 )
 
 /**
- * Buddy isteği durumu
+ * Badi isteği durumu
  */
-enum class BuddyRequestStatus {
+enum class BadiRequestStatus {
     PENDING,    // Beklemede
     ACCEPTED,   // Kabul edildi
     REJECTED,   // Reddedildi
@@ -36,10 +36,10 @@ enum class BuddyRequestStatus {
 }
 
 /**
- * Buddy isteği ile birlikte kullanıcı bilgilerini içeren model
+ * Badi isteği ile birlikte kullanıcı bilgilerini içeren model
  * (UI'da göstermek için)
  */
-data class BuddyRequestWithUser(
-    val request: BuddyRequest,
+data class BadiRequestWithUser(
+    val request: BadiRequest,
     val fromUser: User
 )

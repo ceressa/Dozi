@@ -22,11 +22,11 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideBuddyRepository(
+    fun provideBadiRepository(
         auth: FirebaseAuth,
         firestore: FirebaseFirestore
-    ): BuddyRepository {
-        return BuddyRepository(auth, firestore)
+    ): BadiRepository {
+        return BadiRepository(auth, firestore)
     }
 
     @Provides

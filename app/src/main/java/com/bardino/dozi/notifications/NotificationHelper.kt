@@ -174,7 +174,7 @@ object NotificationHelper {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) PendingIntent.FLAG_MUTABLE else 0
 
     /**
-     * Buddy request bildirimi göster (Kabul/Reddet butonları ile)
+     * Badi request bildirimi göster (Kabul/Reddet butonları ile)
      */
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     fun showBuddyRequestNotification(
@@ -222,11 +222,11 @@ object NotificationHelper {
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_pill)
             .setColor(Color.parseColor("#26C6DA"))
-            .setContentTitle("🤝 Yeni Buddy İsteği")
+            .setContentTitle("🤝 Yeni Badi İsteği")
             .setContentText("$fromUserName seni buddy olarak eklemek istiyor!")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("$fromUserName seni buddy olarak eklemek istiyor!\n\nBuddy'leriniz ilaç hatırlatmalarınızı görebilir ve sizi destekleyebilir.")
+                    .bigText("$fromUserName seni buddy olarak eklemek istiyor!\n\nBadileriniz ilaç hatırlatmalarınızı görebilir ve sizi destekleyebilir.")
             )
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)

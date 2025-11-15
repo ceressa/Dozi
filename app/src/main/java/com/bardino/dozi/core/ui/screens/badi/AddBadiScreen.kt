@@ -1,4 +1,4 @@
-package com.bardino.dozi.core.ui.screens.buddy
+package com.bardino.dozi.core.ui.screens.badi
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -22,17 +22,17 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.bardino.dozi.core.ui.viewmodel.BuddyViewModel
+import com.bardino.dozi.core.ui.viewmodel.BadiViewModel
 
 /**
- * Buddy Ekleme Ekranı
- * Kullanıcı buddy kodu veya email ile buddy ekleyebilir
+ * Badi Ekleme Ekranı
+ * Kullanıcı badi kodu veya email ile badi ekleyebilir
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun AddBuddyScreen(
+fun AddBadiScreen(
     onNavigateBack: () -> Unit,
-    viewModel: BuddyViewModel = hiltViewModel()
+    viewModel: BadiViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val searchState by viewModel.searchState.collectAsState()
@@ -47,7 +47,7 @@ fun AddBuddyScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("➕ Buddy Ekle") },
+                title = { Text("➕ Badi Ekle") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Geri")
@@ -68,9 +68,9 @@ fun AddBuddyScreen(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             // Kodumu göster butonu
-            MyBuddyCodeCard(
+            MyBadiCodeCard(
                 onClick = {
-                    viewModel.generateBuddyCode()
+                    viewModel.generateBadiCode()
                     showMyCodeDialog = true
                 }
             )
@@ -101,7 +101,7 @@ fun AddBuddyScreen(
                         value = searchQuery,
                         onValueChange = { searchQuery = it },
                         modifier = Modifier.fillMaxWidth(),
-                        label = { Text("Buddy Kodu") },
+                        label = { Text("BadiKodu") },
                         placeholder = { Text("6 haneli kod girin") },
                         leadingIcon = { Icon(Icons.Default.Pin, null) },
                         keyboardOptions = KeyboardOptions(
@@ -111,7 +111,7 @@ fun AddBuddyScreen(
                         keyboardActions = KeyboardActions(
                             onSearch = {
                                 if (searchQuery.length == 6) {
-                                    viewModel.searchUserByBuddyCode(searchQuery)
+                                    viewModel.searchUserByBadiCode(searchQuery)
                                     focusManager.clearFocus()
                                 }
                             }
@@ -149,7 +149,7 @@ fun AddBuddyScreen(
             Button(
                 onClick = {
                     when (selectedTab) {
-                        0 -> viewModel.searchUserByBuddyCode(searchQuery)
+                        0 -> viewModel.searchUserByBadiCode(searchQuery)
                         1 -> viewModel.searchUserByEmail(searchQuery)
                     }
                 },
@@ -225,7 +225,7 @@ fun AddBuddyScreen(
                         // İstek gönder butonu
                         Button(
                             onClick = {
-                                viewModel.sendBuddyRequest(
+                                viewModel.sendBadiRequest(
                                     user.uid,
                                     message.ifEmpty { null }
                                 )
@@ -238,7 +238,7 @@ fun AddBuddyScreen(
                         ) {
                             Icon(Icons.Default.Send, "Gönder")
                             Spacer(modifier = Modifier.width(8.dp))
-                            Text("Buddy İsteği Gönder")
+                            Text("Badiİsteği Gönder")
                         }
                     }
                 }
@@ -287,7 +287,7 @@ fun AddBuddyScreen(
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "• Buddy kodunuz ile arkadaşlarınız sizi kolayca bulabilir",
+                        "• Badi kodunuz ile arkadaşlarınız sizi kolayca bulabilir",
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
@@ -295,7 +295,7 @@ fun AddBuddyScreen(
                         style = MaterialTheme.typography.bodySmall
                     )
                     Text(
-                        "• Buddy istekleri 7 gün geçerlidir",
+                        "• Badi istekleri 7 gün geçerlidir",
                         style = MaterialTheme.typography.bodySmall
                     )
                 }
@@ -304,16 +304,16 @@ fun AddBuddyScreen(
     }
 
     // Kodumu göster dialog
-    if (showMyCodeDialog && uiState.buddyCode != null) {
+    if (showMyCodeDialog && uiState.badiCode != null) {
         MyBuddyCodeDialog(
-            code = uiState.buddyCode!!,
+            code = uiState.badiCode!!,
             onDismiss = { showMyCodeDialog = false }
         )
     }
 }
 
 @Composable
-fun MyBuddyCodeCard(onClick: () -> Unit) {
+fun MyBadiCodeCard(onClick: () -> Unit) {
     Card(
         modifier = Modifier
             .fillMaxWidth(),
@@ -356,7 +356,7 @@ fun MyBuddyCodeDialog(
         icon = { Icon(Icons.Default.QrCode, null, modifier = Modifier.size(48.dp)) },
         title = {
             Text(
-                "Buddy Kodunuz",
+                "BadiKodunuz",
                 textAlign = TextAlign.Center
             )
         },

@@ -15,9 +15,9 @@ import java.util.*
 import kotlin.random.Random
 
 /**
- * Buddy sistemini yöneten repository
+ * Badi sistemini yöneten repository
  */
-class BuddyRepository(
+class BadiRepository(
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
     private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
 ) {
@@ -25,49 +25,49 @@ class BuddyRepository(
     private val currentUserId: String?
         get() = auth.currentUser?.uid
 
-    // ==================== Buddy İşlemleri ====================
+    // ==================== Badi İşlemleri ====================
 
     /**
-     * Kullanıcının buddy'lerini real-time olarak dinle
+     * Kullanıcının badilerini real-time olarak dinle
      */
-    fun getBuddiesFlow(): Flow<List<BuddyWithUser>> = callbackFlow {
+    fun getBadisFlow(): Flow<List<BadiWithUser>> = callbackFlow {
         val userId = currentUserId ?: run {
-            android.util.Log.w("BuddyRepository", "getBuddiesFlow: No user logged in")
+            android.util.Log.w("BadiRepository", "getBadisFlow: No user logged in")
             close()
             return@callbackFlow
         }
 
-        android.util.Log.d("BuddyRepository", "getBuddiesFlow: Listening for buddies of userId=$userId")
+        android.util.Log.d("BadiRepository", "getBadisFlow: Listening for badis of userId=$userId")
 
         val scope = this
 
         val listener = db.collection("buddies")
             .whereEqualTo("userId", userId)
-            .whereEqualTo("status", BuddyStatus.ACTIVE.name)
+            .whereEqualTo("status", BadiStatus.ACTIVE.name)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    android.util.Log.e("BuddyRepository", "getBuddiesFlow: Error", error)
+                    android.util.Log.e("BadiRepository", "getBadisFlow: Error", error)
                     close(error)
                     return@addSnapshotListener
                 }
 
-                val buddies = snapshot?.documents?.mapNotNull { doc ->
-                    val buddy = doc.toObject(Buddy::class.java)?.copy(id = doc.id)
-                    android.util.Log.d("BuddyRepository", "getBuddiesFlow: Found buddy record - id=${doc.id}, userId=${buddy?.userId}, buddyUserId=${buddy?.buddyUserId}")
-                    buddy
+                val badis = snapshot?.documents?.mapNotNull { doc ->
+                    val badi = doc.toObject(Badi::class.java)?.copy(id = doc.id)
+                    android.util.Log.d("BadiRepository", "getBadisFlow: Found badi record - id=${doc.id}, userId=${badi?.userId}, buddyUserId=${badi?.buddyUserId}")
+                    badi
                 } ?: emptyList()
 
-                android.util.Log.d("BuddyRepository", "getBuddiesFlow: Total ${buddies.size} buddy records found")
+                android.util.Log.d("BadiRepository", "getBadisFlow: Total ${badis.size} badi records found")
 
                 // ❗ Suspend fonksiyon kullanacağımız için coroutine açıyoruz
                 scope.launch {
-                    val list = buddies.map { buddy ->
-                        android.util.Log.d("BuddyRepository", "getBuddiesFlow: Fetching user info for buddyUserId=${buddy.buddyUserId}")
-                        val user = getUserById(buddy.buddyUserId)
-                        android.util.Log.d("BuddyRepository", "getBuddiesFlow: Got user - uid=${user.uid}, name=${user.name}, email=${user.email}")
-                        BuddyWithUser(buddy, user)
+                    val list = badis.map { badi ->
+                        android.util.Log.d("BadiRepository", "getBadisFlow: Fetching user info for buddyUserId=${badi.buddyUserId}")
+                        val user = getUserById(badi.buddyUserId)
+                        android.util.Log.d("BadiRepository", "getBadisFlow: Got user - uid=${user.uid}, name=${user.name}, email=${user.email}")
+                        BadiWithUser(badi, user)
                     }
-                    android.util.Log.d("BuddyRepository", "getBuddiesFlow: Sending ${list.size} buddies to UI")
+                    android.util.Log.d("BadiRepository", "getBadisFlow: Sending ${list.size} badis to UI")
                     trySend(list).isSuccess
                 }
             }
@@ -77,31 +77,31 @@ class BuddyRepository(
 
 
     /**
-     * Belirli bir buddy'yi ID ile getir
+     * Belirli bir badiyi ID ile getir
      */
-    suspend fun getBuddyById(buddyId: String): Buddy? {
+    suspend fun getBadiById(badiId: String): Badi? {
         return try {
             db.collection("buddies")
-                .document(buddyId)
+                .document(badiId)
                 .get()
                 .await()
-                .toObject(Buddy::class.java)
+                .toObject(Badi::class.java)
         } catch (e: Exception) {
             null
         }
     }
 
     /**
-     * İki kullanıcı arasında buddy ilişkisi var mı kontrol et
+     * İki kullanıcı arasında badi ilişkisi var mı kontrol et
      */
-    suspend fun isBuddy(otherUserId: String): Boolean {
+    suspend fun isBadi(otherUserId: String): Boolean {
         val userId = currentUserId ?: return false
 
         return try {
             val snapshot = db.collection("buddies")
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("buddyUserId", otherUserId)
-                .whereEqualTo("status", BuddyStatus.ACTIVE.name)
+                .whereEqualTo("status", BadiStatus.ACTIVE.name)
                 .get()
                 .await()
 
@@ -112,15 +112,15 @@ class BuddyRepository(
     }
 
     /**
-     * Buddy izinlerini güncelle
+     * Badi izinlerini güncelle
      */
-    suspend fun updateBuddyPermissions(
-        buddyId: String,
-        permissions: BuddyPermissions
+    suspend fun updateBadiPermissions(
+        badiId: String,
+        permissions: BadiPermissions
     ): Result<Unit> {
         return try {
             db.collection("buddies")
-                .document(buddyId)
+                .document(badiId)
                 .update("permissions", permissions)
                 .await()
             Result.success(Unit)
@@ -130,15 +130,15 @@ class BuddyRepository(
     }
 
     /**
-     * Buddy bildirim tercihlerini güncelle
+     * Badi bildirim tercihlerini güncelle
      */
-    suspend fun updateBuddyNotificationPreferences(
-        buddyId: String,
-        preferences: BuddyNotificationPreferences
+    suspend fun updateBadiNotificationPreferences(
+        badiId: String,
+        preferences: BadiNotificationPreferences
     ): Result<Unit> {
         return try {
             db.collection("buddies")
-                .document(buddyId)
+                .document(badiId)
                 .update("notificationPreferences", preferences)
                 .await()
             Result.success(Unit)
@@ -148,15 +148,15 @@ class BuddyRepository(
     }
 
     /**
-     * Buddy'ye nickname (takma isim) ekle
+     * Badiye nickname (takma isim) ekle
      */
-    suspend fun updateBuddyNickname(
-        buddyId: String,
+    suspend fun updateBadiNickname(
+        badiId: String,
         nickname: String?
     ): Result<Unit> {
         return try {
             db.collection("buddies")
-                .document(buddyId)
+                .document(badiId)
                 .update("nickname", nickname)
                 .await()
             Result.success(Unit)
@@ -166,13 +166,13 @@ class BuddyRepository(
     }
 
     /**
-     * Buddy ilişkisini kaldır
+     * Badi ilişkisini kaldır
      */
-    suspend fun removeBuddy(buddyId: String): Result<Unit> {
+    suspend fun removeBadi(badiId: String): Result<Unit> {
         return try {
             db.collection("buddies")
-                .document(buddyId)
-                .update("status", BuddyStatus.REMOVED.name)
+                .document(badiId)
+                .update("status", BadiStatus.REMOVED.name)
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -180,17 +180,17 @@ class BuddyRepository(
         }
     }
 
-    // ==================== Buddy İstekleri ====================
+    // ==================== Badi İstekleri ====================
 
     /**
-     * Buddy kodu oluştur (6 haneli)
+     * Badi kodu oluştur (6 haneli)
      */
-    suspend fun generateBuddyCode(): String {
+    suspend fun generateBadiCode(): String {
         val userId = currentUserId ?: return ""
 
         val code = Random.nextInt(100000, 999999).toString()
 
-        // User'a buddy kodu kaydet
+        // User'a badi kodu kaydet
         db.collection("users")
             .document(userId)
             .update("buddyCode", code)
@@ -200,9 +200,9 @@ class BuddyRepository(
     }
 
     /**
-     * Buddy kodu ile kullanıcı bul
+     * Badi kodu ile kullanıcı bul
      */
-    suspend fun findUserByBuddyCode(code: String): User? {
+    suspend fun findUserByBadiCode(code: String): User? {
         return try {
             val snapshot = db.collection("users")
                 .whereEqualTo("buddyCode", code)
@@ -234,9 +234,9 @@ class BuddyRepository(
     }
 
     /**
-     * Buddy isteği gönder
+     * Badi isteği gönder
      */
-    suspend fun sendBuddyRequest(
+    suspend fun sendBadiRequest(
         toUserId: String,
         message: String? = null
     ): Result<String> {
@@ -251,7 +251,7 @@ class BuddyRepository(
             val existingRequest = db.collection("buddy_requests")
                 .whereEqualTo("fromUserId", userId)
                 .whereEqualTo("toUserId", toUserId)
-                .whereEqualTo("status", BuddyRequestStatus.PENDING.name)
+                .whereEqualTo("status", BadiRequestStatus.PENDING.name)
                 .get()
                 .await()
 
@@ -260,13 +260,13 @@ class BuddyRepository(
             }
 
             // Yeni istek oluştur
-            val request = BuddyRequest(
+            val request = BadiRequest(
                 fromUserId = userId,
                 toUserId = toUserId,
                 fromUserName = currentUser.name,
                 fromUserPhoto = currentUser.photoUrl,
                 message = message,
-                status = BuddyRequestStatus.PENDING,
+                status = BadiRequestStatus.PENDING,
                 expiresAt = Timestamp(Date(System.currentTimeMillis() + 7 * 24 * 60 * 60 * 1000)) // 7 gün
             )
 
@@ -278,51 +278,51 @@ class BuddyRepository(
     }
 
     /**
-     * Bekleyen buddy isteklerini real-time dinle
+     * Bekleyen badi isteklerini real-time dinle
      * Not: respondedAt NULL olan (henüz yanıt verilmemiş) istekleri getir
      */
-    fun getPendingBuddyRequestsFlow(): Flow<List<BuddyRequestWithUser>> = callbackFlow {
+    fun getPendingBadiRequestsFlow(): Flow<List<BadiRequestWithUser>> = callbackFlow {
         val userId = currentUserId ?: run {
-            android.util.Log.w("BuddyRepository", "getPendingBuddyRequestsFlow: No user logged in")
+            android.util.Log.w("BadiRepository", "getPendingBadiRequestsFlow: No user logged in")
             close()
             return@callbackFlow
         }
 
-        android.util.Log.d("BuddyRepository", "getPendingBuddyRequestsFlow: Listening for requests to userId=$userId")
+        android.util.Log.d("BadiRepository", "getPendingBadiRequestsFlow: Listening for requests to userId=$userId")
 
         val scope = this
 
         val listener = db.collection("buddy_requests")
             .whereEqualTo("toUserId", userId)
-            .whereEqualTo("status", BuddyRequestStatus.PENDING.name)
+            .whereEqualTo("status", BadiRequestStatus.PENDING.name)
             .whereEqualTo("respondedAt", null)  // SADECE yanıt verilmemiş olanlar
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
-                    android.util.Log.e("BuddyRepository", "getPendingBuddyRequestsFlow error", error)
+                    android.util.Log.e("BadiRepository", "getPendingBadiRequestsFlow error", error)
                     close(error)
                     return@addSnapshotListener
                 }
 
                 val requests = snapshot?.documents?.mapNotNull { doc ->
-                    val request = doc.toObject(BuddyRequest::class.java)?.copy(id = doc.id)
+                    val request = doc.toObject(BadiRequest::class.java)?.copy(id = doc.id)
                     if (request?.respondedAt != null) {
-                        android.util.Log.w("BuddyRepository", "Found request with respondedAt but still PENDING: ${doc.id}")
+                        android.util.Log.w("BadiRepository", "Found request with respondedAt but still PENDING: ${doc.id}")
                         null // Filtrele
                     } else {
-                        android.util.Log.d("BuddyRepository", "Found valid pending request: ${doc.id}")
+                        android.util.Log.d("BadiRepository", "Found valid pending request: ${doc.id}")
                         request
                     }
                 } ?: emptyList()
 
-                android.util.Log.d("BuddyRepository", "Total valid pending requests: ${requests.size}")
+                android.util.Log.d("BadiRepository", "Total valid pending requests: ${requests.size}")
 
                 scope.launch {
                     val list = requests.map { request ->
                         val user = getUserById(request.fromUserId)
-                        BuddyRequestWithUser(request, user)
+                        BadiRequestWithUser(request, user)
                     }
-                    android.util.Log.d("BuddyRepository", "Sending ${list.size} pending requests to UI")
+                    android.util.Log.d("BadiRepository", "Sending ${list.size} pending requests to UI")
                     trySend(list).isSuccess
                 }
             }
@@ -332,113 +332,113 @@ class BuddyRepository(
 
 
     /**
-     * Buddy isteğini kabul et
+     * Badi isteğini kabul et
      */
-    suspend fun acceptBuddyRequest(requestId: String): Result<Unit> {
+    suspend fun acceptBadiRequest(requestId: String): Result<Unit> {
         val userId = currentUserId ?: run {
-            android.util.Log.e("BuddyRepository", "acceptBuddyRequest: User not logged in")
+            android.util.Log.e("BadiRepository", "acceptBadiRequest: User not logged in")
             return Result.failure(Exception("User not logged in"))
         }
 
         return try {
-            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: Getting request $requestId")
+            android.util.Log.d("BadiRepository", "acceptBadiRequest: Getting request $requestId")
 
             // İsteği al
             val requestDoc = db.collection("buddy_requests").document(requestId).get().await()
-            val request = requestDoc.toObject(BuddyRequest::class.java)
+            val request = requestDoc.toObject(BadiRequest::class.java)
                 ?: run {
-                    android.util.Log.e("BuddyRepository", "acceptBuddyRequest: Request not found")
+                    android.util.Log.e("BadiRepository", "acceptBadiRequest: Request not found")
                     return Result.failure(Exception("Request not found"))
                 }
 
             // İstek zaten kabul edilmiş mi kontrol et
-            if (request.status != BuddyRequestStatus.PENDING) {
-                android.util.Log.w("BuddyRepository", "acceptBuddyRequest: Request already processed (status=${request.status})")
+            if (request.status != BadiRequestStatus.PENDING) {
+                android.util.Log.w("BadiRepository", "acceptBadiRequest: Request already processed (status=${request.status})")
                 return Result.failure(Exception("Bu istek zaten işleme alınmış"))
             }
 
-            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: From ${request.fromUserId} to $userId")
+            android.util.Log.d("BadiRepository", "acceptBadiRequest: From ${request.fromUserId} to $userId")
 
-            // Bu kullanıcılar arasında zaten buddy ilişkisi var mı kontrol et
-            val existingBuddy = db.collection("buddies")
+            // Bu kullanıcılar arasında zaten badi ilişkisi var mı kontrol et
+            val existingBadi = db.collection("buddies")
                 .whereEqualTo("userId", userId)
                 .whereEqualTo("buddyUserId", request.fromUserId)
-                .whereEqualTo("status", BuddyStatus.ACTIVE.name)
+                .whereEqualTo("status", BadiStatus.ACTIVE.name)
                 .get()
                 .await()
 
-            if (!existingBuddy.isEmpty) {
-                android.util.Log.w("BuddyRepository", "acceptBuddyRequest: Buddy relationship already exists")
+            if (!existingBadi.isEmpty) {
+                android.util.Log.w("BadiRepository", "acceptBadiRequest: Badi relationship already exists")
                 // İsteği kabul edildi olarak işaretle
                 db.collection("buddy_requests").document(requestId)
                     .update(
                         mapOf(
-                            "status" to BuddyRequestStatus.ACCEPTED.name,
+                            "status" to BadiRequestStatus.ACCEPTED.name,
                             "respondedAt" to FieldValue.serverTimestamp()
                         )
                     ).await()
                 return Result.success(Unit)
             }
 
-            // İki yönlü buddy ilişkisi oluştur
-            val buddy1 = Buddy(
+            // İki yönlü badi ilişkisi oluştur
+            val badi1 = Badi(
                 userId = request.fromUserId,
                 buddyUserId = userId,
-                status = BuddyStatus.ACTIVE
+                status = BadiStatus.ACTIVE
             )
 
-            val buddy2 = Buddy(
+            val badi2 = Badi(
                 userId = userId,
                 buddyUserId = request.fromUserId,
-                status = BuddyStatus.ACTIVE
+                status = BadiStatus.ACTIVE
             )
 
-            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: Creating buddies - buddy1(userId=${buddy1.userId}, buddyUserId=${buddy1.buddyUserId}), buddy2(userId=${buddy2.userId}, buddyUserId=${buddy2.buddyUserId})")
+            android.util.Log.d("BadiRepository", "acceptBadiRequest: Creating badis - badi1(userId=${badi1.userId}, buddyUserId=${badi1.buddyUserId}), badi2(userId=${badi2.userId}, buddyUserId=${badi2.buddyUserId})")
 
             // Firestore batch işlemi
             val batch = db.batch()
 
-            // Buddy ilişkilerini ekle
-            val buddy1Ref = db.collection("buddies").document()
-            val buddy2Ref = db.collection("buddies").document()
+            // Badi ilişkilerini ekle
+            val badi1Ref = db.collection("buddies").document()
+            val badi2Ref = db.collection("buddies").document()
 
-            batch.set(buddy1Ref, buddy1)
-            batch.set(buddy2Ref, buddy2)
+            batch.set(badi1Ref, badi1)
+            batch.set(badi2Ref, badi2)
 
             // İstek durumunu güncelle
             batch.update(
                 db.collection("buddy_requests").document(requestId),
                 mapOf(
-                    "status" to BuddyRequestStatus.ACCEPTED.name,
+                    "status" to BadiRequestStatus.ACCEPTED.name,
                     "respondedAt" to FieldValue.serverTimestamp()
                 )
             )
 
-            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: Committing batch...")
+            android.util.Log.d("BadiRepository", "acceptBadiRequest: Committing batch...")
             batch.commit().await()
 
-            android.util.Log.d("BuddyRepository", "acceptBuddyRequest: ✅ Success - Buddy relationship created")
+            android.util.Log.d("BadiRepository", "acceptBadiRequest: ✅ Success - Badi relationship created")
             Result.success(Unit)
         } catch (e: Exception) {
-            android.util.Log.e("BuddyRepository", "acceptBuddyRequest: ❌ Error", e)
+            android.util.Log.e("BadiRepository", "acceptBadiRequest: ❌ Error", e)
             Result.failure(e)
         }
     }
 
     /**
-     * Kirli buddy request kayıtlarını temizle
+     * Kirli badi request kayıtlarını temizle
      * (respondedAt varsa ama status hala PENDING olanları düzelt)
      */
     suspend fun cleanupStaleRequests(): Result<Int> {
         val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
 
         return try {
-            android.util.Log.d("BuddyRepository", "cleanupStaleRequests: Starting cleanup")
+            android.util.Log.d("BadiRepository", "cleanupStaleRequests: Starting cleanup")
 
             // Status=PENDING ama respondedAt olan kayıtları bul
             val staleRequests = db.collection("buddy_requests")
                 .whereEqualTo("toUserId", userId)
-                .whereEqualTo("status", BuddyRequestStatus.PENDING.name)
+                .whereEqualTo("status", BadiRequestStatus.PENDING.name)
                 .get()
                 .await()
 
@@ -447,7 +447,7 @@ class BuddyRepository(
                 respondedAt != null
             }
 
-            android.util.Log.d("BuddyRepository", "cleanupStaleRequests: Found ${requestsToUpdate.size} stale requests")
+            android.util.Log.d("BadiRepository", "cleanupStaleRequests: Found ${requestsToUpdate.size} stale requests")
 
             if (requestsToUpdate.isEmpty()) {
                 return Result.success(0)
@@ -456,40 +456,40 @@ class BuddyRepository(
             // Bu istekleri EXPIRED olarak işaretle (veya sil)
             val batch = db.batch()
             requestsToUpdate.forEach { doc ->
-                android.util.Log.d("BuddyRepository", "cleanupStaleRequests: Deleting stale request ${doc.id}")
+                android.util.Log.d("BadiRepository", "cleanupStaleRequests: Deleting stale request ${doc.id}")
                 batch.delete(doc.reference)
             }
 
             batch.commit().await()
-            android.util.Log.d("BuddyRepository", "cleanupStaleRequests: ✅ Cleaned up ${requestsToUpdate.size} stale requests")
+            android.util.Log.d("BadiRepository", "cleanupStaleRequests: ✅ Cleaned up ${requestsToUpdate.size} stale requests")
 
             Result.success(requestsToUpdate.size)
         } catch (e: Exception) {
-            android.util.Log.e("BuddyRepository", "cleanupStaleRequests: ❌ Error", e)
+            android.util.Log.e("BadiRepository", "cleanupStaleRequests: ❌ Error", e)
             Result.failure(e)
         }
     }
 
     /**
-     * Duplicate buddy kayıtlarını temizle
+     * Duplicate badi kayıtlarını temizle
      * (Her userId-buddyUserId kombinasyonundan sadece birini bırak)
      */
-    suspend fun cleanupDuplicateBuddies(): Result<Int> {
+    suspend fun cleanupDuplicateBadis(): Result<Int> {
         val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
 
         return try {
-            android.util.Log.d("BuddyRepository", "cleanupDuplicateBuddies: Starting cleanup for user $userId")
+            android.util.Log.d("BadiRepository", "cleanupDuplicateBadis: Starting cleanup for user $userId")
 
-            // Kullanıcının tüm buddy kayıtlarını al
-            val buddiesSnapshot = db.collection("buddies")
+            // Kullanıcının tüm badi kayıtlarını al
+            val badisSnapshot = db.collection("buddies")
                 .whereEqualTo("userId", userId)
-                .whereEqualTo("status", BuddyStatus.ACTIVE.name)
+                .whereEqualTo("status", BadiStatus.ACTIVE.name)
                 .get()
                 .await()
 
             // buddyUserId'ye göre grupla
-            val grouped = buddiesSnapshot.documents.groupBy { doc ->
-                doc.toObject(Buddy::class.java)?.buddyUserId ?: ""
+            val grouped = badisSnapshot.documents.groupBy { doc ->
+                doc.toObject(Badi::class.java)?.buddyUserId ?: ""
             }
 
             var deletedCount = 0
@@ -498,7 +498,7 @@ class BuddyRepository(
             // Her grup için sadece ilkini tut, diğerlerini sil
             grouped.forEach { (buddyUserId, docs) ->
                 if (docs.size > 1) {
-                    android.util.Log.d("BuddyRepository", "cleanupDuplicateBuddies: Found ${docs.size} duplicates for buddy $buddyUserId")
+                    android.util.Log.d("BadiRepository", "cleanupDuplicateBadis: Found ${docs.size} duplicates for badi $buddyUserId")
                     // İlkini hariç tut, diğerlerini sil
                     docs.drop(1).forEach { doc ->
                         batch.delete(doc.reference)
@@ -509,28 +509,28 @@ class BuddyRepository(
 
             if (deletedCount > 0) {
                 batch.commit().await()
-                android.util.Log.d("BuddyRepository", "cleanupDuplicateBuddies: ✅ Deleted $deletedCount duplicate records")
+                android.util.Log.d("BadiRepository", "cleanupDuplicateBadis: ✅ Deleted $deletedCount duplicate records")
             } else {
-                android.util.Log.d("BuddyRepository", "cleanupDuplicateBuddies: No duplicates found")
+                android.util.Log.d("BadiRepository", "cleanupDuplicateBadis: No duplicates found")
             }
 
             Result.success(deletedCount)
         } catch (e: Exception) {
-            android.util.Log.e("BuddyRepository", "cleanupDuplicateBuddies: ❌ Error", e)
+            android.util.Log.e("BadiRepository", "cleanupDuplicateBadis: ❌ Error", e)
             Result.failure(e)
         }
     }
 
     /**
-     * Buddy isteğini reddet
+     * Badi isteğini reddet
      */
-    suspend fun rejectBuddyRequest(requestId: String): Result<Unit> {
+    suspend fun rejectBadiRequest(requestId: String): Result<Unit> {
         return try {
             db.collection("buddy_requests")
                 .document(requestId)
                 .update(
                     mapOf(
-                        "status" to BuddyRequestStatus.REJECTED.name,
+                        "status" to BadiRequestStatus.REJECTED.name,
                         "respondedAt" to FieldValue.serverTimestamp()
                     )
                 )
@@ -545,7 +545,7 @@ class BuddyRepository(
 
     private suspend fun getUserById(userId: String): User {
         return try {
-            android.util.Log.d("BuddyRepository", "getUserById: Fetching user with userId=$userId")
+            android.util.Log.d("BadiRepository", "getUserById: Fetching user with userId=$userId")
             val userDoc = db.collection("users")
                 .document(userId)
                 .get()
@@ -553,14 +553,14 @@ class BuddyRepository(
 
             val user = userDoc.toObject(User::class.java)
             if (user != null) {
-                android.util.Log.d("BuddyRepository", "getUserById: Found user - uid=${user.uid}, name=${user.name}, email=${user.email}")
+                android.util.Log.d("BadiRepository", "getUserById: Found user - uid=${user.uid}, name=${user.name}, email=${user.email}")
                 user
             } else {
-                android.util.Log.w("BuddyRepository", "getUserById: User not found in Firestore, using placeholder")
+                android.util.Log.w("BadiRepository", "getUserById: User not found in Firestore, using placeholder")
                 User(uid = userId, name = "Bilinmeyen")
             }
         } catch (e: Exception) {
-            android.util.Log.e("BuddyRepository", "getUserById: Error fetching user $userId", e)
+            android.util.Log.e("BadiRepository", "getUserById: Error fetching user $userId", e)
             User(uid = userId, name = "Bilinmeyen")
         }
     }

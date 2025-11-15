@@ -1,4 +1,4 @@
-package com.bardino.dozi.core.ui.screens.buddy
+package com.bardino.dozi.core.ui.screens.badi
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
@@ -17,31 +17,31 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.bardino.dozi.core.data.model.*
-import com.bardino.dozi.core.ui.viewmodel.BuddyViewModel
+import com.bardino.dozi.core.ui.viewmodel.BadiViewModel
 import coil.compose.AsyncImage
 import java.text.SimpleDateFormat
 import java.util.*
 
 /**
- * Buddy İlaç Takibi Ekranı
- * Buddy'nin ilaç alma geçmişini ve istatistiklerini gösterir
+ * Badi İlaç Takibi Ekranı
+ * Badinin ilaç alma geçmişini ve istatistiklerini gösterir
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BuddyMedicationTrackingScreen(
-    buddyId: String,
+fun BadiMedicationTrackingScreen(
+    badiId: String,
     onNavigateBack: () -> Unit,
-    viewModel: BuddyViewModel = hiltViewModel()
+    viewModel: BadiViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
-    val medicationLogs by viewModel.selectedBuddyLogs.collectAsState()
+    val medicationLogs by viewModel.selectedBadiLogs.collectAsState()
 
-    // Buddy'yi bul
-    val buddy = uiState.buddies.find { it.buddy.id == buddyId }
+    // Badiyi bul
+    val badi = uiState.badis.find { it.badi.id == badiId }
 
-    LaunchedEffect(buddyId) {
-        buddy?.let {
-            viewModel.loadBuddyMedicationLogs(it.buddy.buddyUserId)
+    LaunchedEffect(badiId) {
+        badi?.let {
+            viewModel.loadBadiMedicationLogs(it.badi.buddyUserId)
         }
     }
 
@@ -49,7 +49,7 @@ fun BuddyMedicationTrackingScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(buddy?.buddy?.nickname ?: buddy?.user?.name ?: "Buddy Takibi")
+                    Text(badi?.badi?.nickname ?: buddy?.user?.name ?: "Badi Takibi")
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -62,14 +62,14 @@ fun BuddyMedicationTrackingScreen(
             )
         }
     ) { padding ->
-        if (buddy == null) {
+        if (badi == null) {
             Box(
                 modifier = Modifier
                     .fillMaxSize()
                     .padding(padding),
                 contentAlignment = Alignment.Center
             ) {
-                Text("Buddy bulunamadı")
+                Text("Badi bulunamadı")
             }
             return@Scaffold
         }
@@ -81,9 +81,9 @@ fun BuddyMedicationTrackingScreen(
             contentPadding = PaddingValues(16.dp),
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
-            // Buddy bilgisi
+            // Badi bilgisi
             item {
-                BuddyInfoCard(buddy = buddy)
+                BadiInfoCard(badi = badi)
             }
 
             // İstatistikler
@@ -127,7 +127,7 @@ fun BuddyMedicationTrackingScreen(
 }
 
 @Composable
-fun BuddyInfoCard(buddy: BuddyWithUser) {
+fun BadiInfoCard(badi: BadiWithUser) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(16.dp),
@@ -141,7 +141,7 @@ fun BuddyInfoCard(buddy: BuddyWithUser) {
             horizontalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             AsyncImage(
-                model = buddy.user.photoUrl,
+                model = badi.user.photoUrl,
                 contentDescription = "Profil",
                 modifier = Modifier
                     .size(64.dp)
@@ -151,12 +151,12 @@ fun BuddyInfoCard(buddy: BuddyWithUser) {
 
             Column {
                 Text(
-                    buddy.buddy.nickname ?: buddy.user.name,
+                    buddy.badi.nickname ?: badi.user.name,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    buddy.user.email,
+                    badi.user.email,
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
@@ -369,7 +369,7 @@ fun EmptyMedicationLogsCard() {
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Buddy henüz ilaç kaydı oluşturmamış",
+                "Badi henüz ilaç kaydı oluşturmamış",
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )

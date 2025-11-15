@@ -3,7 +3,7 @@ package com.bardino.dozi.core.utils
 import android.content.Context
 import android.util.Log
 import com.bardino.dozi.core.data.model.*
-import com.bardino.dozi.core.data.repository.BuddyRepository
+import com.bardino.dozi.core.data.repository.BadiRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.NotificationRepository
@@ -13,14 +13,14 @@ import java.util.Calendar
 
 /**
  * 🚨 Escalation Manager
- * Kritik ilaçların kaçırılması durumunda buddy'lere bildirim gönderir
+ * Kritik ilaçların kaçırılması durumunda badilere bildirim gönderir
  */
 class EscalationManager(
     private val context: Context
 ) {
     private val medicineRepository = MedicineRepository()
     private val medicationLogRepository = MedicationLogRepository(context)
-    private val buddyRepository = BuddyRepository()
+    private val badiRepository = BadiRepository()
     private val notificationRepository = NotificationRepository()
 
     companion object {
@@ -31,7 +31,7 @@ class EscalationManager(
 
     /**
      * Kritik ilaçların kaçırılıp kaçırılmadığını kontrol et
-     * Eğer CRITICAL_MISSED_THRESHOLD kadar kritik ilaç kaçırıldıysa buddy'lere bildir
+     * Eğer CRITICAL_MISSED_THRESHOLD kadar kritik ilaç kaçırıldıysa badilere bildir
      */
     suspend fun checkAndEscalate() {
         try {
@@ -56,7 +56,7 @@ class EscalationManager(
             Log.d(TAG, "Missed critical medicines count: $missedCriticalCount")
 
             if (missedCriticalCount >= CRITICAL_MISSED_THRESHOLD) {
-                // 🚨 Escalate! Buddy'lere bildirim gönder
+                // 🚨 Escalate! Badilere bildirim gönder
                 notifyBuddiesAboutMissedCriticalMedicines(
                     userId,
                     missedCriticalCount,
@@ -94,7 +94,7 @@ class EscalationManager(
     }
 
     /**
-     * Buddy'lere kritik ilaç kaçırılması hakkında bildirim gönder
+     * Badilere kritik ilaç kaçırılması hakkında bildirim gönder
      */
     private suspend fun notifyBuddiesAboutMissedCriticalMedicines(
         userId: String,
@@ -102,48 +102,48 @@ class EscalationManager(
         medicineNames: List<String>
     ) {
         try {
-            // Aktif buddy'leri çek
-            val buddies = buddyRepository.getBuddiesFlow().first()
+            // Aktif badileri çek
+            val badis = badiRepository.getBuddiesFlow().first()
 
-            // Notification almak isteyen buddy'leri filtrele
-            val notifiableBuddies = buddies.filter {
-                it.buddy.notificationPreferences.onMedicationMissed &&
-                it.buddy.permissions.canReceiveNotifications
+            // Notification almak isteyen badileri filtrele
+            val notifiableBuddies = badis.filter {
+                it.badi.notificationPreferences.onMedicationMissed &&
+                it.badi.permissions.canReceiveNotifications
             }
 
             if (notifiableBuddies.isEmpty()) {
-                Log.d(TAG, "No buddies to notify")
+                Log.d(TAG, "No badis to notify")
                 return
             }
 
-            // Her buddy için bildirim oluştur
-            for (buddyWithUser in notifiableBuddies) {
+            // Her badi için bildirim oluştur
+            for (badiWithUser in notifiableBuddies) {
                 val notification = DoziNotification(
-                    userId = buddyWithUser.buddy.buddyUserId,
+                    userId = badiWithUser.badi.buddyUserId,
                     type = NotificationType.CRITICAL_MEDICATION_MISSED,
                     title = "🚨 Kritik İlaç Uyarısı",
-                    body = "${buddyWithUser.buddy.nickname ?: buddyWithUser.user.name} son 24 saatte $missedCount kritik ilaç kaçırdı!",
+                    body = "${badiWithUser.badi.nickname ?: badiWithUser.user.name} son 24 saatte $missedCount kritik ilaç kaçırdı!",
                     data = mapOf(
                         "fromUserId" to userId,
                         "missedCount" to missedCount.toString(),
                         "medicines" to medicineNames.joinToString(", ")
                     ),
-                    actionUrl = "buddy_medication_tracking/$userId",
+                    actionUrl = "badi_medication_tracking/$userId",
                     priority = NotificationPriority.HIGH
                 )
 
                 notificationRepository.createNotification(notification)
-                Log.d(TAG, "Escalation notification sent to buddy: ${buddyWithUser.buddy.buddyUserId}")
+                Log.d(TAG, "Escalation notification sent to buddy: ${badiWithUser.badi.buddyUserId}")
             }
 
-            Log.d(TAG, "🚨 Escalation notifications sent to ${notifiableBuddies.size} buddies")
+            Log.d(TAG, "🚨 Escalation notifications sent to ${notifiableBuddies.size} badis")
         } catch (e: Exception) {
-            Log.e(TAG, "Error notifying buddies", e)
+            Log.e(TAG, "Error notifying badis", e)
         }
     }
 
     /**
-     * Tek bir kritik ilaç kaçırıldığında hemen buddy'lere bildir
+     * Tek bir kritik ilaç kaçırıldığında hemen badilere bildir
      */
     suspend fun notifyBuddiesForSingleCriticalMedicine(medicine: Medicine) {
         if (medicine.criticalityLevel != MedicineCriticality.CRITICAL) {
@@ -153,42 +153,42 @@ class EscalationManager(
         try {
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
-            // Aktif buddy'leri çek
-            val buddies = buddyRepository.getBuddiesFlow().first()
+            // Aktif badileri çek
+            val badis = badiRepository.getBuddiesFlow().first()
 
-            // Notification almak isteyen buddy'leri filtrele
-            val notifiableBuddies = buddies.filter {
-                it.buddy.notificationPreferences.onMedicationMissed &&
-                it.buddy.permissions.canReceiveNotifications
+            // Notification almak isteyen badileri filtrele
+            val notifiableBuddies = badis.filter {
+                it.badi.notificationPreferences.onMedicationMissed &&
+                it.badi.permissions.canReceiveNotifications
             }
 
             if (notifiableBuddies.isEmpty()) {
                 return
             }
 
-            // Her buddy için bildirim oluştur
-            for (buddyWithUser in notifiableBuddies) {
+            // Her badi için bildirim oluştur
+            for (badiWithUser in notifiableBuddies) {
                 val notification = DoziNotification(
-                    userId = buddyWithUser.buddy.buddyUserId,
+                    userId = badiWithUser.badi.buddyUserId,
                     type = NotificationType.MEDICATION_MISSED,
                     title = "⚠️ Kritik İlaç Kaçırıldı",
-                    body = "${buddyWithUser.buddy.nickname ?: buddyWithUser.user.name} ${medicine.name} ilacını kaçırdı!",
+                    body = "${badiWithUser.badi.nickname ?: badiWithUser.user.name} ${medicine.name} ilacını kaçırdı!",
                     data = mapOf(
                         "fromUserId" to userId,
                         "medicineId" to medicine.id,
                         "medicineName" to medicine.name,
                         "criticality" to "CRITICAL"
                     ),
-                    actionUrl = "buddy_medication_tracking/$userId",
+                    actionUrl = "badi_medication_tracking/$userId",
                     priority = NotificationPriority.HIGH
                 )
 
                 notificationRepository.createNotification(notification)
             }
 
-            Log.d(TAG, "✅ Critical medicine missed notification sent to ${notifiableBuddies.size} buddies")
+            Log.d(TAG, "✅ Critical medicine missed notification sent to ${notifiableBuddies.size} badis")
         } catch (e: Exception) {
-            Log.e(TAG, "Error notifying buddies for single critical medicine", e)
+            Log.e(TAG, "Error notifying badis for single critical medicine", e)
         }
     }
 }

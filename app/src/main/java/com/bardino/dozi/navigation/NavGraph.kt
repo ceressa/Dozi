@@ -27,9 +27,11 @@ import com.bardino.dozi.core.ui.screens.reminder.ReminderListScreen
 import com.bardino.dozi.core.ui.screens.settings.AboutScreen
 import com.bardino.dozi.core.ui.screens.settings.NotificationSettingsScreen
 import com.bardino.dozi.core.ui.screens.settings.SettingsScreen
-import com.bardino.dozi.core.ui.screens.buddy.BuddyListScreen
-import com.bardino.dozi.core.ui.screens.buddy.AddBuddyScreen
-import com.bardino.dozi.core.ui.screens.buddy.BuddyMedicationTrackingScreen
+import com.bardino.dozi.core.ui.screens.badi.BadiListScreen
+import com.bardino.dozi.core.ui.screens.badi.AddBadiScreen
+import com.bardino.dozi.core.ui.screens.badi.BadiPermissionsScreen
+import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
+import com.bardino.dozi.core.ui.screens.stats.StatsScreen
 import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
 import com.bardino.dozi.onboarding.screens.OnboardingIntroScreen
 import com.bardino.dozi.onboarding.screens.OnboardingMedicineScreen
@@ -50,7 +52,8 @@ fun NavGraph(
         Screen.Home.route,
         Screen.MedicineList.route,
         Screen.ReminderList.route,
-        Screen.BuddyList.route,
+        Screen.Stats.route,
+        Screen.BadiList.route,
         Screen.Profile.route
     )
     val context = LocalContext.current
@@ -318,32 +321,51 @@ fun NavGraph(
                 AboutScreen(onNavigateBack = { navController.popBackStack() })
             }
 
-            // 👥 Buddy Listesi
-            composable(Screen.BuddyList.route) {
-                BuddyListScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToAddBuddy = { navController.navigate(Screen.AddBuddy.route) },
-                    onNavigateToBuddyDetail = { buddyId ->
-                        navController.navigate(Screen.BuddyMedicationTracking.createRoute(buddyId))
-                    }
-                )
-            }
-
-            // ➕ Buddy Ekle
-            composable(Screen.AddBuddy.route) {
-                AddBuddyScreen(
+            // 📊 İstatistikler
+            composable(Screen.Stats.route) {
+                StatsScreen(
                     onNavigateBack = { navController.popBackStack() }
                 )
             }
 
-            // 📊 Buddy İlaç Takibi
+            // 👥 Badi Listesi
+            composable(Screen.BadiList.route) {
+                BadiListScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAddBadi = { navController.navigate(Screen.AddBadi.route) },
+                    onNavigateToBadiDetail = { badiId ->
+                        navController.navigate(Screen.BadiMedicationTracking.createRoute(badiId))
+                    }
+                )
+            }
+
+            // ➕ Badi Ekle
+            composable(Screen.AddBadi.route) {
+                AddBadiScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // ⚙️ Badi İzinleri
             composable(
-                route = Screen.BuddyMedicationTracking.route,
-                arguments = listOf(navArgument("buddyId") { type = NavType.StringType })
+                route = Screen.BadiPermissions.route,
+                arguments = listOf(navArgument("badiId") { type = NavType.StringType })
             ) { backStackEntry ->
-                val buddyId = backStackEntry.arguments?.getString("buddyId") ?: ""
-                BuddyMedicationTrackingScreen(
-                    buddyId = buddyId,
+                val badiId = backStackEntry.arguments?.getString("badiId") ?: ""
+                BadiPermissionsScreen(
+                    badiId = badiId,
+                    onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // 📊 Badi İlaç Takibi
+            composable(
+                route = Screen.BadiMedicationTracking.route,
+                arguments = listOf(navArgument("badiId") { type = NavType.StringType })
+            ) { backStackEntry ->
+                val badiId = backStackEntry.arguments?.getString("badiId") ?: ""
+                BadiMedicationTrackingScreen(
+                    badiId = badiId,
                     onNavigateBack = { navController.popBackStack() }
                 )
             }

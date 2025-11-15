@@ -6,7 +6,7 @@ import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.model.DoziNotification
 import com.bardino.dozi.core.data.model.NotificationType
 import com.bardino.dozi.core.data.repository.NotificationRepository
-import com.bardino.dozi.core.data.repository.BuddyRepository
+import com.bardino.dozi.core.data.repository.BadiRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -141,7 +141,7 @@ class NotificationViewModel @Inject constructor(
     }
 
     /**
-     * İlaç hatırlatması için buddy'lere bildirim gönder
+     * İlaç hatırlatması için badilere bildirim gönder
      */
     fun sendMedicationReminderToBuddies(
         medicineId: String,
@@ -164,7 +164,7 @@ class NotificationViewModel @Inject constructor(
     }
 
     /**
-     * Buddy isteğini kabul et
+     * Badi isteğini kabul et
      */
     fun acceptBuddyRequest(requestId: String) {
         viewModelScope.launch {
@@ -180,7 +180,7 @@ class NotificationViewModel @Inject constructor(
     }
 
     /**
-     * Buddy isteğini reddet
+     * Badi isteğini reddet
      */
     fun rejectBuddyRequest(requestId: String) {
         viewModelScope.launch {

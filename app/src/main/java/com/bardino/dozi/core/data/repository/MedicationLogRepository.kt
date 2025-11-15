@@ -438,7 +438,7 @@ class MedicationLogRepository(
     }
 
     /**
-     * Buddy'nin ilaç geçmişini getir (buddy permission kontrolü yapılmalı)
+     * Badinin ilaç geçmişini getir (buddy permission kontrolü yapılmalı)
      */
     suspend fun getBuddyMedicationLogs(buddyUserId: String): List<MedicationLog> {
         return try {

@@ -21,7 +21,7 @@ import androidx.core.content.edit
 import com.bardino.dozi.R
 import com.bardino.dozi.notifications.NotificationHelper
 import com.bardino.dozi.core.utils.SoundHelper
-import com.bardino.dozi.core.data.repository.BuddyRepository
+import com.bardino.dozi.core.data.repository.BadiRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -130,7 +130,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // Bildirimi kapat
         nm.cancel(requestId.hashCode())
 
-        // Buddy isteğini kabul et
+        // Badi isteğini kabul et
         val buddyRepository = BuddyRepository()
         CoroutineScope(Dispatchers.IO).launch {
             try {
@@ -163,7 +163,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // Bildirimi kapat
         nm.cancel(requestId.hashCode())
 
-        // Buddy isteğini reddet
+        // Badi isteğini reddet
         val buddyRepository = BuddyRepository()
         CoroutineScope(Dispatchers.IO).launch {
             try {
