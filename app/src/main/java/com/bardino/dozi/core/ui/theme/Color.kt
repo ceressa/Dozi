@@ -107,6 +107,14 @@ val ErrorRed = Color(0xFFF87171)                // Red 400 - yumuşak kırmızı
  */
 val InfoBlue = Color(0xFF818CF8)                // Indigo 400 - yumuşak mavi-mor
 
+/**
+ * 🌟 Premium - Dozi Ekstra için özel renkler (Gold/Pink)
+ * Premium kullanıcılar için badge, çerçeve ve vurgular
+ */
+val DoziGold = Color(0xFFFFD700)                // Altın rengi - premium badge
+val DoziPink = Color(0xFFFFC0CB)                // Pembe - premium gradient
+val DoziRose = Color(0xFFFDA4AF)                // Rose - premium accent
+
 // ═════════════════════════════════════════════════════════════════════════════
 // 🌫️ GRİ SKALASİ (Neutral Colors)
 // ═════════════════════════════════════════════════════════════════════════════
