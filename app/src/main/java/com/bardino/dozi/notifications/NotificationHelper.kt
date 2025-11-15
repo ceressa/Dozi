@@ -156,7 +156,15 @@ object NotificationHelper {
         }
     }
 
-    fun scheduleSnooze(context: Context, medicineName: String, minutes: Int = 10) {
+    fun scheduleSnooze(
+        context: Context,
+        medicineName: String,
+        medicineId: String = "",
+        dosage: String = "",
+        time: String = "",
+        scheduledTime: Long = System.currentTimeMillis(),
+        minutes: Int = 10
+    ) {
         val alarmMgr = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val triggerAt = System.currentTimeMillis() + minutes * 60_000L
 
@@ -166,6 +174,10 @@ object NotificationHelper {
             Intent(context, NotificationActionReceiver::class.java).apply {
                 action = "ACTION_SNOOZE_TRIGGER"
                 putExtra(EXTRA_MEDICINE, medicineName)
+                putExtra(EXTRA_MEDICINE_ID, medicineId)
+                putExtra(EXTRA_DOSAGE, dosage)
+                putExtra(EXTRA_TIME, time)
+                putExtra(EXTRA_SCHEDULED_TIME, scheduledTime)
             },
             PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
         )

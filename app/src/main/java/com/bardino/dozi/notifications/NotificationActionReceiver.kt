@@ -56,9 +56,25 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 handleBuddyReject(context, requestId, fromUserName, nm)
             }
             "ACTION_SNOOZE_TRIGGER" -> {
-                // Erteleme süresi doldu, yeni bildirim göster
+                // ⏰ Erteleme süresi doldu, yeni bildirim göster + escalation/auto-missed planla
                 if (hasNotificationPermission(context)) {
-                    NotificationHelper.showMedicationNotification(context, med)
+                    NotificationHelper.showMedicationNotification(
+                        context = context,
+                        medicineName = med,
+                        medicineId = medicineId,
+                        dosage = dosage,
+                        time = time,
+                        scheduledTime = scheduledTime
+                    )
+
+                    // ⏰ YENİ: 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
+                    if (medicineId.isNotEmpty()) {
+                        scheduleEscalationReminder(context, medicineId, med, dosage, time, scheduledTime)
+                        // ⏱️ YENİ: 1 saat sonra auto-MISSED (eğer hala aksiyon alınmadıysa)
+                        scheduleAutoMissed(context, medicineId, med, dosage, time, scheduledTime)
+                    }
+
+                    android.util.Log.d("NotificationActionReceiver", "⏰ Erteleme sonrası bildirim + escalation/auto-missed planlandı: $med")
                 }
             }
             ReminderScheduler.ACTION_REMINDER_TRIGGER -> {

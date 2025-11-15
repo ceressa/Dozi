@@ -8,8 +8,12 @@ import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.bardino.dozi.MainActivity
+import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.notifications.NotificationHelper
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 
 class SnoozePromptActivity : ComponentActivity() {
 
@@ -25,17 +29,35 @@ class SnoozePromptActivity : ComponentActivity() {
 
     private fun showSmartSnoozeDialog(medicineName: String, medicineId: String, scheduledTime: Long) {
         lifecycleScope.launch {
-            // 🧠 Akıllı öneriler al
-            val suggestedTimes = SmartReminderHelper.getSuggestedSnoozeTimes(this@SnoozePromptActivity, medicineId)
+            // 🔐 Kullanıcı ayarlarını kontrol et
+            val user = getUserSettings()
+            val smartReminderEnabled = user?.smartReminderEnabled ?: false
+
+            // 🧠 Akıllı öneriler al (eğer kullanıcı aktif ettiyse)
+            val suggestedTimes = if (smartReminderEnabled) {
+                SmartReminderHelper.getSuggestedSnoozeTimes(this@SnoozePromptActivity, medicineId)
+            } else {
+                // Default seçenekler (akıllı öneri yok)
+                listOf(
+                    10 to "10 dakika",
+                    20 to "20 dakika",
+                    30 to "30 dakika",
+                    60 to "1 saat"
+                )
+            }
             val times = suggestedTimes.map { it.second }.toTypedArray()
             val minutes = suggestedTimes.map { it.first }.toIntArray()
 
-            // 🧠 Zamanı değiştirme önerisi al
-            val (newTime, timeSuggestion) = SmartReminderHelper.getTimeAdjustmentSuggestion(
-                this@SnoozePromptActivity,
-                medicineId,
-                intent.getStringExtra("time") ?: "09:00"
-            )
+            // 🧠 Zamanı değiştirme önerisi al (eğer kullanıcı aktif ettiyse)
+            val (newTime, timeSuggestion) = if (smartReminderEnabled) {
+                SmartReminderHelper.getTimeAdjustmentSuggestion(
+                    this@SnoozePromptActivity,
+                    medicineId,
+                    intent.getStringExtra("time") ?: "09:00"
+                )
+            } else {
+                null to null
+            }
 
             var selectedIndex = 0
 
@@ -55,8 +77,16 @@ class SnoozePromptActivity : ComponentActivity() {
                 val min = minutes[selectedIndex]
                 val currentTime = System.currentTimeMillis()
 
-                // ✅ Erteleme planla
-                NotificationHelper.scheduleSnooze(this@SnoozePromptActivity, medicineName, min)
+                // ✅ Erteleme planla (tüm parametrelerle)
+                NotificationHelper.scheduleSnooze(
+                    context = this@SnoozePromptActivity,
+                    medicineName = medicineName,
+                    medicineId = medicineId,
+                    dosage = intent.getStringExtra("dosage") ?: "",
+                    time = intent.getStringExtra("time") ?: "",
+                    scheduledTime = scheduledTime,
+                    minutes = min
+                )
 
                 // ✅ SharedPreferences'a timestamp ile kaydet
                 getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE).edit()
@@ -66,14 +96,16 @@ class SnoozePromptActivity : ComponentActivity() {
                     .putLong("snooze_timestamp", currentTime)
                     .apply()
 
-                // 🧠 Pattern'i kaydet (gelecekteki öneriler için)
-                lifecycleScope.launch {
-                    SmartReminderHelper.recordSnoozePattern(
-                        this@SnoozePromptActivity,
-                        medicineId,
-                        min,
-                        scheduledTime
-                    )
+                // 🧠 Pattern'i kaydet (gelecekteki öneriler için - eğer kullanıcı aktif ettiyse)
+                if (smartReminderEnabled) {
+                    lifecycleScope.launch {
+                        SmartReminderHelper.recordSnoozePattern(
+                            this@SnoozePromptActivity,
+                            medicineId,
+                            min,
+                            scheduledTime
+                        )
+                    }
                 }
 
                 Toast.makeText(
@@ -108,6 +140,21 @@ class SnoozePromptActivity : ComponentActivity() {
 
             val dialog = builder.create()
             dialog.show()
+        }
+    }
+
+    /**
+     * Kullanıcı ayarlarını Firestore'dan al
+     */
+    private suspend fun getUserSettings(): User? {
+        return try {
+            val currentUser = FirebaseAuth.getInstance().currentUser ?: return null
+            val db = FirebaseFirestore.getInstance()
+            val doc = db.collection("users").document(currentUser.uid).get().await()
+            doc.toObject(User::class.java)
+        } catch (e: Exception) {
+            android.util.Log.e("SnoozePromptActivity", "Error getting user settings", e)
+            null
         }
     }
 }
