@@ -57,17 +57,27 @@ fun MedicineListScreen(
             medicines = MedicineRepository.loadMedicines(context)
 
             // Firestore'dan hatırlatmaları yükle
-            val firestoreRepo = com.bardino.dozi.core.data.repository.MedicineRepository()
-            val allReminders = firestoreRepo.getAllMedicines()
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val firestoreRepo = com.bardino.dozi.core.data.repository.MedicineRepository()
+                    val allReminders = firestoreRepo.getAllMedicines()
 
-            // Her ilaç adına göre grupla
-            val remindersMap = mutableMapOf<String, List<com.bardino.dozi.core.data.model.Medicine>>()
-            medicines.forEach { localMedicine ->
-                remindersMap[localMedicine.name] = allReminders.filter { it.name == localMedicine.name }
+                    // Her ilaç adına göre grupla
+                    val remindersMap = mutableMapOf<String, List<com.bardino.dozi.core.data.model.Medicine>>()
+                    medicines.forEach { localMedicine ->
+                        remindersMap[localMedicine.name] = allReminders.filter { it.name == localMedicine.name }
+                    }
+
+                    // UI thread'de güncelle
+                    CoroutineScope(Dispatchers.Main).launch {
+                        medicineReminders = remindersMap
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("MedicineList", "Error loading reminders", e)
+                }
             }
-            medicineReminders = remindersMap
         } catch (e: Exception) {
-            android.util.Log.e("MedicineList", "Error loading medicines/reminders", e)
+            android.util.Log.e("MedicineList", "Error loading medicines", e)
         }
     }
 
