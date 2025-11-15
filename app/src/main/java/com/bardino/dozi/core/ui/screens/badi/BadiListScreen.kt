@@ -33,6 +33,7 @@ fun BadiListScreen(
     onNavigateBack: () -> Unit,
     onNavigateToAddBadi: () -> Unit,
     onNavigateToBadiDetail: (String) -> Unit,
+    onNavigateToBadiPermissions: (String) -> Unit = {},
     viewModel: BadiViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
@@ -112,6 +113,9 @@ fun BadiListScreen(
                     onBadiClick = { badi ->
                         android.util.Log.d("BadiListScreen", "Badi clicked: id=${badi.badi.id}, userId=${badi.badi.userId}, buddyUserId=${badi.badi.buddyUserId}, userName=${badi.user.name}")
                         onNavigateToBadiDetail(badi.badi.id)
+                    },
+                    onPermissionsClick = { badiId ->
+                        onNavigateToBadiPermissions(badiId)
                     }
                 )
             }
@@ -331,7 +335,8 @@ fun BadiRequestCard(
 @Composable
 fun BadiList(
     badis: List<BadiWithUser>,
-    onBadiClick: (BadiWithUser) -> Unit
+    onBadiClick: (BadiWithUser) -> Unit,
+    onPermissionsClick: (String) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -341,7 +346,8 @@ fun BadiList(
         items(badis, key = { it.badi.id }) { badi ->
             BadiCard(
                 badi = badi,
-                onClick = { onBadiClick(badi) }
+                onClick = { onBadiClick(badi) },
+                onPermissionsClick = { onPermissionsClick(badi.badi.id) }
             )
         }
     }
@@ -350,12 +356,11 @@ fun BadiList(
 @Composable
 fun BadiCard(
     badi: BadiWithUser,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onPermissionsClick: () -> Unit
 ) {
     Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = Modifier.fillMaxWidth(),
         shape = RoundedCornerShape(20.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
@@ -371,6 +376,7 @@ fun BadiCard(
                         )
                     )
                 )
+                .clickable(onClick = onClick)
         ) {
             Row(
                 modifier = Modifier
@@ -430,6 +436,30 @@ fun BadiCard(
                     }
                 }
 
+                // İzin Ayarları butonu
+                Box(
+                    modifier = Modifier
+                        .size(40.dp)
+                        .background(
+                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                listOf(com.bardino.dozi.core.ui.theme.WarningOrange, com.bardino.dozi.core.ui.theme.DoziTurquoise)
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .clickable(onClick = onPermissionsClick),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        Icons.Default.Settings,
+                        "İzinler",
+                        tint = Color.White,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+
+                Spacer(modifier = Modifier.width(8.dp))
+
+                // Detay butonu
                 Box(
                     modifier = Modifier
                         .size(40.dp)
