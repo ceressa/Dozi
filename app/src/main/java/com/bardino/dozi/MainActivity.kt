@@ -27,6 +27,7 @@ import androidx.navigation.compose.rememberNavController
 import com.bardino.dozi.core.data.IlacRepository
 import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.repository.UserRepository
+import com.bardino.dozi.core.data.repository.PremiumRepository
 import com.bardino.dozi.navigation.NavGraph
 import com.bardino.dozi.notifications.NotificationHelper
 import com.bardino.dozi.core.ui.theme.DoziAppTheme
@@ -93,6 +94,12 @@ class MainActivity : ComponentActivity() {
                                     try {
                                         userRepository.createUserIfNotExists()
                                         Log.d("GOOGLE_AUTH", "Kullanıcı Firestore'a kaydedildi/güncellendi")
+
+                                        // 🎁 Onboarding tamamlandıysa 1 haftalık ücretsiz trial ver
+                                        if (!OnboardingPreferences.isFirstTime(this@MainActivity)) {
+                                            userRepository.activateTrialIfOnboarding()
+                                            Log.d("PREMIUM_TRIAL", "1 haftalık trial aktivasyonu yapıldı")
+                                        }
 
                                         // ✅ FCM token'ı al ve kaydet (retry logic ile)
                                         saveFCMToken()

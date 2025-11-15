@@ -66,4 +66,34 @@ class UserRepository(
     fun signOut() {
         auth.signOut()
     }
+
+    /**
+     * 🎁 Onboarding tamamlandıktan sonra 1 haftalık ücretsiz trial başlat
+     */
+    suspend fun activateTrialIfOnboarding() {
+        val user = auth.currentUser ?: return
+        val docRef = db.collection("users").document(user.uid)
+        val snapshot = docRef.get().await()
+        val userData = snapshot.toObject(User::class.java) ?: return
+
+        // Eğer kullanıcı zaten premium veya trial almışsa, tekrar verme
+        if (userData.isPremium || userData.premiumExpiryDate > 0) {
+            return
+        }
+
+        // 1 haftalık trial ver
+        val now = System.currentTimeMillis()
+        val expiryDate = now + (7 * 24 * 60 * 60 * 1000L) // 7 gün
+
+        val updates = hashMapOf<String, Any>(
+            "isPremium" to true,
+            "isTrial" to true,
+            "planType" to "trial",
+            "premiumStartDate" to now,
+            "premiumExpiryDate" to expiryDate,
+            "onboardingCompleted" to true
+        )
+
+        docRef.update(updates).await()
+    }
 }
