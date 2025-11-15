@@ -227,29 +227,18 @@ service cloud.firestore {
       // 💊 İLAÇLAR SUBCOLLECTION (users/{userId}/medicines)
       // ═══════════════════════════════════════════════════════════════════════
       match /medicines/{medicineId} {
-        // 📖 OKUMA: Kullanıcı kendi ilaçlarını veya badi olarak izin varsa okuyabilir
-        allow read: if isAuthenticated() && (
-          isOwner(userId) ||
-          canViewRemindersOf(userId)
-        );
+        // 📖 OKUMA: Kullanıcı kendi ilaçlarını okuyabilir
+        // NOT: Buddy permissions şimdilik devre dışı - query performance için
+        allow read: if isAuthenticated() && isOwner(userId);
 
-        // ✏️ OLUŞTURMA: Kullanıcı kendi ilacını veya badi olarak izin varsa ekleyebilir
-        allow create: if isAuthenticated() && (
-          isOwner(userId) ||
-          canAddMedicineFor(userId)
-        );
+        // ✏️ OLUŞTURMA: Kullanıcı kendi ilacını ekleyebilir
+        allow create: if isAuthenticated() && isOwner(userId);
 
-        // 🔄 GÜNCELLEME: Kullanıcı kendi ilacını veya badi olarak izin varsa güncelleyebilir
-        allow update: if isAuthenticated() && (
-          isOwner(userId) ||
-          canEditRemindersOf(userId)
-        );
+        // 🔄 GÜNCELLEME: Kullanıcı kendi ilacını güncelleyebilir
+        allow update: if isAuthenticated() && isOwner(userId);
 
-        // 🗑️ SİLME: Kullanıcı kendi ilacını veya badi olarak izin varsa silebilir
-        allow delete: if isAuthenticated() && (
-          isOwner(userId) ||
-          canDeleteMedicineOf(userId)
-        );
+        // 🗑️ SİLME: Kullanıcı kendi ilacını silebilir
+        allow delete: if isAuthenticated() && isOwner(userId);
       }
 
 
@@ -257,29 +246,18 @@ service cloud.firestore {
       // ⏰ HATIRLATICILAR SUBCOLLECTION (users/{userId}/reminders)
       // ═══════════════════════════════════════════════════════════════════════
       match /reminders/{reminderId} {
-        // 📖 OKUMA: Kullanıcı kendi hatırlatıcılarını veya badi olarak izin varsa okuyabilir
-        allow read: if isAuthenticated() && (
-          isOwner(userId) ||
-          canViewRemindersOf(userId)
-        );
+        // 📖 OKUMA: Kullanıcı kendi hatırlatıcılarını okuyabilir
+        // NOT: Buddy permissions şimdilik devre dışı - query performance için
+        allow read: if isAuthenticated() && isOwner(userId);
 
-        // ✏️ OLUŞTURMA: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa ekleyebilir
-        allow create: if isAuthenticated() && (
-          isOwner(userId) ||
-          canEditRemindersOf(userId)
-        );
+        // ✏️ OLUŞTURMA: Kullanıcı kendi hatırlatıcısını ekleyebilir
+        allow create: if isAuthenticated() && isOwner(userId);
 
-        // 🔄 GÜNCELLEME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa güncelleyebilir
-        allow update: if isAuthenticated() && (
-          isOwner(userId) ||
-          canEditRemindersOf(userId)
-        );
+        // 🔄 GÜNCELLEME: Kullanıcı kendi hatırlatıcısını güncelleyebilir
+        allow update: if isAuthenticated() && isOwner(userId);
 
-        // 🗑️ SİLME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa silebilir
-        allow delete: if isAuthenticated() && (
-          isOwner(userId) ||
-          canEditRemindersOf(userId)
-        );
+        // 🗑️ SİLME: Kullanıcı kendi hatırlatıcısını silebilir
+        allow delete: if isAuthenticated() && isOwner(userId);
       }
     }
 
