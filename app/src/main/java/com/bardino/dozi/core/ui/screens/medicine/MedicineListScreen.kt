@@ -163,79 +163,11 @@ fun MedicineListScreen(
                             visible = isVisible && !dismissed,
                             enter = fadeIn() + slideInVertically(initialOffsetY = { 40 })
                         ) {
-                            val dismissState = rememberSwipeToDismissBoxState(
-                                confirmValueChange = { value ->
-                                    when (value) {
-                                        SwipeToDismissBoxValue.StartToEnd -> {
-                                            showDeleteConfirm = true
-                                            false
-                                        }
-                                        SwipeToDismissBoxValue.EndToStart -> {
-                                            onNavigateToDetail(medicine.id)
-                                            false
-                                        }
-                                        else -> false
-                                    }
-                                }
-                            )
-
-                            SwipeToDismissBox(
-                                state = dismissState,
-                                backgroundContent = {
-                                    val direction = dismissState.targetValue
-                                    val bgColor = when (direction) {
-                                        SwipeToDismissBoxValue.StartToEnd -> DoziRed.copy(alpha = 0.15f)
-                                        SwipeToDismissBoxValue.EndToStart -> DoziTurquoise.copy(alpha = 0.15f)
-                                        else -> Color.Transparent
-                                    }
-                                    val iconColor = when (direction) {
-                                        SwipeToDismissBoxValue.StartToEnd -> DoziRed
-                                        SwipeToDismissBoxValue.EndToStart -> DoziTurquoise
-                                        else -> Color.Transparent
-                                    }
-                                    val icon = when (direction) {
-                                        SwipeToDismissBoxValue.StartToEnd -> Icons.Default.Delete
-                                        SwipeToDismissBoxValue.EndToStart -> Icons.Default.Edit
-                                        else -> null
-                                    }
-
-                                    Box(
-                                        modifier = Modifier
-                                            .fillMaxSize()
-                                            .background(bgColor, shape = RoundedCornerShape(20.dp))
-                                            .padding(horizontal = 24.dp),
-                                        contentAlignment = when (direction) {
-                                            SwipeToDismissBoxValue.StartToEnd -> Alignment.CenterStart
-                                            SwipeToDismissBoxValue.EndToStart -> Alignment.CenterEnd
-                                            else -> Alignment.Center
-                                        }
-                                    ) {
-                                        icon?.let {
-                                            Surface(
-                                                modifier = Modifier.size(48.dp),
-                                                color = iconColor.copy(alpha = 0.2f),
-                                                shape = CircleShape
-                                            ) {
-                                                Box(contentAlignment = Alignment.Center) {
-                                                    Icon(
-                                                        imageVector = it,
-                                                        contentDescription = null,
-                                                        tint = iconColor,
-                                                        modifier = Modifier.size(26.dp)
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    }
-                                },
-                                enableDismissFromStartToEnd = true,
-                                enableDismissFromEndToStart = true,
-                                content = {
-                                    ModernMedicineCard(
-                                        medicine = medicine,
-                                        onClick = { onNavigateToDetail(medicine.id) }
-                                    )
-                                }
+                            ModernMedicineCard(
+                                medicine = medicine,
+                                onClick = { onNavigateToDetail(medicine.id) },
+                                onEdit = { onNavigateToDetail(medicine.id) },
+                                onDelete = { showDeleteConfirm = true }
                             )
                         }
 
@@ -268,26 +200,31 @@ fun MedicineListScreen(
 @Composable
 private fun ModernMedicineCard(
     medicine: Medicine,
-    onClick: () -> Unit
+    onClick: () -> Unit,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     Card(
         onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
     ) {
         Box {
-            // Dekoratif background pattern
+            // Üstte renkli gradient border (Secondary-Accent gradient - MedicineCard ile aynı)
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(8.dp)
+                    .height(6.dp)
                     .background(
                         brush = Brush.horizontalGradient(
                             listOf(
-                                DoziTurquoise.copy(alpha = 0.8f),
-                                DoziBlue.copy(alpha = 0.6f)
+                                DoziSecondary,
+                                DoziAccent,
+                                DoziPrimary
                             )
                         ),
                         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
@@ -297,8 +234,16 @@ private fun ModernMedicineCard(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 8.dp)
-                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                    .padding(top = 6.dp)
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                DoziSecondaryLight.copy(alpha = 0.05f),
+                                Color.White
+                            )
+                        )
+                    )
+                    .padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 // Başlık kısmı
@@ -315,50 +260,64 @@ private fun ModernMedicineCard(
                             text = medicine.name,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
+                            color = Gray900,
+                            maxLines = 1,
+                            overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                         )
                         Text(
                             text = medicine.dosage,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            color = Gray600,
                             fontWeight = FontWeight.Medium
                         )
                     }
 
-                    Surface(
-                        shape = CircleShape,
-                        color = DoziTurquoise.copy(alpha = 0.1f)
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(6.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Box(
-                            modifier = Modifier.padding(10.dp),
-                            contentAlignment = Alignment.Center
+                        // Edit butonu
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = DoziSecondary.copy(alpha = 0.15f)
                         ) {
-                            Icon(
-                                Icons.Default.ChevronRight,
-                                contentDescription = null,
-                                tint = DoziTurquoise,
-                                modifier = Modifier.size(24.dp)
-                            )
+                            IconButton(onClick = onEdit) {
+                                Icon(
+                                    Icons.Default.Edit,
+                                    contentDescription = "Düzenle",
+                                    tint = DoziSecondaryDark,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
+                        }
+
+                        // Delete butonu
+                        Surface(
+                            shape = RoundedCornerShape(12.dp),
+                            color = ErrorRed.copy(alpha = 0.15f)
+                        ) {
+                            IconButton(onClick = onDelete) {
+                                Icon(
+                                    Icons.Default.Delete,
+                                    contentDescription = "Sil",
+                                    tint = ErrorRed,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                            }
                         }
                     }
                 }
 
-                // Bilgi Satırları
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(10.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    InfoTag(
-                        Icons.Default.Inventory,
-                        "Stok: ${medicine.stock}",
-                        when {
-                            medicine.stock < 5 -> DoziRed
-                            medicine.stock < 10 -> WarningOrange
-                            else -> SuccessGreen
-                        }
-                    )
-                }
+                // Stok bilgisi - daha belirgin
+                InfoTag(
+                    Icons.Default.Inventory,
+                    "Stok: ${medicine.stock} adet",
+                    when {
+                        medicine.stock < 5 -> ErrorRed
+                        medicine.stock < 10 -> Color(0xFFF59E0B) // Daha koyu amber
+                        else -> Color(0xFF059669) // Daha koyu yeşil
+                    }
+                )
             }
         }
     }
@@ -371,8 +330,10 @@ private fun InfoTag(
     color: Color
 ) {
     Surface(
-        color = color.copy(alpha = 0.12f),
-        shape = RoundedCornerShape(12.dp)
+        color = color.copy(alpha = 0.15f),
+        shape = RoundedCornerShape(12.dp),
+        border = BorderStroke(1.dp, color.copy(alpha = 0.3f)),
+        modifier = Modifier.fillMaxWidth()
     ) {
         Row(
             modifier = Modifier.padding(horizontal = 14.dp, vertical = 10.dp),
@@ -389,7 +350,7 @@ private fun InfoTag(
                 text = text,
                 color = color,
                 style = MaterialTheme.typography.labelLarge,
-                fontWeight = FontWeight.SemiBold
+                fontWeight = FontWeight.Bold
             )
         }
     }
