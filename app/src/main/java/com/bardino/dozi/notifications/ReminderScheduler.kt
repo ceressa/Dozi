@@ -28,8 +28,11 @@ class ReminderScheduler {
 
         /**
          * Tek bir ilaç için tüm hatırlatmaları planla
+         *
+         * @param isRescheduling true ise alarm tetiklendikten sonra bir sonraki alarmı planlar (frequency'ye göre),
+         *                       false ise ilk kurulum
          */
-        fun scheduleReminders(context: Context, medicine: Medicine) {
+        fun scheduleReminders(context: Context, medicine: Medicine, isRescheduling: Boolean = false) {
             if (!medicine.reminderEnabled) {
                 Log.d(TAG, "Hatırlatma devre dışı: ${medicine.name}")
                 return
@@ -44,7 +47,7 @@ class ReminderScheduler {
 
             // Her saat için bir alarm kur
             medicine.times.forEach { time ->
-                scheduleReminderForTime(context, alarmManager, medicine, time)
+                scheduleReminderForTime(context, alarmManager, medicine, time, isRescheduling)
             }
 
             Log.d(TAG, "✅ ${medicine.name} için ${medicine.times.size} hatırlatma planlandı")
@@ -52,12 +55,16 @@ class ReminderScheduler {
 
         /**
          * Belirli bir saat için hatırlatma planla
+         *
+         * @param isRescheduling true ise alarm tetiklendikten sonra bir sonraki alarmı planlar (frequency'ye göre),
+         *                       false ise ilk kurulum (bugünden sonraki ilk uygun zamanı planlar)
          */
         private fun scheduleReminderForTime(
             context: Context,
             alarmManager: AlarmManager,
             medicine: Medicine,
-            time: String
+            time: String,
+            isRescheduling: Boolean = false
         ) {
             try {
                 val (hour, minute) = time.split(":").map { it.toInt() }
@@ -84,56 +91,160 @@ class ReminderScheduler {
                     }
                 )
 
-                // İlk tetiklenme zamanını hesapla
+                // Tetiklenme zamanını hesapla
                 val calendar = Calendar.getInstance().apply {
                     set(Calendar.HOUR_OF_DAY, hour)
                     set(Calendar.MINUTE, minute)
                     set(Calendar.SECOND, 0)
                     set(Calendar.MILLISECOND, 0)
 
-                    // Eğer bu saat bugün geçmişse, yarına ayarla
-                    if (timeInMillis <= System.currentTimeMillis()) {
-                        add(Calendar.DAY_OF_MONTH, 1)
+                    if (isRescheduling) {
+                        // Alarm tetiklendi, bir sonraki zamanı hesapla (frequency'ye göre)
+                        val daysToAdd = when (medicine.frequency) {
+                            "Her gün" -> 1
+                            "Gün aşırı" -> 2
+                            "Haftada bir" -> 7
+                            "15 günde bir" -> 15
+                            "Ayda bir" -> 30
+                            "Her X günde bir" -> medicine.frequencyValue
+                            "İstediğim tarihlerde" -> {
+                                // İstediğim tarihlerde için bir sonraki tarihi bul
+                                // Şimdilik 1 gün ekle (bu daha sonra düzgün handle edilecek)
+                                1
+                            }
+                            else -> 1
+                        }
+                        add(Calendar.DAY_OF_MONTH, daysToAdd)
+                    } else {
+                        // İlk kurulum: Eğer bu saat bugün geçmişse, frequency'ye göre bir sonraki uygun zamanı bul
+                        if (timeInMillis <= System.currentTimeMillis()) {
+                            val daysToAdd = when (medicine.frequency) {
+                                "Her gün" -> 1
+                                "Gün aşırı" -> {
+                                    // Başlangıç tarihinden itibaren gün aşırı mantığını uygula
+                                    // Bugünden 1 veya 2 gün sonra olabilir (startDate'e göre)
+                                    calculateDaysUntilNextAlternateDay(medicine.startDate, medicine.frequency)
+                                }
+                                "Haftada bir" -> calculateDaysUntilNextWeeklyAlarm(medicine.startDate)
+                                "15 günde bir" -> calculateDaysUntilNextAlarm(medicine.startDate, 15)
+                                "Ayda bir" -> calculateDaysUntilNextAlarm(medicine.startDate, 30)
+                                "Her X günde bir" -> calculateDaysUntilNextAlarm(medicine.startDate, medicine.frequencyValue)
+                                "İstediğim tarihlerde" -> 1 // Özel tarihler için ayrı handle edilecek
+                                else -> 1
+                            }
+                            add(Calendar.DAY_OF_MONTH, daysToAdd)
+                        }
                     }
                 }
 
-                // Tekrarlama aralığını hesapla (frequency'ye göre)
-                val intervalMillis = when (medicine.frequency) {
-                    "Her gün" -> AlarmManager.INTERVAL_DAY
-                    "Gün aşırı" -> AlarmManager.INTERVAL_DAY * 2
-                    "Haftada bir" -> AlarmManager.INTERVAL_DAY * 7
-                    "15 günde bir" -> AlarmManager.INTERVAL_DAY * 15
-                    "Ayda bir" -> AlarmManager.INTERVAL_DAY * 30
-                    "Her X günde bir" -> AlarmManager.INTERVAL_DAY * medicine.frequencyValue
-                    else -> AlarmManager.INTERVAL_DAY // Default: Her gün
-                }
-
-                // Alarm kur
+                // Alarm kur (her zaman tek seferlik)
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     // Android 6.0+: Doze mode'u bypass etmek için setExactAndAllowWhileIdle kullan
-                    // Ancak bu tekrarlanan alarmlar için çalışmaz, bu yüzden tek seferlik alarm kur
                     alarmManager.setExactAndAllowWhileIdle(
                         AlarmManager.RTC_WAKEUP,
                         calendar.timeInMillis,
                         pendingIntent
                     )
-
-                    // Sonraki alarmı planlamak için bir iş kur (WorkManager kullanılabilir)
-                    // Şimdilik basit yaklaşım: Her tetiklenmede bir sonrakini planla
                 } else {
-                    // Android 5.x: setRepeating kullan
-                    alarmManager.setRepeating(
+                    // Android 5.x: setExact kullan
+                    alarmManager.setExact(
                         AlarmManager.RTC_WAKEUP,
                         calendar.timeInMillis,
-                        intervalMillis,
                         pendingIntent
                     )
                 }
 
-                Log.d(TAG, "⏰ ${medicine.name} - $time için alarm kuruldu (requestCode: $requestCode)")
+                val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
+                Log.d(TAG, "⏰ ${medicine.name} - $time için alarm kuruldu: ${dateFormat.format(calendar.time)} (requestCode: $requestCode)")
 
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Alarm kurulurken hata: ${medicine.name} - $time", e)
+            }
+        }
+
+        /**
+         * Gün aşırı için bir sonraki uygun günü hesapla
+         *
+         * Mantık: Başlangıç günü = gün 0 (ilaç al), gün 1 (alma), gün 2 (al), gün 3 (alma), ...
+         * Yani çift günlerde ilaç alınır, tek günlerde alınmaz
+         */
+        private fun calculateDaysUntilNextAlternateDay(startDate: Long, frequency: String): Int {
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            val start = Calendar.getInstance().apply {
+                timeInMillis = startDate
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            // Başlangıçtan bugüne kadar kaç gün geçti
+            val daysSinceStart = ((today.timeInMillis - start.timeInMillis) / (24 * 60 * 60 * 1000)).toInt()
+
+            // Gün aşırı mantığı: Başlangıç = gün 0, sonra gün 2, gün 4, gün 6, ...
+            // Eğer bugün çift günse (ilaç günü) -> saat geçmiş olduğu için bir sonraki ilaç günü 2 gün sonra
+            // Eğer bugün tek günse (ilaç yok) -> yarın ilaç günü
+            return if (daysSinceStart % 2 == 0) {
+                2 // Bugün ilaç günü (saat geçmiş), bir sonraki ilaç günü 2 gün sonra
+            } else {
+                1 // Bugün ilaç yok günü, yarın ilaç günü
+            }
+        }
+
+        /**
+         * Haftada bir için bir sonraki uygun günü hesapla
+         */
+        private fun calculateDaysUntilNextWeeklyAlarm(startDate: Long): Int {
+            // Başlangıç gününü tespit et
+            val startCalendar = Calendar.getInstance().apply {
+                timeInMillis = startDate
+            }
+            val startDayOfWeek = startCalendar.get(Calendar.DAY_OF_WEEK)
+
+            val today = Calendar.getInstance()
+            val todayDayOfWeek = today.get(Calendar.DAY_OF_WEEK)
+
+            // Bugünden başlangıç gününe kadar kaç gün var
+            var daysUntilNext = (startDayOfWeek - todayDayOfWeek + 7) % 7
+            if (daysUntilNext == 0) daysUntilNext = 7 // Bugün o gün ise, gelecek hafta
+
+            return daysUntilNext
+        }
+
+        /**
+         * X günde bir için bir sonraki uygun günü hesapla
+         */
+        private fun calculateDaysUntilNextAlarm(startDate: Long, intervalDays: Int): Int {
+            val today = Calendar.getInstance().apply {
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            val start = Calendar.getInstance().apply {
+                timeInMillis = startDate
+                set(Calendar.HOUR_OF_DAY, 0)
+                set(Calendar.MINUTE, 0)
+                set(Calendar.SECOND, 0)
+                set(Calendar.MILLISECOND, 0)
+            }
+
+            // Başlangıçtan bugüne kadar kaç gün geçti
+            val daysSinceStart = ((today.timeInMillis - start.timeInMillis) / (24 * 60 * 60 * 1000)).toInt()
+
+            // Kaç gün sonra bir sonraki alarm günü
+            val remainder = daysSinceStart % intervalDays
+            return if (remainder == 0) {
+                intervalDays // Bugün alarm günü ise, gelecek interval günü
+            } else {
+                intervalDays - remainder // Kalan günler
             }
         }
 
