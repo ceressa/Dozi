@@ -28,7 +28,7 @@ data class Reminder(
     val createdAt: Timestamp? = null,
     @ServerTimestamp
     val updatedAt: Timestamp? = null,
-    val sharedWithBuddies: List<String> = emptyList() // Paylaşılan buddy userId'leri
+    val sharedWithBadis: List<String> = emptyList() // Paylaşılan badi userId'leri
 )
 
 /**

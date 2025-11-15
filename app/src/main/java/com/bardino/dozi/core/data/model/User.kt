@@ -14,7 +14,7 @@ data class User(
     val voiceGender: String = "erkek", // "erkek" (Ozan) veya "kadin" (Efsun)
     val onboardingCompleted: Boolean = false,
 
-    // 🤝 Buddy sistem için
+    // 🤝 Badi sistem için
     val fcmToken: String? = null,        // Firebase Cloud Messaging token
     val buddyCode: String? = null,       // 6 haneli buddy kodu
 

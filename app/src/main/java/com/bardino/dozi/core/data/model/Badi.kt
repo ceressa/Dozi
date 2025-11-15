@@ -5,27 +5,27 @@ import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.ServerTimestamp
 
 /**
- * Kullanıcılar arası buddy ilişkisini temsil eder
+ * Kullanıcılar arası badi ilişkisini temsil eder
  */
-data class Buddy(
+data class Badi(
     @DocumentId
     val id: String = "",
     val userId: String = "",                    // İsteği gönderen/oluşturan kullanıcı
-    val buddyUserId: String = "",               // Buddy olan kullanıcı
-    val status: BuddyStatus = BuddyStatus.ACTIVE,
+    val buddyUserId: String = "",               // Badi olan kullanıcı
+    val status: BadiStatus = BadiStatus.ACTIVE,
     @ServerTimestamp
     val createdAt: Timestamp? = null,
-    val nickname: String? = null,                // Buddy için özel isim
-    val permissions: BuddyPermissions = BuddyPermissions(),
-    val notificationPreferences: BuddyNotificationPreferences = BuddyNotificationPreferences(),
+    val nickname: String? = null,                // Badi için özel isim
+    val permissions: BadiPermissions = BadiPermissions(),
+    val notificationPreferences: BadiNotificationPreferences = BadiNotificationPreferences(),
     @ServerTimestamp
     val lastInteraction: Timestamp? = null
 )
 
 /**
- * Buddy rolleri
+ * Badi rolleri
  */
-enum class BuddyRole {
+enum class BadiRole {
     VIEWER,      // Sadece görüntüleme
     HELPER,      // İlaç aldı işaretleyebilir
     CAREGIVER,   // İlaç ekle/düzenle
@@ -33,10 +33,10 @@ enum class BuddyRole {
 }
 
 /**
- * Buddy izinleri
+ * Badi izinleri
  */
-data class BuddyPermissions(
-    val role: BuddyRole = BuddyRole.VIEWER,       // Buddy rolü
+data class BadiPermissions(
+    val role: BadiRole = BadiRole.VIEWER,       // Badi rolü
     val canViewReminders: Boolean = true,         // Hatırlatmaları görüntüleyebilir
     val canReceiveNotifications: Boolean = true,  // Bildirim alabilir
     val canMarkAsTaken: Boolean = false,          // İlaç aldı işaretleyebilir
@@ -44,15 +44,15 @@ data class BuddyPermissions(
     val canAddMedicine: Boolean = false,          // Yeni ilaç ekleyebilir
     val canDeleteMedicine: Boolean = false,       // İlaç silebilir
     val canViewMedicationHistory: Boolean = true, // İlaç geçmişini görüntüleyebilir
-    val canManageBuddies: Boolean = false         // Diğer buddy'leri yönetebilir
+    val canManageBadis: Boolean = false         // Diğer badileri yönetebilir
 ) {
     companion object {
         /**
          * Rol bazlı izin seti döndür
          */
-        fun fromRole(role: BuddyRole): BuddyPermissions {
+        fun fromRole(role: BadiRole): BadiPermissions {
             return when (role) {
-                BuddyRole.VIEWER -> BuddyPermissions(
+                BadiRole.VIEWER -> BadiPermissions(
                     role = role,
                     canViewReminders = true,
                     canReceiveNotifications = true,
@@ -61,9 +61,9 @@ data class BuddyPermissions(
                     canAddMedicine = false,
                     canDeleteMedicine = false,
                     canViewMedicationHistory = true,
-                    canManageBuddies = false
+                    canManageBadis = false
                 )
-                BuddyRole.HELPER -> BuddyPermissions(
+                BadiRole.HELPER -> BadiPermissions(
                     role = role,
                     canViewReminders = true,
                     canReceiveNotifications = true,
@@ -72,9 +72,9 @@ data class BuddyPermissions(
                     canAddMedicine = false,
                     canDeleteMedicine = false,
                     canViewMedicationHistory = true,
-                    canManageBuddies = false
+                    canManageBadis = false
                 )
-                BuddyRole.CAREGIVER -> BuddyPermissions(
+                BadiRole.CAREGIVER -> BadiPermissions(
                     role = role,
                     canViewReminders = true,
                     canReceiveNotifications = true,
@@ -83,9 +83,9 @@ data class BuddyPermissions(
                     canAddMedicine = true,          // ✅ İlaç ekleyebilir
                     canDeleteMedicine = false,
                     canViewMedicationHistory = true,
-                    canManageBuddies = false
+                    canManageBadis = false
                 )
-                BuddyRole.ADMIN -> BuddyPermissions(
+                BadiRole.ADMIN -> BadiPermissions(
                     role = role,
                     canViewReminders = true,
                     canReceiveNotifications = true,
@@ -94,7 +94,7 @@ data class BuddyPermissions(
                     canAddMedicine = true,
                     canDeleteMedicine = true,       // ✅ İlaç silebilir
                     canViewMedicationHistory = true,
-                    canManageBuddies = true         // ✅ Buddy'leri yönetebilir
+                    canManageBadis = true         // ✅ Badileri yönetebilir
                 )
             }
         }
@@ -102,29 +102,29 @@ data class BuddyPermissions(
 }
 
 /**
- * Buddy rolü için Türkçe isimler
+ * Badi rolü için Türkçe isimler
  */
-fun BuddyRole.toTurkish(): String = when (this) {
-    BuddyRole.VIEWER -> "İzleyici"
-    BuddyRole.HELPER -> "Yardımcı"
-    BuddyRole.CAREGIVER -> "Bakıcı"
-    BuddyRole.ADMIN -> "Yönetici"
+fun BadiRole.toTurkish(): String = when (this) {
+    BadiRole.VIEWER -> "İzleyici"
+    BadiRole.HELPER -> "Yardımcı"
+    BadiRole.CAREGIVER -> "Bakıcı"
+    BadiRole.ADMIN -> "Yönetici"
 }
 
 /**
- * Buddy rolü için açıklama
+ * Badi rolü için açıklama
  */
-fun BuddyRole.toDescription(): String = when (this) {
-    BuddyRole.VIEWER -> "Sadece ilaç hatırlatmalarını ve geçmişi görüntüleyebilir"
-    BuddyRole.HELPER -> "İlaç alındı olarak işaretleyebilir"
-    BuddyRole.CAREGIVER -> "İlaç ekleyebilir ve düzenleyebilir"
-    BuddyRole.ADMIN -> "Tüm yetkiler (ilaç ekleme, silme, buddy yönetimi)"
+fun BadiRole.toDescription(): String = when (this) {
+    BadiRole.VIEWER -> "Sadece ilaç hatırlatmalarını ve geçmişi görüntüleyebilir"
+    BadiRole.HELPER -> "İlaç alındı olarak işaretleyebilir"
+    BadiRole.CAREGIVER -> "İlaç ekleyebilir ve düzenleyebilir"
+    BadiRole.ADMIN -> "Tüm yetkiler (ilaç ekleme, silme, badi yönetimi)"
 }
 
 /**
- * Buddy bildirim tercihleri
+ * Badi bildirim tercihleri
  */
-data class BuddyNotificationPreferences(
+data class BadiNotificationPreferences(
     val onMedicationTime: Boolean = true,        // İlaç zamanı geldiğinde bildir
     val onMedicationTaken: Boolean = true,       // İlaç alındığında bildir
     val onMedicationSkipped: Boolean = true,     // İlaç atlandığında bildir
@@ -132,19 +132,19 @@ data class BuddyNotificationPreferences(
 )
 
 /**
- * Buddy durumu
+ * Badi durumu
  */
-enum class BuddyStatus {
-    ACTIVE,      // Aktif buddy ilişkisi
+enum class BadiStatus {
+    ACTIVE,      // Aktif badi ilişkisi
     PAUSED,      // Geçici olarak duraklatılmış
     REMOVED      // Kaldırılmış
 }
 
 /**
- * Buddy ile birlikte kullanıcı bilgilerini içeren model
+ * Badi ile birlikte kullanıcı bilgilerini içeren model
  * (UI'da göstermek için)
  */
-data class BuddyWithUser(
-    val buddy: Buddy,
+data class BadiWithUser(
+    val badi: Badi,
     val user: User
 )

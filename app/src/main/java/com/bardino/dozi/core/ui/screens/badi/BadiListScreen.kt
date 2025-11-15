@@ -1,4 +1,4 @@
-package com.bardino.dozi.core.ui.screens.buddy
+package com.bardino.dozi.core.ui.screens.badi
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -18,34 +18,34 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.bardino.dozi.core.data.model.BuddyWithUser
-import com.bardino.dozi.core.data.model.BuddyRequestWithUser
-import com.bardino.dozi.core.ui.viewmodel.BuddyViewModel
+import com.bardino.dozi.core.data.model.BadiWithUser
+import com.bardino.dozi.core.data.model.BadiRequestWithUser
+import com.bardino.dozi.core.ui.viewmodel.BadiViewModel
 import coil.compose.AsyncImage
 
 /**
- * Buddy Listesi Ekranı
- * Kullanıcının buddy'lerini ve bekleyen isteklerini gösterir
+ * Badi Listesi Ekranı
+ * Kullanıcının badilerini ve bekleyen isteklerini gösterir
  */
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun BuddyListScreen(
+fun BadiListScreen(
     onNavigateBack: () -> Unit,
-    onNavigateToAddBuddy: () -> Unit,
-    onNavigateToBuddyDetail: (String) -> Unit,
-    viewModel: BuddyViewModel = hiltViewModel()
+    onNavigateToAddBadi: () -> Unit,
+    onNavigateToBadiDetail: (String) -> Unit,
+    viewModel: BadiViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
 
     // Log UI state changes
-    LaunchedEffect(uiState.pendingRequests.size, uiState.buddies.size) {
-        android.util.Log.d("BuddyListScreen", "UI State - Pending requests: ${uiState.pendingRequests.size}, Buddies: ${uiState.buddies.size}")
+    LaunchedEffect(uiState.pendingRequests.size, uiState.badis.size) {
+        android.util.Log.d("BadiListScreen", "UI State - Pending requests: ${uiState.pendingRequests.size}, Badis: ${uiState.badis.size}")
     }
 
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("🤝 Buddy'lerim") },
+                title = { Text("🤝 Badilerim") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Geri")
@@ -53,7 +53,7 @@ fun BuddyListScreen(
                 },
                 actions = {
                     IconButton(onClick = onNavigateToAddBuddy) {
-                        Icon(Icons.Default.PersonAdd, "Buddy Ekle")
+                        Icon(Icons.Default.PersonAdd, "Badi Ekle")
                     }
                 },
                 colors = TopAppBarDefaults.topAppBarColors(
@@ -66,7 +66,7 @@ fun BuddyListScreen(
                 onClick = onNavigateToAddBuddy,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
-                Icon(Icons.Default.PersonAdd, "Buddy Ekle")
+                Icon(Icons.Default.PersonAdd, "Badi Ekle")
             }
         }
     ) { padding ->
@@ -79,21 +79,21 @@ fun BuddyListScreen(
             if (uiState.pendingRequests.isNotEmpty()) {
                 PendingRequestsSection(
                     requests = uiState.pendingRequests,
-                    onAccept = { viewModel.acceptBuddyRequest(it) },
-                    onReject = { viewModel.rejectBuddyRequest(it) }
+                    onAccept = { viewModel.acceptBadiRequest(it) },
+                    onReject = { viewModel.rejectBadiRequest(it) }
                 )
                 Divider()
             }
 
-            // Buddy listesi
+            // Badi listesi
             if (uiState.buddies.isEmpty()) {
                 EmptyBuddyState(onAddBuddy = onNavigateToAddBuddy)
             } else {
                 BuddyList(
                     buddies = uiState.buddies,
-                    onBuddyClick = { buddy ->
-                        android.util.Log.d("BuddyListScreen", "Buddy clicked: id=${buddy.buddy.id}, userId=${buddy.buddy.userId}, buddyUserId=${buddy.buddy.buddyUserId}, userName=${buddy.user.name}")
-                        onNavigateToBuddyDetail(buddy.buddy.id)
+                    onBadiClick = { badi ->
+                        android.util.Log.d("BadiListScreen", "Badi clicked: id=${buddy.badi.id}, userId=${buddy.badi.userId}, buddyUserId=${buddy.badi.buddyUserId}, userName=${badi.user.name}")
+                        onNavigateToBadiDetail(buddy.badi.id)
                     }
                 )
             }
@@ -239,17 +239,17 @@ fun BuddyRequestCard(
 @Composable
 fun BuddyList(
     buddies: List<BuddyWithUser>,
-    onBuddyClick: (BuddyWithUser) -> Unit
+    onBadiClick: (BuddyWithUser) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(buddies, key = { it.buddy.id }) { buddy ->
+        items(buddies, key = { it.badi.id }) { badi ->
             BuddyCard(
-                buddy = buddy,
-                onClick = { onBuddyClick(buddy) }
+                badi = badi,
+                onClick = { onBadiClickabadi) }
             )
         }
     }
@@ -257,7 +257,7 @@ fun BuddyList(
 
 @Composable
 fun BuddyCard(
-    buddy: BuddyWithUser,
+    buddy: BadiWithUser,
     onClick: () -> Unit
 ) {
     Card(
@@ -275,7 +275,7 @@ fun BuddyCard(
         ) {
             // Profil fotoğrafı
             AsyncImage(
-                model = buddy.user.photoUrl,
+                model = badi.user.photoUrl,
                 contentDescription = "Profil",
                 modifier = Modifier
                     .size(56.dp)
@@ -288,18 +288,18 @@ fun BuddyCard(
             // Kullanıcı bilgisi
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    buddy.buddy.nickname ?: buddy.user.name,
+                    buddy.badi.nickname ?: badi.user.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
                 Text(
-                    buddy.user.email,
+                    badi.user.email,
                     style = MaterialTheme.typography.bodySmall,
                     color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
                 )
                 // DEBUG: Match kontrolü
                 Text(
-                    "🔍 MATCH: ${buddy.user.uid == buddy.buddy.buddyUserId} | uid:...${buddy.user.uid.takeLast(4)} vs buddyId:...${buddy.buddy.buddyUserId.takeLast(4)}",
+                    "🔍 MATCH: ${badi.user.uid == buddy.badi.buddyUserId} | uid:...${badi.user.uid.takeLast(4)} vs buddyId:...${buddy.badi.buddyUserId.takeLast(4)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Red,
                     fontWeight = FontWeight.Bold
@@ -310,10 +310,10 @@ fun BuddyCard(
                     modifier = Modifier.padding(top = 4.dp),
                     horizontalArrangement = Arrangement.spacedBy(4.dp)
                 ) {
-                    if (buddy.buddy.permissions.canViewReminders) {
+                    if (badi.badi.permissions.canViewReminders) {
                         Chip(text = "📋 Hatırlatmalar")
                     }
-                    if (buddy.buddy.notificationPreferences.onMedicationTime) {
+                    if (badi.badi.notificationPreferences.onMedicationTime) {
                         Chip(text = "🔔 Bildirimler")
                     }
                 }
@@ -358,12 +358,12 @@ fun EmptyBuddyState(onAddBuddy: () -> Unit) {
                 style = MaterialTheme.typography.displayLarge
             )
             Text(
-                "Henüz buddy'niz yok",
+                "Henüz badiniz yok",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold
             )
             Text(
-                "Sevdiklerinizi buddy olarak ekleyin\nilaç takibinizi birlikte yönetin",
+                "Sevdiklerinizi badi olarak ekleyin\nilaç takibinizi birlikte yönetin",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
@@ -371,7 +371,7 @@ fun EmptyBuddyState(onAddBuddy: () -> Unit) {
             Button(onClick = onAddBuddy) {
                 Icon(Icons.Default.PersonAdd, "Ekle")
                 Spacer(modifier = Modifier.width(8.dp))
-                Text("Buddy Ekle")
+                Text("Badi Ekle")
             }
         }
     }

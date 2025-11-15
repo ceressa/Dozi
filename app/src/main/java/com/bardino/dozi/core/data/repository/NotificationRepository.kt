@@ -188,7 +188,7 @@ class NotificationRepository(
     // ==================== Push Notification Gönderme ====================
 
     /**
-     * İlaç hatırlatması için buddy'lere bildirim gönder
+     * İlaç hatırlatması için badilere bildirim gönder
      */
     suspend fun sendMedicationReminderToBuddies(
         medicineId: String,
@@ -284,7 +284,7 @@ class NotificationRepository(
             NotificationStats(
                 totalCount = notifications.size,
                 unreadCount = notifications.count { !it.isRead },
-                buddyRequestCount = notifications.count { it.type == NotificationType.BUDDY_REQUEST },
+                buddyRequestCount = notifications.count { it.type == NotificationType.BADI_REQUEST },
                 medicationReminderCount = notifications.count { it.type == NotificationType.MEDICATION_REMINDER }
             )
         } catch (e: Exception) {

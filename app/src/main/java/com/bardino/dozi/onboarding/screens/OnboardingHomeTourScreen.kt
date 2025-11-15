@@ -53,7 +53,7 @@ fun OnboardingHomeTourScreen(
             color = DoziBlue
         ),
         OnboardingStep(
-            title = "Buddy Sistemi 👥",
+            title = "Badi Sistemi 👥",
             description = "Sevdiklerini ekleyebilirsin. Onlar da seni takip edip destek olabilir!",
             icon = Icons.Default.People,
             color = SuccessGreen
@@ -84,7 +84,7 @@ fun OnboardingHomeTourScreen(
                         0 -> R.drawable.dozi_teach3  // Ana ekran
                         1 -> R.drawable.dozi_teach4  // Hatırlatmalar
                         2 -> R.drawable.dozi_teach3  // İlaç listesi
-                        else -> R.drawable.dozi_teach4 // Buddy
+                        else -> R.drawable.dozi_teach4 // Badi
                     }
                 ),
                 contentDescription = "Dozi",
@@ -232,7 +232,7 @@ private fun OnboardingStepCard(step: OnboardingStep) {
 
             // Ek özellikler (isteğe bağlı)
             if (step == OnboardingStep(
-                    "Buddy Sistemi 👥",
+                    "Badi Sistemi 👥",
                     "Sevdiklerini ekleyebilirsin. Onlar da seni takip edip destek olabilir!",
                     Icons.Default.People,
                     SuccessGreen
@@ -244,7 +244,7 @@ private fun OnboardingStepCard(step: OnboardingStep) {
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Text(
-                        text = "💡 İpucu: Buddy'ler ilaç aldığını görebilir ve sana destek olabilir!",
+                        text = "💡 İpucu: Badiler ilaç aldığını görebilir ve sana destek olabilir!",
                         style = MaterialTheme.typography.bodySmall,
                         color = SuccessGreen,
                         modifier = Modifier.padding(12.dp),

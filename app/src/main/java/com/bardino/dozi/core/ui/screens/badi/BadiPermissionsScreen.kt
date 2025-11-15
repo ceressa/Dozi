@@ -1,0 +1,419 @@
+package com.bardino.dozi.core.ui.screens.badi
+
+import android.os.Build
+import androidx.annotation.RequiresApi
+import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
+import androidx.lifecycle.viewmodel.compose.viewModel
+import com.bardino.dozi.core.data.model.*
+import com.bardino.dozi.core.ui.components.DoziTopBar
+import com.bardino.dozi.core.ui.theme.*
+import com.bardino.dozi.core.ui.viewmodel.BadiViewModel
+
+@RequiresApi(Build.VERSION_CODES.O)
+@OptIn(ExperimentalMaterial3Api::class)
+@Composable
+fun BadiPermissionsScreen(
+    badiId: String,
+    onNavigateBack: () -> Unit
+) {
+    val viewModel: BadiViewModel = viewModel()
+    val badis by viewModel.badis.collectAsState()
+
+    val currentBadi = badis.find { it.badi.id == badiId }
+
+    if (currentBadi == null) {
+        // Badi bulunamadı
+        Scaffold(
+            topBar = {
+                DoziTopBar(
+                    title = "Badi İzinleri",
+                    canNavigateBack = true,
+                    onNavigateBack = onNavigateBack
+                )
+            }
+        ) { padding ->
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Text("Badi bulunamadı")
+            }
+        }
+        return
+    }
+
+    var permissions by remember { mutableStateOf(currentBadi.badi.permissions) }
+    var hasChanges by remember { mutableStateOf(false) }
+
+    Scaffold(
+        topBar = {
+            DoziTopBar(
+                title = "${currentBadi.user.name} İzinleri",
+                canNavigateBack = true,
+                onNavigateBack = onNavigateBack,
+                actions = {
+                    if (hasChanges) {
+                        TextButton(onClick = {
+                            viewModel.updateBadiPermissions(badiId, permissions)
+                            hasChanges = false
+                            onNavigateBack()
+                        }) {
+                            Text("Kaydet", color = DoziTurquoise, fontWeight = FontWeight.Bold)
+                        }
+                    }
+                }
+            )
+        }
+    ) { padding ->
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(padding)
+                .background(BackgroundLight)
+                .verticalScroll(rememberScrollState())
+                .padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(16.dp)
+        ) {
+            // Badi Info Card
+            BadiInfoCard(currentBadi.user)
+
+            // Rol Seçimi
+            RoleSelectionCard(
+                currentRole = permissions.role,
+                onRoleChange = { newRole ->
+                    permissions = BadiPermissions.fromRole(newRole)
+                    hasChanges = true
+                }
+            )
+
+            // Detaylı İzinler
+            Text(
+                text = "Detaylı İzinler",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                modifier = Modifier.padding(top = 8.dp)
+            )
+
+            PermissionCard(
+                icon = Icons.Default.Visibility,
+                title = "Hatırlatmaları Görüntüleme",
+                description = "Badin ilaç hatırlatmalarını görebilir",
+                isEnabled = permissions.canViewReminders,
+                onToggle = {
+                    permissions = permissions.copy(canViewReminders = it)
+                    hasChanges = true
+                },
+                color = DoziBlue
+            )
+
+            PermissionCard(
+                icon = Icons.Default.Notifications,
+                title = "Bildirim Alma",
+                description = "Badin hatırlatma bildirimleri alır",
+                isEnabled = permissions.canReceiveNotifications,
+                onToggle = {
+                    permissions = permissions.copy(canReceiveNotifications = it)
+                    hasChanges = true
+                },
+                color = DoziTurquoise
+            )
+
+            PermissionCard(
+                icon = Icons.Default.CheckCircle,
+                title = "İlaç Alındı İşaretleme",
+                description = "Badin senin adına ilaç alındı işaretleyebilir",
+                isEnabled = permissions.canMarkAsTaken,
+                onToggle = {
+                    permissions = permissions.copy(canMarkAsTaken = it)
+                    hasChanges = true
+                },
+                color = Color(0xFF4CAF50)
+            )
+
+            PermissionCard(
+                icon = Icons.Default.Edit,
+                title = "Hatırlatma Düzenleme",
+                description = "Badin ilaç hatırlatmalarını düzenleyebilir",
+                isEnabled = permissions.canEditReminders,
+                onToggle = {
+                    permissions = permissions.copy(canEditReminders = it)
+                    hasChanges = true
+                },
+                color = Color(0xFFFF9800)
+            )
+
+            PermissionCard(
+                icon = Icons.Default.Add,
+                title = "İlaç Ekleme",
+                description = "Badin yeni ilaç ekleyebilir",
+                isEnabled = permissions.canAddMedicine,
+                onToggle = {
+                    permissions = permissions.copy(canAddMedicine = it)
+                    hasChanges = true
+                },
+                color = Color(0xFF9C27B0)
+            )
+
+            PermissionCard(
+                icon = Icons.Default.Delete,
+                title = "İlaç Silme",
+                description = "Badin ilaçları silebilir",
+                isEnabled = permissions.canDeleteMedicine,
+                onToggle = {
+                    permissions = permissions.copy(canDeleteMedicine = it)
+                    hasChanges = true
+                },
+                color = DoziCoralDark,
+                isWarning = true
+            )
+
+            PermissionCard(
+                icon = Icons.Default.History,
+                title = "İlaç Geçmişini Görüntüleme",
+                description = "Badin ilaç alım geçmişini görebilir",
+                isEnabled = permissions.canViewMedicationHistory,
+                onToggle = {
+                    permissions = permissions.copy(canViewMedicationHistory = it)
+                    hasChanges = true
+                },
+                color = DoziBlue
+            )
+
+            PermissionCard(
+                icon = Icons.Default.People,
+                title = "Badi Yönetimi",
+                description = "Badin diğer badileri yönetebilir",
+                isEnabled = permissions.canManageBadis,
+                onToggle = {
+                    permissions = permissions.copy(canManageBadis = it)
+                    hasChanges = true
+                },
+                color = Color(0xFFE91E63),
+                isWarning = true
+            )
+
+            // Bottom padding for fab
+            Spacer(modifier = Modifier.height(80.dp))
+        }
+    }
+}
+
+@Composable
+private fun BadiInfoCard(user: User) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Avatar placeholder
+        Box(
+            modifier = Modifier
+                .size(48.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(DoziTurquoise.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                Icons.Default.Person,
+                contentDescription = null,
+                tint = DoziTurquoise,
+                modifier = Modifier.size(24.dp)
+            )
+        }
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = user.name,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary
+            )
+            Text(
+                text = user.email,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                fontSize = 13.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleSelectionCard(
+    currentRole: BadiRole,
+    onRoleChange: (BadiRole) -> Unit
+) {
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .padding(16.dp),
+        verticalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        Text(
+            text = "Hızlı Rol Seçimi",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold
+        )
+
+        Text(
+            text = "Önceden tanımlı rolleri kullanarak hızlıca izin ayarlayabilirsiniz",
+            style = MaterialTheme.typography.bodySmall,
+            color = TextSecondary,
+            fontSize = 13.sp
+        )
+
+        BadiRole.values().forEach { role ->
+            RoleOption(
+                role = role,
+                isSelected = currentRole == role,
+                onClick = { onRoleChange(role) }
+            )
+        }
+    }
+}
+
+@Composable
+private fun RoleOption(
+    role: BadiRole,
+    isSelected: Boolean,
+    onClick: () -> Unit
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(12.dp))
+            .background(
+                if (isSelected) DoziTurquoise.copy(alpha = 0.1f) else Color.Transparent
+            )
+            .clickable(onClick = onClick)
+            .padding(12.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        RadioButton(
+            selected = isSelected,
+            onClick = onClick,
+            colors = RadioButtonDefaults.colors(selectedColor = DoziTurquoise)
+        )
+
+        Column(modifier = Modifier.weight(1f)) {
+            Text(
+                text = role.toTurkish(),
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
+                color = if (isSelected) DoziTurquoise else TextPrimary
+            )
+            Text(
+                text = role.toDescription(),
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
+        }
+    }
+}
+
+@Composable
+private fun PermissionCard(
+    icon: ImageVector,
+    title: String,
+    description: String,
+    isEnabled: Boolean,
+    onToggle: (Boolean) -> Unit,
+    color: Color,
+    isWarning: Boolean = false
+) {
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(16.dp))
+            .background(Color.White)
+            .padding(16.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(12.dp)
+    ) {
+        // Icon
+        Box(
+            modifier = Modifier
+                .size(44.dp)
+                .clip(RoundedCornerShape(12.dp))
+                .background(color.copy(alpha = 0.1f)),
+            contentAlignment = Alignment.Center
+        ) {
+            Icon(
+                icon,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(22.dp)
+            )
+        }
+
+        // Text
+        Column(
+            modifier = Modifier.weight(1f),
+            verticalArrangement = Arrangement.spacedBy(3.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.bodyLarge,
+                    fontWeight = FontWeight.SemiBold,
+                    color = TextPrimary,
+                    fontSize = 15.sp
+                )
+                if (isWarning) {
+                    Icon(
+                        Icons.Default.Warning,
+                        contentDescription = null,
+                        tint = Color(0xFFFF9800),
+                        modifier = Modifier.size(16.dp)
+                    )
+                }
+            }
+            Text(
+                text = description,
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                fontSize = 12.sp
+            )
+        }
+
+        // Toggle
+        Switch(
+            checked = isEnabled,
+            onCheckedChange = onToggle,
+            colors = SwitchDefaults.colors(
+                checkedThumbColor = color,
+                checkedTrackColor = color.copy(alpha = 0.5f)
+            )
+        )
+    }
+}

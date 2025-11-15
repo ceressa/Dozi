@@ -34,11 +34,11 @@ data class DoziNotification(
  */
 enum class NotificationType {
     GENERAL,                        // Genel bildirim
-    BUDDY_REQUEST,                  // Buddy isteği
-    BUDDY_ACCEPTED,                 // Buddy isteği kabul edildi
-    BUDDY_REJECTED,                 // Buddy isteği reddedildi
+    BADI_REQUEST,                  // Buddy isteği
+    BADI_ACCEPTED,                 // Buddy isteği kabul edildi
+    BADI_REJECTED,                 // Buddy isteği reddedildi
     MEDICATION_REMINDER,            // İlaç hatırlatması
-    BUDDY_MEDICATION_ALERT,         // Buddy ilaç uyarısı
+    BADI_MEDICATION_ALERT,         // Buddy ilaç uyarısı
     MEDICATION_TAKEN,               // İlaç alındı bildirimi
     MEDICATION_MISSED,              // İlaç kaçırıldı uyarısı
     CRITICAL_MEDICATION_MISSED,     // 🚨 Kritik ilaç kaçırıldı (escalation)
@@ -61,11 +61,11 @@ enum class NotificationPriority {
  */
 fun NotificationType.toTurkish(): String = when (this) {
     NotificationType.GENERAL -> "Genel"
-    NotificationType.BUDDY_REQUEST -> "Buddy İsteği"
-    NotificationType.BUDDY_ACCEPTED -> "Buddy Kabul Edildi"
-    NotificationType.BUDDY_REJECTED -> "Buddy Reddedildi"
+    NotificationType.BADI_REQUEST -> "Badi İsteği"
+    NotificationType.BADI_ACCEPTED -> "Badi Kabul Edildi"
+    NotificationType.BADI_REJECTED -> "Badi Reddedildi"
     NotificationType.MEDICATION_REMINDER -> "İlaç Hatırlatması"
-    NotificationType.BUDDY_MEDICATION_ALERT -> "Buddy İlaç Uyarısı"
+    NotificationType.BADI_MEDICATION_ALERT -> "Badi İlaç Uyarısı"
     NotificationType.MEDICATION_TAKEN -> "İlaç Alındı"
     NotificationType.MEDICATION_MISSED -> "İlaç Kaçırıldı"
     NotificationType.CRITICAL_MEDICATION_MISSED -> "Kritik İlaç Kaçırıldı"
@@ -79,11 +79,11 @@ fun NotificationType.toTurkish(): String = when (this) {
  */
 fun NotificationType.toEmoji(): String = when (this) {
     NotificationType.GENERAL -> "📢"
-    NotificationType.BUDDY_REQUEST -> "🤝"
-    NotificationType.BUDDY_ACCEPTED -> "✅"
-    NotificationType.BUDDY_REJECTED -> "❌"
+    NotificationType.BADI_REQUEST -> "🤝"
+    NotificationType.BADI_ACCEPTED -> "✅"
+    NotificationType.BADI_REJECTED -> "❌"
     NotificationType.MEDICATION_REMINDER -> "💊"
-    NotificationType.BUDDY_MEDICATION_ALERT -> "⚠️"
+    NotificationType.BADI_MEDICATION_ALERT -> "⚠️"
     NotificationType.MEDICATION_TAKEN -> "✅"
     NotificationType.MEDICATION_MISSED -> "❌"
     NotificationType.CRITICAL_MEDICATION_MISSED -> "🚨"

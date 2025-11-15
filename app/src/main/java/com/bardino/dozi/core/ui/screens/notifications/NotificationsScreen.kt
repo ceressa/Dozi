@@ -227,8 +227,8 @@ fun NotificationCard(
                     )
                 )
 
-                // Buddy request için action butonları
-                if (notification.type == NotificationType.BUDDY_REQUEST) {
+                // Badi request için action butonları
+                if (notification.type == NotificationType.BADI_REQUEST) {
                     Spacer(modifier = Modifier.height(8.dp))
                     Row(
                         modifier = Modifier.fillMaxWidth(),
@@ -342,10 +342,10 @@ fun NotificationCard(
 
 @Composable
 fun getNotificationColor(type: NotificationType) = when (type) {
-    NotificationType.BUDDY_REQUEST -> MaterialTheme.colorScheme.primary
-    NotificationType.BUDDY_ACCEPTED -> MaterialTheme.colorScheme.tertiary
+    NotificationType.BADI_REQUEST -> MaterialTheme.colorScheme.primary
+    NotificationType.BADI_ACCEPTED -> MaterialTheme.colorScheme.tertiary
     NotificationType.MEDICATION_REMINDER -> MaterialTheme.colorScheme.primary
-    NotificationType.BUDDY_MEDICATION_ALERT -> MaterialTheme.colorScheme.error
+    NotificationType.BADI_MEDICATION_ALERT -> MaterialTheme.colorScheme.error
     NotificationType.MEDICATION_TAKEN -> MaterialTheme.colorScheme.tertiary
     NotificationType.MEDICATION_MISSED -> MaterialTheme.colorScheme.error
     NotificationType.STOCK_LOW -> MaterialTheme.colorScheme.tertiary

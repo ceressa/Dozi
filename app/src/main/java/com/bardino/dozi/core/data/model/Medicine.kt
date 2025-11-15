@@ -25,8 +25,8 @@ data class Medicine(
     val reminderEnabled: Boolean = true,
     val icon: String = "💊",                    // Emoji icon for visual display
 
-    // 🤝 Buddy sistem için yeni alanlar
-    val sharedWithBuddies: List<String> = emptyList(), // Paylaşılan buddy userId'leri
+    // 🤝 Badi sistem için yeni alanlar
+    val sharedWithBadis: List<String> = emptyList(), // Paylaşılan badi userId'leri
     val barcode: String? = null,                // Barkod/QR kod
     val imageUrl: String? = null,               // İlaç fotoğrafı
     val manufacturer: String? = null,           // Üretici firma
