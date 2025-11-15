@@ -277,33 +277,34 @@ fun AddBadiScreen(
                                 }
                             }
 
-                        // Mesaj alanı
-                        OutlinedTextField(
+                            // Mesaj alanı
+                            OutlinedTextField(
                             value = message,
                             onValueChange = { message = it },
                             modifier = Modifier.fillMaxWidth(),
                             label = { Text("Mesaj (Opsiyonel)") },
                             placeholder = { Text("Bir mesaj ekleyin") },
                             maxLines = 3
-                        )
+                            )
 
-                        // İstek gönder butonu
-                        Button(
-                            onClick = {
-                                viewModel.sendBadiRequest(
-                                    user.uid,
-                                    message.ifEmpty { null }
-                                )
-                                searchQuery = ""
-                                message = ""
-                                viewModel.clearSearchState()
-                            },
-                            modifier = Modifier.fillMaxWidth(),
-                            enabled = !uiState.isLoading
-                        ) {
-                            Icon(Icons.Default.Send, "Gönder")
-                            Spacer(modifier = Modifier.width(8.dp))
-                            Text("Badiİsteği Gönder")
+                            // İstek gönder butonu
+                            Button(
+                                onClick = {
+                                    viewModel.sendBadiRequest(
+                                        user.uid,
+                                        message.ifEmpty { null }
+                                    )
+                                    searchQuery = ""
+                                    message = ""
+                                    viewModel.clearSearchState()
+                                },
+                                modifier = Modifier.fillMaxWidth(),
+                                enabled = !uiState.isLoading
+                            ) {
+                                Icon(Icons.Default.Send, "Gönder")
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Badiİsteği Gönder")
+                            }
                         }
                     }
                 }
