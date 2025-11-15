@@ -131,10 +131,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
         nm.cancel(requestId.hashCode())
 
         // Badi isteğini kabul et
-        val buddyRepository = BuddyRepository()
+        val buddyRepository = BadiRepository()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                buddyRepository.acceptBuddyRequest(requestId)
+                buddyRepository.acceptBadiRequest(requestId)
                     .onSuccess {
                         // Ana thread'de toast göster
                         CoroutineScope(Dispatchers.Main).launch {
@@ -164,10 +164,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
         nm.cancel(requestId.hashCode())
 
         // Badi isteğini reddet
-        val buddyRepository = BuddyRepository()
+        val buddyRepository = BadiRepository()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                buddyRepository.rejectBuddyRequest(requestId)
+                buddyRepository.rejectBadiRequest(requestId)
                     .onSuccess {
                         CoroutineScope(Dispatchers.Main).launch {
                             showToast(context, "🚫 $fromUserName buddy isteği reddedildi")

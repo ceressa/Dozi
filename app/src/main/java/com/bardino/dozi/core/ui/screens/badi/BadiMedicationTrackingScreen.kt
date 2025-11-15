@@ -49,7 +49,7 @@ fun BadiMedicationTrackingScreen(
         topBar = {
             TopAppBar(
                 title = {
-                    Text(badi?.badi?.nickname ?: buddy?.user?.name ?: "Badi Takibi")
+                    Text(badi?.badi?.nickname ?: badi?.user?.name ?: "Badi Takibi")
                 },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
@@ -151,7 +151,7 @@ fun BadiInfoCard(badi: BadiWithUser) {
 
             Column {
                 Text(
-                    buddy.badi.nickname ?: badi.user.name,
+                    badi.badi.nickname ?: badi.user.name,
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold
                 )

@@ -103,7 +103,7 @@ class EscalationManager(
     ) {
         try {
             // Aktif badileri çek
-            val badis = badiRepository.getBuddiesFlow().first()
+            val badis = badiRepository.getBadisFlow().first()
 
             // Notification almak isteyen badileri filtrele
             val notifiableBuddies = badis.filter {
@@ -154,7 +154,7 @@ class EscalationManager(
             val userId = FirebaseAuth.getInstance().currentUser?.uid ?: return
 
             // Aktif badileri çek
-            val badis = badiRepository.getBuddiesFlow().first()
+            val badis = badiRepository.getBadisFlow().first()
 
             // Notification almak isteyen badileri filtrele
             val notifiableBuddies = badis.filter {

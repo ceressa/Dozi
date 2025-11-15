@@ -1,9 +1,12 @@
 package com.bardino.dozi.notifications
 
 import android.Manifest
+import android.app.PendingIntent
+import android.content.Intent
 import android.content.pm.PackageManager
 import android.util.Log
 import androidx.core.content.ContextCompat
+import com.bardino.dozi.MainActivity
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.google.firebase.messaging.FirebaseMessagingService
 import com.google.firebase.messaging.RemoteMessage
@@ -146,7 +149,7 @@ class DoziMessagingService : FirebaseMessagingService() {
         val contentIntent = PendingIntent.getActivity(
             this,
             0,
-            Intent(this, com.bardino.dozi.MainActivity::class.java).apply {
+            Intent(this, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
                 // Deep link için navigation route ekle
                 navigationRoute?.let { putExtra("navigation_route", it) }
