@@ -15,6 +15,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
+import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
@@ -22,10 +23,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
+import androidx.compose.runtime.collectAsState
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.bardino.dozi.core.data.IlacRepository
 import com.bardino.dozi.core.data.OnboardingPreferences
+import com.bardino.dozi.core.data.ThemePreferences
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.data.repository.PremiumRepository
 import com.bardino.dozi.navigation.NavGraph
@@ -140,7 +143,18 @@ class MainActivity : ComponentActivity() {
         }
 
         setContent {
-            DoziAppTheme {
+            // 🎨 Tema tercihini oku (DataStore'dan Flow olarak)
+            val themeMode by ThemePreferences.getThemeFlow(this).collectAsState(initial = "system")
+            val systemInDarkTheme = isSystemInDarkTheme()
+
+            // Tema tercihine göre dark mode aktif mi belirle
+            val isDarkTheme = when (themeMode) {
+                "dark" -> true
+                "light" -> false
+                else -> systemInDarkTheme // "system" veya tanımsız ise sistem ayarını kullan
+            }
+
+            DoziAppTheme(darkTheme = isDarkTheme) {
                 navController = rememberNavController()
 
                 // İlk açılışta deep link varsa handle et
