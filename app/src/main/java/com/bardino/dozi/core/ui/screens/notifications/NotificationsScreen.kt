@@ -114,12 +114,12 @@ fun NotificationsScreen(
                             onNotificationClick(notification)
                         },
                         onDelete = { viewModel.deleteNotification(notification.id) },
-                        onAcceptBuddyRequest = { requestId ->
-                            viewModel.acceptBuddyRequest(requestId)
+                        onAcceptBadiRequest = { requestId ->
+                            viewModel.acceptBadiRequest(requestId)
                             viewModel.deleteNotification(notification.id)
                         },
-                        onRejectBuddyRequest = { requestId ->
-                            viewModel.rejectBuddyRequest(requestId)
+                        onRejectBadiRequest = { requestId ->
+                            viewModel.rejectBadiRequest(requestId)
                             viewModel.deleteNotification(notification.id)
                         }
                     )
@@ -161,8 +161,8 @@ fun NotificationCard(
     notification: DoziNotification,
     onClick: () -> Unit,
     onDelete: () -> Unit,
-    onAcceptBuddyRequest: (String) -> Unit = {},
-    onRejectBuddyRequest: (String) -> Unit = {}
+    onAcceptBadiRequest: (String) -> Unit = {},
+    onRejectBadiRequest: (String) -> Unit = {}
 ) {
     var showDeleteDialog by remember { mutableStateOf(false) }
 
@@ -237,7 +237,7 @@ fun NotificationCard(
                         Button(
                             onClick = {
                                 val requestId = notification.data["requestId"] ?: return@Button
-                                onAcceptBuddyRequest(requestId)
+                                onAcceptBadiRequest(requestId)
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.buttonColors(
@@ -251,7 +251,7 @@ fun NotificationCard(
                         OutlinedButton(
                             onClick = {
                                 val requestId = notification.data["requestId"] ?: return@OutlinedButton
-                                onRejectBuddyRequest(requestId)
+                                onRejectBadiRequest(requestId)
                             },
                             modifier = Modifier.weight(1f),
                             colors = ButtonDefaults.outlinedButtonColors(

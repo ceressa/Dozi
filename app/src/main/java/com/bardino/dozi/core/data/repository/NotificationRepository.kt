@@ -190,7 +190,7 @@ class NotificationRepository(
     /**
      * İlaç hatırlatması için badilere bildirim gönder
      */
-    suspend fun sendMedicationReminderToBuddies(
+    suspend fun sendMedicationReminderToBadis(
         medicineId: String,
         medicineName: String,
         dosage: String,
@@ -205,7 +205,7 @@ class NotificationRepository(
             )
 
             val result = functions
-                .getHttpsCallable("sendMedicationReminderToBuddies")
+                .getHttpsCallable("sendMedicationReminderToBadis")
                 .call(data)
                 .await()
 

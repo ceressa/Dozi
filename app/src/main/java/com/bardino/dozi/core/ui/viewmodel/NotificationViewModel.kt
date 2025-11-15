@@ -28,7 +28,7 @@ data class NotificationUiState(
 @HiltViewModel
 class NotificationViewModel @Inject constructor(
     private val notificationRepository: NotificationRepository,
-    private val buddyRepository: BuddyRepository
+    private val badiRepository: BadiRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(NotificationUiState())
@@ -143,7 +143,7 @@ class NotificationViewModel @Inject constructor(
     /**
      * İlaç hatırlatması için badilere bildirim gönder
      */
-    fun sendMedicationReminderToBuddies(
+    fun sendMedicationReminderToBadis(
         medicineId: String,
         medicineName: String,
         dosage: String,
@@ -151,7 +151,7 @@ class NotificationViewModel @Inject constructor(
     ) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            notificationRepository.sendMedicationReminderToBuddies(
+            notificationRepository.sendMedicationReminderToBadis(
                 medicineId, medicineName, dosage, time
             )
                 .onSuccess { sentCount ->
@@ -166,10 +166,10 @@ class NotificationViewModel @Inject constructor(
     /**
      * Badi isteğini kabul et
      */
-    fun acceptBuddyRequest(requestId: String) {
+    fun acceptBadiRequest(requestId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            buddyRepository.acceptBuddyRequest(requestId)
+            badiRepository.acceptBadiRequest(requestId)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false, error = null) }
                 }
@@ -182,10 +182,10 @@ class NotificationViewModel @Inject constructor(
     /**
      * Badi isteğini reddet
      */
-    fun rejectBuddyRequest(requestId: String) {
+    fun rejectBadiRequest(requestId: String) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
-            buddyRepository.rejectBuddyRequest(requestId)
+            badiRepository.rejectBadiRequest(requestId)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false, error = null) }
                 }
