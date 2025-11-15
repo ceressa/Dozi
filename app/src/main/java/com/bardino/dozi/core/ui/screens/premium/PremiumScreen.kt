@@ -177,7 +177,11 @@ fun PremiumScreen(
                 Text(
                     text = "7 gün ücretsiz dene • İstediğin zaman iptal et",
                     style = MaterialTheme.typography.bodySmall,
+
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -298,7 +302,11 @@ private fun PricingOption(
                 Text(
                     text = " / ${planType.period}",
                     style = MaterialTheme.typography.bodyMedium,
+
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }

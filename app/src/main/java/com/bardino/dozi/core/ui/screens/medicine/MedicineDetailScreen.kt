@@ -131,7 +131,7 @@ fun MedicineDetailScreen(
                 title = "İlaç Detayı",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                backgroundColor = Color.White,
+                backgroundColor = MaterialTheme.colorScheme.surface,
                 actions = {
                     IconButton(
                         onClick = { onEditMedicine(med.id) },

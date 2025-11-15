@@ -397,7 +397,11 @@ private fun EmptyLocationsState(
             text = "Henüz konum eklemedin",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
+
             color = MaterialTheme.colorScheme.onSurface,
+
+            color = MaterialTheme.colorScheme.onSurface
+
             textAlign = TextAlign.Center
         )
 
@@ -406,7 +410,11 @@ private fun EmptyLocationsState(
         Text(
             text = "Ev, iş, okul gibi sık gittiğin yerleri ekle. Bu konumlara vardığında ilaç hatırlatması yapalım! 📍",
             style = MaterialTheme.typography.bodyLarge,
+
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+
             textAlign = TextAlign.Center
         )
 
@@ -482,7 +490,11 @@ private fun LocationCard(
                     Text(
                         text = place.address,
                         style = MaterialTheme.typography.bodySmall,
+
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+
                         maxLines = 1
                     )
                 }
@@ -490,7 +502,11 @@ private fun LocationCard(
                 Text(
                     text = "📍 ${String.format("%.4f", place.lat)}, ${String.format("%.4f", place.lng)}",
                     style = MaterialTheme.typography.labelSmall,
+
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
+
+                    color = MaterialTheme.colorScheme.onSurfaceVariantcopy(alpha = 0.7f)
+
                 )
             }
 

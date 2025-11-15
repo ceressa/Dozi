@@ -124,7 +124,11 @@ fun NotificationSoundSettingsScreen(
                     text = "Mevcut Sesler",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
+
                     color = MaterialTheme.colorScheme.onSurface,
+
+                    color = MaterialTheme.colorScheme.onSurface
+
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
@@ -186,7 +190,11 @@ fun NotificationSoundSettingsScreen(
                             Text(
                                 text = "Özel sesleri kullanmak için Dozi Ekstra'ya geç",
                                 style = MaterialTheme.typography.bodyMedium,
+
                                 color = MaterialTheme.colorScheme.onSurface,
+
+                                color = MaterialTheme.colorScheme.onSurface
+
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(

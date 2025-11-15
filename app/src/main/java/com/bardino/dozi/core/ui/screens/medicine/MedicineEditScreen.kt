@@ -179,7 +179,7 @@ fun MedicineEditScreen(
                 title = if (medicineId == "new") "Yeni İlaç Ekle" else "İlaç Düzenle",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                backgroundColor = Color.White
+                backgroundColor = MaterialTheme.colorScheme.surface
             )
         },
         containerColor = MaterialTheme.colorScheme.background

@@ -422,7 +422,11 @@ private fun StepProgressIndicator(currentStep: Int, totalSteps: Int) {
         Text(
             text = "Adım $currentStep / $totalSteps",
             style = MaterialTheme.typography.labelLarge,
+
             color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+
             modifier = Modifier.align(Alignment.End)
         )
     }
@@ -661,7 +665,11 @@ private fun MultipleMedicinesStep(
                                     it[index] = it[index].copy(customDosage = newDosage)
                                 })
                             },
+
                             label = { Text("Adet Girin", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+
+                            label = { Text("Adet Girin", color = MaterialTheme.colorScheme.onSurfaceVariant },
+
                             placeholder = { Text("Örn: 1.5, 4, vb.") },
                             leadingIcon = { Icon(Icons.Default.Edit, null, tint = DoziTurquoise) },
                             modifier = Modifier.fillMaxWidth(),
@@ -684,7 +692,11 @@ private fun MultipleMedicinesStep(
                         "Birim",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
+
                         color = MaterialTheme.colorScheme.onSurface,
+
+                        color = MaterialTheme.colorScheme.onSurface
+
                         modifier = Modifier.padding(top = 8.dp)
                     )
 
@@ -1012,7 +1024,11 @@ private fun MedicineBottomSheet(
                     headlineContent = {
                         Text(
                             medicine,
+
                             color = MaterialTheme.colorScheme.onSurface,
+
+                            color = MaterialTheme.colorScheme.onSurface
+
                             style = MaterialTheme.typography.bodyLarge
                         )
                     },
@@ -1508,7 +1524,11 @@ private fun SummaryRow(
             Text(
                 label,
                 style = MaterialTheme.typography.bodyMedium,
+
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
+
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+
                 fontWeight = FontWeight.Medium
             )
         }
@@ -1612,7 +1632,11 @@ private fun ReminderSuccessDialog(
                 Text(
                     text = "İlaçlarınız başarıyla kaydedildi!",
                     style = MaterialTheme.typography.bodyLarge,
+
                     color = MaterialTheme.colorScheme.onSurface,
+
+                    color = MaterialTheme.colorScheme.onSurface
+
                     textAlign = TextAlign.Center
                 )
 
