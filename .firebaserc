@@ -1,5 +1,9 @@
 {
   "projects": {
-    "default": "dozi-cd7cc"
-  }
+    "default": "dozi-cd7cc",
+    "i": "decimo-rt",
+    "dozi": "dozi-cd7cc"
+  },
+  "targets": {},
+  "etags": {}
 }
