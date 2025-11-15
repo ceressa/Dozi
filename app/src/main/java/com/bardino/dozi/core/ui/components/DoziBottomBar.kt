@@ -176,7 +176,7 @@ private fun MoreMenuBottomSheet(
     ModalBottomSheet(
         onDismissRequest = onDismiss,
         sheetState = sheetState,
-        containerColor = Color.White,
+        containerColor = Color(0xFFF8F9FA),
         tonalElevation = 0.dp
     ) {
         Column(
@@ -184,17 +184,39 @@ private fun MoreMenuBottomSheet(
                 .fillMaxWidth()
                 .padding(bottom = 32.dp)
         ) {
-            // Başlık
-            Text(
-                text = "Menü",
-                style = MaterialTheme.typography.titleLarge.copy(
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 22.sp
-                ),
-                modifier = Modifier.padding(horizontal = 24.dp, vertical = 8.dp)
-            )
+            // Gradient başlık alanı
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        androidx.compose.ui.graphics.Brush.horizontalGradient(
+                            listOf(DoziTurquoise, DoziPurple)
+                        )
+                    )
+                    .padding(horizontal = 24.dp, vertical = 20.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.MoreHoriz,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        text = "Daha Fazla",
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.ExtraBold,
+                            fontSize = 24.sp
+                        ),
+                        color = Color.White
+                    )
+                }
+            }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
 
             val menuItems = listOf(
                 MoreMenuItem.Stats,
@@ -230,68 +252,94 @@ private fun MoreMenuItemCard(
     isEnabled: Boolean,
     onClick: () -> Unit
 ) {
-    Row(
+    androidx.compose.material3.Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = isEnabled, onClick = onClick)
-            .background(
-                if (isSelected) DoziTurquoise.copy(alpha = 0.1f) else Color.Transparent
-            )
-            .padding(horizontal = 24.dp, vertical = 16.dp),
-        verticalAlignment = Alignment.CenterVertically
+            .padding(horizontal = 16.dp, vertical = 6.dp),
+        shape = RoundedCornerShape(16.dp),
+        colors = androidx.compose.material3.CardDefaults.cardColors(
+            containerColor = if (isSelected)
+                androidx.compose.ui.graphics.Brush.horizontalGradient(
+                    listOf(DoziTurquoise.copy(alpha = 0.15f), DoziPurple.copy(alpha = 0.15f))
+                ).let { Color.White }
+            else Color.White
+        ),
+        elevation = androidx.compose.material3.CardDefaults.cardElevation(
+            defaultElevation = if (isSelected) 6.dp else 2.dp
+        ),
+        onClick = { if (isEnabled) onClick() }
     ) {
-        // Icon
-        Box(
+        Row(
             modifier = Modifier
-                .size(48.dp)
+                .fillMaxWidth()
                 .background(
-                    color = if (isSelected) DoziTurquoise else Color(0xFF1A237E).copy(alpha = 0.1f),
-                    shape = RoundedCornerShape(12.dp)
-                ),
-            contentAlignment = Alignment.Center
+                    if (isSelected) androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(DoziTurquoise.copy(alpha = 0.12f), DoziPurple.copy(alpha = 0.12f))
+                    ) else androidx.compose.ui.graphics.Brush.horizontalGradient(
+                        listOf(Color.White, Color.White)
+                    )
+                )
+                .padding(horizontal = 16.dp, vertical = 14.dp),
+            verticalAlignment = Alignment.CenterVertically
         ) {
-            Icon(
-                imageVector = item.icon,
-                contentDescription = item.label,
-                tint = if (isSelected) Color.White else Color(0xFF1A237E),
-                modifier = Modifier.size(24.dp)
-            )
-        }
+            // Icon
+            Box(
+                modifier = Modifier
+                    .size(52.dp)
+                    .background(
+                        brush = if (isSelected) androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(DoziTurquoise, DoziPurple)
+                        ) else androidx.compose.ui.graphics.Brush.linearGradient(
+                            listOf(Color(0xFFE3F2FD), Color(0xFFE1F5FE))
+                        ),
+                        shape = RoundedCornerShape(14.dp)
+                    ),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = item.icon,
+                    contentDescription = item.label,
+                    tint = if (isSelected) Color.White else DoziTurquoise,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
 
-        Spacer(modifier = Modifier.width(16.dp))
+            Spacer(modifier = Modifier.width(16.dp))
 
-        // Text
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = item.label,
-                style = MaterialTheme.typography.bodyLarge.copy(
-                    fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Medium,
-                    fontSize = 16.sp
-                ),
-                color = if (isEnabled) Color.Black else Color.Gray
-            )
-            Text(
-                text = item.description,
-                style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
-                color = if (isEnabled) Color.Gray else Color.LightGray
-            )
-        }
+            // Text
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = item.label,
+                    style = MaterialTheme.typography.bodyLarge.copy(
+                        fontWeight = if (isSelected) FontWeight.ExtraBold else FontWeight.Bold,
+                        fontSize = 17.sp
+                    ),
+                    color = if (isEnabled) Color(0xFF1A237E) else Color.Gray
+                )
+                Spacer(modifier = Modifier.height(2.dp))
+                Text(
+                    text = item.description,
+                    style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                    color = if (isEnabled) Color(0xFF546E7A) else Color.LightGray
+                )
+            }
 
-        // Arrow or lock icon
-        if (isEnabled) {
-            Icon(
-                imageVector = Icons.Default.ChevronRight,
-                contentDescription = null,
-                tint = Color.Gray,
-                modifier = Modifier.size(24.dp)
-            )
-        } else {
-            Icon(
-                imageVector = Icons.Default.Lock,
-                contentDescription = "Giriş gerekli",
-                tint = Color.Gray,
-                modifier = Modifier.size(20.dp)
-            )
+            // Arrow or lock icon
+            if (isEnabled) {
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = if (isSelected) DoziTurquoise else Color(0xFF90A4AE),
+                    modifier = Modifier.size(26.dp)
+                )
+            } else {
+                Icon(
+                    imageVector = Icons.Default.Lock,
+                    contentDescription = "Giriş gerekli",
+                    tint = Color.Gray,
+                    modifier = Modifier.size(22.dp)
+                )
+            }
         }
     }
 }
