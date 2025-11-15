@@ -49,7 +49,7 @@ fun PremiumScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -101,7 +101,7 @@ fun PremiumScreen(
                     text = "Dozi Ekstra Neler Sunar",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 PremiumFeature("Gelişmiş ilaç istatistikleri ve grafikler")
@@ -123,7 +123,7 @@ fun PremiumScreen(
                     text = "Planını Seç",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 PricingOption(
@@ -177,7 +177,7 @@ fun PremiumScreen(
                 Text(
                     text = "7 gün ücretsiz dene • İstediğin zaman iptal et",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -227,7 +227,7 @@ private fun PremiumFeature(text: String) {
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -282,7 +282,7 @@ private fun PricingOption(
                 text = planType.title,
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Row(
@@ -298,7 +298,7 @@ private fun PricingOption(
                 Text(
                     text = " / ${planType.period}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }
@@ -309,7 +309,7 @@ private fun PricingOption(
                     style = MaterialTheme.typography.bodySmall.copy(
                         textDecoration = TextDecoration.LineThrough
                     ),
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 
@@ -317,7 +317,7 @@ private fun PricingOption(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextPrimaryLight
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

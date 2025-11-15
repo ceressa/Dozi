@@ -249,7 +249,7 @@ fun ProfileScreen(
                         icon = Icons.Outlined.Info,
                         title = "Hakkında",
                         desc = "Versiyon bilgisi ve lisanslar",
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         onClick = onNavigateToAbout
                     )
                 }
@@ -332,7 +332,7 @@ private fun ProfileHeader(
                     Text(
                         text = currentUser?.displayName ?: firestoreUser?.name ?: "Kullanıcı",
                         style = MaterialTheme.typography.titleLarge,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         fontWeight = FontWeight.Bold,
                         fontSize = 20.sp
                     )
@@ -358,7 +358,7 @@ private fun ProfileHeader(
                     Text(
                         text = currentUser?.email ?: "",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         fontSize = 14.sp
                     )
                 }
@@ -462,14 +462,14 @@ private fun MenuCard(
                 Text(
                     text = title,
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.SemiBold,
                     fontSize = 16.sp
                 )
                 Text(
                     text = desc,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     fontSize = 13.sp
                 )
             }
@@ -478,7 +478,7 @@ private fun MenuCard(
             Icon(
                 Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = TextSecondary.copy(alpha = 0.4f),
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.4f),
                 modifier = Modifier.size(20.dp)
             )
         }

@@ -71,7 +71,7 @@ fun NotificationSoundSettingsScreen(
                 }
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -105,13 +105,13 @@ fun NotificationSoundSettingsScreen(
                             Text(
                                 text = "Seçili Ses",
                                 style = MaterialTheme.typography.labelMedium,
-                                color = TextSecondary
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                             Text(
                                 text = currentSoundName,
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                         }
                     }
@@ -124,7 +124,7 @@ fun NotificationSoundSettingsScreen(
                     text = "Mevcut Sesler",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
@@ -186,7 +186,7 @@ fun NotificationSoundSettingsScreen(
                             Text(
                                 text = "Özel sesleri kullanmak için Dozi Ekstra'ya geç",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TextPrimary,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(
@@ -249,7 +249,7 @@ private fun SoundItem(
                     text = name,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                    color = if (isSelected) TextPrimary else TextSecondary
+                    color = if (isSelected) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
 

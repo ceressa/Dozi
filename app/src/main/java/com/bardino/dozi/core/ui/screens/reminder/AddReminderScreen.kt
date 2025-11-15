@@ -207,7 +207,7 @@ fun AddReminderScreen(
                         Icon(
                             imageVector = if (soundEnabled) Icons.Default.VolumeUp else Icons.Default.VolumeOff,
                             contentDescription = if (soundEnabled) "Sesi Kapat" else "Sesi Aç",
-                            tint = if (soundEnabled) DoziTurquoise else TextSecondaryLight
+                            tint = if (soundEnabled) DoziTurquoise else MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -422,7 +422,7 @@ private fun StepProgressIndicator(currentStep: Int, totalSteps: Int) {
         Text(
             text = "Adım $currentStep / $totalSteps",
             style = MaterialTheme.typography.labelLarge,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             modifier = Modifier.align(Alignment.End)
         )
     }
@@ -574,7 +574,7 @@ private fun MultipleMedicinesStep(
                         "Kaç Adet?",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Row(
@@ -661,7 +661,7 @@ private fun MultipleMedicinesStep(
                                     it[index] = it[index].copy(customDosage = newDosage)
                                 })
                             },
-                            label = { Text("Adet Girin", color = TextSecondary) },
+                            label = { Text("Adet Girin", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                             placeholder = { Text("Örn: 1.5, 4, vb.") },
                             leadingIcon = { Icon(Icons.Default.Edit, null, tint = DoziTurquoise) },
                             modifier = Modifier.fillMaxWidth(),
@@ -684,7 +684,7 @@ private fun MultipleMedicinesStep(
                         "Birim",
                         style = MaterialTheme.typography.labelLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(top = 8.dp)
                     )
 
@@ -869,7 +869,7 @@ private fun DosageChip(
                 text = label,
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color.White else TextPrimary
+                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -902,7 +902,7 @@ private fun UnitChip(
                 text = label,
                 style = MaterialTheme.typography.bodyLarge,
                 fontWeight = FontWeight.Bold,
-                color = if (isSelected) Color.White else TextPrimary
+                color = if (isSelected) Color.White else MaterialTheme.colorScheme.onSurface
             )
         }
     }
@@ -944,12 +944,12 @@ private fun MedicinePickerRow(
                 readOnly = true,
                 enabled = false, // ✅ Disabled ama görsel olarak düzgün
                 colors = OutlinedTextFieldDefaults.colors(
-                    disabledTextColor = TextPrimary, // ✅ Okunabilir
+                    disabledTextColor = MaterialTheme.colorScheme.onSurface, // ✅ Okunabilir
                     disabledBorderColor = Gray200,
-                    disabledLabelColor = TextSecondary,
+                    disabledLabelColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     disabledLeadingIconColor = DoziCoral,
                     disabledTrailingIconColor = DoziCoral,
-                    disabledPlaceholderColor = TextSecondaryLight,
+                    disabledPlaceholderColor = MaterialTheme.colorScheme.onSurfaceVariant,
                     disabledContainerColor = DoziCoral.copy(alpha = 0.05f)
                 ),
                 shape = MaterialTheme.shapes.medium
@@ -1002,7 +1002,7 @@ private fun MedicineBottomSheet(
                 text = "Kayıtlı İlaçlar",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Divider(color = Gray200, thickness = 1.dp)
@@ -1012,7 +1012,7 @@ private fun MedicineBottomSheet(
                     headlineContent = {
                         Text(
                             medicine,
-                            color = TextPrimary,
+                            color = MaterialTheme.colorScheme.onSurface,
                             style = MaterialTheme.typography.bodyLarge
                         )
                     },
@@ -1131,7 +1131,7 @@ private fun FrequencyOptionCard(
                         text = option,
                         style = MaterialTheme.typography.bodyLarge,
                         fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                        color = if (isSelected) DoziTurquoise else TextPrimary
+                        color = if (isSelected) DoziTurquoise else MaterialTheme.colorScheme.onSurface
                     )
                 }
                 if (isSelected) {
@@ -1397,7 +1397,7 @@ private fun SummaryStep(
                     text = "📋 Özet",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Divider(color = Gray200)
 
@@ -1433,7 +1433,7 @@ private fun SummaryStep(
                                 "${index + 1}. ${medicine.name}",
                                 style = MaterialTheme.typography.bodyLarge,
                                 fontWeight = FontWeight.Medium,
-                                color = TextPrimary
+                                color = MaterialTheme.colorScheme.onSurface
                             )
                             Text(
                                 dosageText,
@@ -1478,7 +1478,7 @@ private fun SummaryStep(
                 Text(
                     text = "Her şey hazır! ${medicines.size} ilaç aynı saatte kaydedilecek.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
         }
@@ -1508,7 +1508,7 @@ private fun SummaryRow(
             Text(
                 label,
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = FontWeight.Medium
             )
         }
@@ -1612,7 +1612,7 @@ private fun ReminderSuccessDialog(
                 Text(
                     text = "İlaçlarınız başarıyla kaydedildi!",
                     style = MaterialTheme.typography.bodyLarge,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface,
                     textAlign = TextAlign.Center
                 )
 
@@ -1638,7 +1638,7 @@ private fun ReminderSuccessDialog(
                         modifier = Modifier.fillMaxWidth().height(56.dp),
                         border = BorderStroke(2.dp, Gray200),
                         shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = TextSecondary)
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                     ) {
                         Text("Kapat", fontWeight = FontWeight.Bold)
                     }

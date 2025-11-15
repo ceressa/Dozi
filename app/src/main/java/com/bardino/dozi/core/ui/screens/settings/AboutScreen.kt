@@ -46,7 +46,7 @@ fun AboutScreen(
                 backgroundColor = Color.White
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -82,14 +82,14 @@ fun AboutScreen(
                 text = "Dozi",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             // Versiyon
             Text(
                 text = "Versiyon $versionName ($versionCode)",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             // Açıklama
@@ -108,12 +108,12 @@ fun AboutScreen(
                         text = "Dozi Hakkında",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Dozi, ilaç takibinizi kolaylaştıran ve sağlığınızı kontrol altında tutmanıza yardımcı olan modern bir mobil uygulamadır. İlaçlarınızı zamanında almayı unutmayın!",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Justify
                     )
                 }
@@ -135,7 +135,7 @@ fun AboutScreen(
                         text = "Özellikler",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface,
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
@@ -163,17 +163,17 @@ fun AboutScreen(
                         text = "Geliştirici",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         text = "Bardino Technology",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         text = "© 2025 Tüm hakları saklıdır",
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -194,7 +194,7 @@ fun AboutScreen(
                         text = "Açık Kaynak Lisansları",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     LicenseItem("Jetpack Compose", "Apache License 2.0")
@@ -240,7 +240,7 @@ private fun FeatureRow(
         Text(
             text = text,
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
     }
 }
@@ -258,12 +258,12 @@ private fun LicenseItem(
             text = name,
             style = MaterialTheme.typography.bodyMedium,
             fontWeight = FontWeight.Medium,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             text = license,
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondary
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Divider(
             modifier = Modifier.padding(top = 8.dp),

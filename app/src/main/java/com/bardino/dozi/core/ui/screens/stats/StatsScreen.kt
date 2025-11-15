@@ -50,7 +50,7 @@ fun StatsScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -116,7 +116,7 @@ private fun StreakCard(stats: UserStats?) {
                 Text(
                     "Günlük Seri",
                     style = MaterialTheme.typography.titleMedium,
-                    color = TextSecondaryLight
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Spacer(Modifier.height(16.dp))
                 HorizontalDivider(color = Gray200)
@@ -150,7 +150,7 @@ private fun WeeklySummaryCard(weeklyData: List<DayLog>) {
                 "Son 7 Gün",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(8.dp))
 
@@ -181,12 +181,12 @@ private fun WeeklyDayRow(day: DayLog) {
                 day.dayName,
                 style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
             Text(
                 day.date,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondaryLight
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
 
@@ -231,14 +231,14 @@ private fun AchievementsCard(stats: UserStats?) {
                 "🏆 Başarımlar",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimary
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             if (unlockedAchievements.isEmpty()) {
                 Text(
                     "Henüz başarım kazanmadın. Düzenli ilaç kullanımını sürdür!",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryLight,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -290,12 +290,12 @@ private fun AchievementItem(
                     title,
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = if (isUnlocked) TextPrimary else TextSecondaryLight
+                    color = if (isUnlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     description,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondaryLight
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
             }
             if (isUnlocked) {
@@ -332,7 +332,7 @@ private fun ComplianceCard(stats: UserStats?) {
             Text(
                 "Uyumluluk Oranı",
                 style = MaterialTheme.typography.titleMedium,
-                color = TextSecondaryLight
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Spacer(Modifier.height(16.dp))
             Box(
@@ -357,7 +357,7 @@ private fun ComplianceCard(stats: UserStats?) {
             Text(
                 "Son 30 günlük ortalama",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondaryLight
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -379,12 +379,12 @@ private fun StatItem(label: String, value: String, icon: androidx.compose.ui.gra
             value,
             style = MaterialTheme.typography.titleLarge,
             fontWeight = FontWeight.Bold,
-            color = TextPrimary
+            color = MaterialTheme.colorScheme.onSurface
         )
         Text(
             label,
             style = MaterialTheme.typography.bodySmall,
-            color = TextSecondaryLight,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }

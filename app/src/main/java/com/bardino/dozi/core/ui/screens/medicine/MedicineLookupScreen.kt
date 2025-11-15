@@ -191,7 +191,7 @@ fun MedicineLookupScreen(
                 }
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -224,7 +224,7 @@ fun MedicineLookupScreen(
                         },
                         modifier = Modifier.fillMaxWidth(),
                         placeholder = {
-                            Text("İlaç adı, barkod veya etken madde...", color = TextSecondaryLight)
+                            Text("İlaç adı, barkod veya etken madde...", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         },
                         leadingIcon = {
                             Icon(
@@ -268,7 +268,7 @@ fun MedicineLookupScreen(
                                 else -> "Yazarak, barkod okutarak veya sesli arayabilirsiniz"
                             },
                             style = MaterialTheme.typography.labelSmall,
-                            color = TextSecondaryLight,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             modifier = Modifier.padding(start = 4.dp)
                         )
                     }
@@ -295,7 +295,7 @@ fun MedicineLookupScreen(
                         )
                         Text(
                             if (searchMode == "barcode") "Barkod okunuyor..." else "Aranıyor...",
-                            color = TextSecondary
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 
@@ -330,10 +330,10 @@ fun MedicineLookupScreen(
                             modifier = Modifier.size(56.dp)
                         )
                         Spacer(Modifier.height(8.dp))
-                        Text("Sonuç bulunamadı", color = TextSecondaryLight)
+                        Text("Sonuç bulunamadı", color = MaterialTheme.colorScheme.onSurfaceVariant)
                         Text(
                             "Farklı bir arama terimi deneyin veya barkod okutun",
-                            color = TextSecondaryLight,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontSize = 12.sp,
                             textAlign = TextAlign.Center
                         )
@@ -358,11 +358,11 @@ fun MedicineLookupScreen(
                         Text(
                             "İlaç aramaya başlayın",
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryLight
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             "Yukarıdaki kutuya yazın, barkod okutun veya sesli arama yapın",
-                            color = TextSecondaryLight,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = TextAlign.Center,
                             fontSize = 14.sp,
                             modifier = Modifier.padding(horizontal = 24.dp)
@@ -422,10 +422,10 @@ private fun MedicineResultCard(
             Spacer(Modifier.width(12.dp))
             Column(Modifier.weight(1f)) {
                 result.item.Product_Name?.let {
-                    Text(it, fontWeight = FontWeight.Bold, color = TextPrimaryLight)
+                    Text(it, fontWeight = FontWeight.Bold, color = MaterialTheme.colorScheme.onSurface)
                 }
                 result.item.Active_Ingredient?.takeIf { it.isNotBlank() }?.let {
-                    Text(it, color = TextSecondaryLight, fontSize = 13.sp)
+                    Text(it, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 13.sp)
                 }
                 result.dosage?.let {
                     Surface(color = DoziTurquoise.copy(alpha = 0.15f), shape = MaterialTheme.shapes.small) {
@@ -468,7 +468,7 @@ private fun MedicineDetailDialog(
                         }
                     }
                     Spacer(Modifier.width(12.dp))
-                    Text("İlaç Detayı", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = TextPrimaryLight)
+                    Text("İlaç Detayı", fontWeight = FontWeight.Bold, fontSize = 20.sp, color = MaterialTheme.colorScheme.onSurface)
                 }
                 Divider(color = VeryLightGray)
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -485,7 +485,7 @@ private fun MedicineDetailDialog(
                         modifier = Modifier.weight(1f),
                         border = BorderStroke(1.dp, VeryLightGray),
                         shape = MaterialTheme.shapes.medium
-                    ) { Text("İptal", color = TextSecondaryLight) }
+                    ) { Text("İptal", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     Button(
                         onClick = onConfirm,
                         modifier = Modifier.weight(1f),
@@ -505,7 +505,7 @@ private fun MedicineDetailDialog(
 @Composable
 private fun DetailRow(label: String, value: String?) {
     Column {
-        Text(label, color = TextSecondaryLight, fontSize = 11.sp)
-        if (value != null) Text(value, fontWeight = FontWeight.Medium, color = TextPrimaryLight)
+        Text(label, color = MaterialTheme.colorScheme.onSurfaceVariant, fontSize = 11.sp)
+        if (value != null) Text(value, fontWeight = FontWeight.Medium, color = MaterialTheme.colorScheme.onSurface)
     }
 }

@@ -190,7 +190,7 @@ fun PendingRequestsSection(
                 "Bekleyen İstekler (${requests.size})",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = com.bardino.dozi.core.ui.theme.TextPrimary
+                color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurface
             )
         }
         Spacer(modifier = Modifier.height(12.dp))
@@ -266,19 +266,19 @@ fun BadiRequestCard(
                         request.fromUser.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.ExtraBold,
-                        color = com.bardino.dozi.core.ui.theme.TextPrimary
+                        color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         request.fromUser.email,
                         style = MaterialTheme.typography.bodySmall,
-                        color = com.bardino.dozi.core.ui.theme.TextSecondary
+                        color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     request.request.message?.let { message ->
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             "\"$message\"",
                             style = MaterialTheme.typography.bodySmall,
-                            color = com.bardino.dozi.core.ui.theme.TextSecondary,
+                            color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -414,12 +414,12 @@ fun BadiCard(
                         badi.badi.nickname ?: badi.user.name,
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.ExtraBold,
-                        color = com.bardino.dozi.core.ui.theme.TextPrimary
+                        color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         badi.user.email,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = com.bardino.dozi.core.ui.theme.TextSecondary
+                        color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant
                     )
 
                     // İzin durumu
@@ -534,12 +534,12 @@ fun EmptyBadiState(onAddBadi: () -> Unit) {
                 "Henüz Badiniz Yok",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.ExtraBold,
-                color = com.bardino.dozi.core.ui.theme.TextPrimary
+                color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurface
             )
             Text(
                 "Sevdiklerinizi badi olarak ekleyin\nilaç takibinizi birlikte yönetin",
                 style = MaterialTheme.typography.bodyLarge,
-                color = com.bardino.dozi.core.ui.theme.TextSecondary,
+                color = com.bardino.dozi.core.ui.theme.MaterialTheme.colorScheme.onSurfaceVariant,
                 textAlign = androidx.compose.ui.text.style.TextAlign.Center
             )
             Spacer(modifier = Modifier.height(8.dp))

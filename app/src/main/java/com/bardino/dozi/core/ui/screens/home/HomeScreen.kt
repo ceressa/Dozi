@@ -627,7 +627,7 @@ fun HorizontalCalendar(
                 Text(
                     text = today.month.getDisplayName(TextStyle.FULL, Locale("tr")).uppercase(),
                     style = MaterialTheme.typography.titleSmall,
-                    color = TextPrimaryLight,
+                    color = MaterialTheme.colorScheme.onSurface,
                     fontWeight = FontWeight.Bold,
                     modifier = Modifier
                         .fillMaxWidth()
@@ -746,7 +746,7 @@ private fun CalendarDayCircle(
                 }
                 Text(
                     text = displayDay,
-                    color = if (status == MedicineStatus.NONE) TextSecondaryLight else TextPrimary,
+                    color = if (status == MedicineStatus.NONE) MaterialTheme.colorScheme.onSurfaceVariant else MaterialTheme.colorScheme.onSurface,
                     fontWeight = if (isToday) FontWeight.ExtraBold else FontWeight.Bold,
                     fontSize = if (isSelected) 17.sp else if (isToday) 16.sp else 15.sp,
                     modifier = if (isToday) Modifier.offset(y = (-1).dp) else Modifier
@@ -757,7 +757,7 @@ private fun CalendarDayCircle(
         Text(
             text = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("tr", "TR")),
             style = MaterialTheme.typography.labelSmall,
-            color = if (isToday) DoziTurquoise else TextSecondaryLight,
+            color = if (isToday) DoziTurquoise else MaterialTheme.colorScheme.onSurfaceVariant,
             fontWeight = if (isToday) FontWeight.Bold else FontWeight.Normal,
             modifier = Modifier.padding(top = 2.dp)
         )
@@ -813,7 +813,7 @@ private fun CalendarExpandedContent(
                     text = dayLabel.uppercase(),
                     style = MaterialTheme.typography.titleSmall,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimaryLight
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Spacer(Modifier.height(8.dp))
 
@@ -841,7 +841,7 @@ private fun CalendarExpandedContent(
                             Text(
                                 text = "${med.time}  •  ${med.name}",
                                 style = MaterialTheme.typography.bodySmall,
-                                color = TextPrimaryLight,
+                                color = MaterialTheme.colorScheme.onSurface,
                                 fontWeight = FontWeight.Medium
                             )
                             Icon(
@@ -856,7 +856,7 @@ private fun CalendarExpandedContent(
                                     MedicineStatus.TAKEN -> SuccessGreen
                                     MedicineStatus.SKIPPED -> ErrorRed
                                     MedicineStatus.UPCOMING -> DoziPurple
-                                    else -> TextSecondaryLight
+                                    else -> MaterialTheme.colorScheme.onSurfaceVariant
                                 },
                                 modifier = Modifier.size(18.dp)
                             )
@@ -885,7 +885,7 @@ private fun ClickableReminderText(onNavigateToReminders: () -> Unit, isLoggedIn:
                     append("buraya tıklayabilirsin.")
                 }
             },
-            style = MaterialTheme.typography.bodyMedium.copy(color = TextSecondaryLight, lineHeight = 20.sp),
+            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 20.sp),
             onClick = { offset ->
                 // Tüm metin tıklanınca Hatırlatmalar ekranına yönlendir
                 onNavigateToReminders()
@@ -895,7 +895,7 @@ private fun ClickableReminderText(onNavigateToReminders: () -> Unit, isLoggedIn:
         Text(
             text = "💧 Login olursan ilaçlarını beraber takip edebiliriz!",
             style = MaterialTheme.typography.bodyMedium,
-            color = TextSecondaryLight,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
     }
@@ -1034,13 +1034,13 @@ private fun CurrentMedicineCard(
                 "${medicine.icon} ${medicine.name}",
                 style = MaterialTheme.typography.headlineSmall,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimaryLight
+                color = MaterialTheme.colorScheme.onSurface
             )
 
             Text(
                 "📦 ${medicine.dosage}",
                 style = MaterialTheme.typography.titleSmall,
-                color = TextSecondaryLight
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
 
             HorizontalDivider(color = VeryLightGray, thickness = 1.dp)
@@ -1151,7 +1151,7 @@ private fun EmptyMedicineCard(
                 },
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimaryLight,
+                color = MaterialTheme.colorScheme.onSurface,
                 textAlign = TextAlign.Center
             )
 
@@ -1160,14 +1160,14 @@ private fun EmptyMedicineCard(
                 Text(
                     "Login olursan ilaçlarını beraber takip edebiliriz! 💊",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryLight,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
                 Spacer(Modifier.height(8.dp))
                 Text(
                     "İlaç hatırlatmaları, düzenli takip ve senkronize edilmiş veriler için giriş yapman yeterli.",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondaryLight.copy(alpha = 0.8f),
+                    color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
             } else if (nextMedicine != null && currentMedicineStatus != MedicineStatus.TAKEN && currentMedicineStatus != MedicineStatus.SKIPPED) {
@@ -1191,7 +1191,7 @@ private fun EmptyMedicineCard(
                             "${nextMedicine.first.icon} ${nextMedicine.first.name}",
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryLight
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
@@ -1220,7 +1220,7 @@ private fun EmptyMedicineCard(
                         else -> "Vakti gelince seni uyaracağım"
                     },
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryLight,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
                 )
             }
@@ -1343,7 +1343,7 @@ private fun TimelineSection(
                     "Bugünün İlaçları",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimaryLight
+                    color = MaterialTheme.colorScheme.onSurface
                 )
                 Surface(
                     color = DoziTurquoise,
@@ -1383,7 +1383,7 @@ private fun TimelineSection(
                     Text(
                         "Bugün için planlanmış ilaç yok",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondaryLight
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
@@ -1546,7 +1546,7 @@ private fun TimelineItem(
                         medicineName,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryLight,
+                        color = MaterialTheme.colorScheme.onSurface,
                         maxLines = 1,
                         overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                     )
@@ -1563,7 +1563,7 @@ private fun TimelineItem(
                         Text(
                             "•",
                             style = MaterialTheme.typography.bodySmall,
-                            color = TextSecondaryLight
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                         Text(
                             subtitle,
@@ -1573,7 +1573,7 @@ private fun TimelineItem(
                                 TimelineStatus.SKIPPED -> ErrorRed
                                 TimelineStatus.SNOOZED -> WarningOrange
                                 TimelineStatus.CURRENT -> DoziRed
-                                else -> TextSecondaryLight
+                                else -> MaterialTheme.colorScheme.onSurfaceVariant
                             },
                             fontWeight = if (status == TimelineStatus.CURRENT) FontWeight.Bold else FontWeight.Normal
                         )
@@ -1593,7 +1593,7 @@ private fun TimelineItem(
                     color = when (status) {
                         TimelineStatus.CURRENT -> DoziRed
                         TimelineStatus.COMPLETED -> DoziTurquoise
-                        else -> TextSecondaryLight
+                        else -> MaterialTheme.colorScheme.onSurfaceVariant
                     }
                 )
             }
@@ -1626,13 +1626,13 @@ private fun SnoozeDialog(
                     "Ne Kadar Erteleyelim?",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimaryLight
+                    color = MaterialTheme.colorScheme.onSurface
                 )
 
                 Text(
                     "İlacını almak için biraz daha zamana mı ihtiyacın var?",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryLight
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1700,7 +1700,7 @@ private fun SnoozeOption(
         Text(
             "$minutes dakika",
             modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
-            color = if (selected) WarningOrange else TextPrimaryLight,
+            color = if (selected) WarningOrange else MaterialTheme.colorScheme.onSurface,
             fontWeight = if (selected) FontWeight.Bold else FontWeight.Normal
         )
     }
@@ -1758,14 +1758,14 @@ private fun SkipReasonDialog(
                         "Neden Atlamak İstiyorsun?",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryLight
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Text(
                     "Sebebini bilmek, ilaç takibini daha iyi yapmamı sağlar.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryLight
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -1808,7 +1808,7 @@ private fun SkipReasonDialog(
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(2.dp, Gray200)
                     ) {
-                        Text("İptal", color = TextSecondaryLight)
+                        Text("İptal", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
                     Button(
@@ -1870,7 +1870,7 @@ private fun ReasonChip(
             Text(
                 text = text,
                 style = MaterialTheme.typography.bodyLarge,
-                color = if (selected) DoziTurquoise else TextSecondaryLight,
+                color = if (selected) DoziTurquoise else MaterialTheme.colorScheme.onSurfaceVariant,
                 fontWeight = if (selected) FontWeight.Bold else FontWeight.Medium
             )
         }
@@ -1918,14 +1918,14 @@ private fun EditNameDialog(
                         "Adını Düzenle",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryLight
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
 
                 Text(
                     "Seni nasıl çağırayım?",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryLight
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
 
                 OutlinedTextField(
@@ -1968,7 +1968,7 @@ private fun EditNameDialog(
                         shape = RoundedCornerShape(12.dp),
                         border = BorderStroke(2.dp, VeryLightGray)
                     ) {
-                        Text("İptal", color = TextSecondaryLight)
+                        Text("İptal", color = MaterialTheme.colorScheme.onSurfaceVariant)
                     }
 
                     Button(
@@ -2065,13 +2065,13 @@ private fun StreakAndDailySummaryCard(
                     Text(
                         "Bugün",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondaryLight
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
                         "$takenCount/$totalDoses ilaç",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                 }
             }
@@ -2107,7 +2107,7 @@ private fun StreakAndDailySummaryCard(
                     Text(
                         "seri",
                         style = MaterialTheme.typography.labelSmall,
-                        color = TextSecondaryLight
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
@@ -2149,7 +2149,7 @@ private fun MultiMedicineCard(
                         "İlaç Zamanı",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryLight
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Row(
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
@@ -2239,7 +2239,7 @@ private fun MultiMedicineCard(
 
                                     fontWeight = FontWeight.Bold,
 
-                                    color = TextPrimaryLight
+                                    color = MaterialTheme.colorScheme.onSurface
 
                                 )
 
@@ -2249,7 +2249,7 @@ private fun MultiMedicineCard(
 
                                     style = MaterialTheme.typography.bodyMedium,
 
-                                    color = TextSecondaryLight
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
 
                                 )
 
