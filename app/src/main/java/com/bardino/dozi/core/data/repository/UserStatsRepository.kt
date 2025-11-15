@@ -181,9 +181,9 @@ class UserStatsRepository {
             val userId = auth.currentUser?.uid ?: return
             val notification = DoziNotification(
                 userId = userId,
-                type = NotificationType.ACHIEVEMENT,
+                type = NotificationType.SYSTEM,
                 title = "🏆 Başarı Kazandın!",
-                message = "${achievement.icon} ${achievement.title}: ${achievement.description}",
+                body = "${achievement.icon} ${achievement.title}: ${achievement.description}",
                 isRead = false,
                 createdAt = Timestamp.now()
             )
