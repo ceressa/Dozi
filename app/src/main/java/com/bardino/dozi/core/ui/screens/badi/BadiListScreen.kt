@@ -52,7 +52,7 @@ fun BadiListScreen(
                     }
                 },
                 actions = {
-                    IconButton(onClick = onNavigateToAddBuddy) {
+                    IconButton(onClick = onNavigateToAddBadi) {
                         Icon(Icons.Default.PersonAdd, "Badi Ekle")
                     }
                 },
@@ -63,7 +63,7 @@ fun BadiListScreen(
         },
         floatingActionButton = {
             FloatingActionButton(
-                onClick = onNavigateToAddBuddy,
+                onClick = onNavigateToAddBadi,
                 containerColor = MaterialTheme.colorScheme.primary
             ) {
                 Icon(Icons.Default.PersonAdd, "Badi Ekle")
@@ -86,14 +86,14 @@ fun BadiListScreen(
             }
 
             // Badi listesi
-            if (uiState.buddies.isEmpty()) {
-                EmptyBuddyState(onAddBuddy = onNavigateToAddBuddy)
+            if (uiState.badis.isEmpty()) {
+                EmptyBadiState(onAddBadi = onNavigateToAddBadi)
             } else {
-                BuddyList(
-                    buddies = uiState.buddies,
+                BadiList(
+                    badis = uiState.badis,
                     onBadiClick = { badi ->
-                        android.util.Log.d("BadiListScreen", "Badi clicked: id=${buddy.badi.id}, userId=${buddy.badi.userId}, buddyUserId=${buddy.badi.buddyUserId}, userName=${badi.user.name}")
-                        onNavigateToBadiDetail(buddy.badi.id)
+                        android.util.Log.d("BadiListScreen", "Badi clicked: id=${badi.badi.id}, userId=${badi.badi.userId}, buddyUserId=${badi.badi.buddyUserId}, userName=${badi.user.name}")
+                        onNavigateToBadiDetail(badi.badi.id)
                     }
                 )
             }
@@ -127,7 +127,7 @@ fun BadiListScreen(
 
 @Composable
 fun PendingRequestsSection(
-    requests: List<BuddyRequestWithUser>,
+    requests: List<BadiRequestWithUser>,
     onAccept: (String) -> Unit,
     onReject: (String) -> Unit
 ) {
@@ -145,7 +145,7 @@ fun PendingRequestsSection(
         Spacer(modifier = Modifier.height(8.dp))
 
         requests.forEach { request ->
-            BuddyRequestCard(
+            BadiRequestCard(
                 request = request,
                 onAccept = { onAccept(request.request.id) },
                 onReject = { onReject(request.request.id) }
@@ -156,8 +156,8 @@ fun PendingRequestsSection(
 }
 
 @Composable
-fun BuddyRequestCard(
-    request: BuddyRequestWithUser,
+fun BadiRequestCard(
+    request: BadiRequestWithUser,
     onAccept: () -> Unit,
     onReject: () -> Unit
 ) {
@@ -237,27 +237,27 @@ fun BuddyRequestCard(
 }
 
 @Composable
-fun BuddyList(
-    buddies: List<BuddyWithUser>,
-    onBadiClick: (BuddyWithUser) -> Unit
+fun BadiList(
+    badis: List<BadiWithUser>,
+    onBadiClick: (BadiWithUser) -> Unit
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
         contentPadding = PaddingValues(16.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp)
     ) {
-        items(buddies, key = { it.badi.id }) { badi ->
-            BuddyCard(
+        items(badis, key = { it.badi.id }) { badi ->
+            BadiCard(
                 badi = badi,
-                onClick = { onBadiClickabadi) }
+                onClick = { onBadiClick(badi) }
             )
         }
     }
 }
 
 @Composable
-fun BuddyCard(
-    buddy: BadiWithUser,
+fun BadiCard(
+    badi: BadiWithUser,
     onClick: () -> Unit
 ) {
     Card(
@@ -288,7 +288,7 @@ fun BuddyCard(
             // Kullanıcı bilgisi
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    buddy.badi.nickname ?: badi.user.name,
+                    badi.badi.nickname ?: badi.user.name,
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold
                 )
@@ -299,7 +299,7 @@ fun BuddyCard(
                 )
                 // DEBUG: Match kontrolü
                 Text(
-                    "🔍 MATCH: ${badi.user.uid == buddy.badi.buddyUserId} | uid:...${badi.user.uid.takeLast(4)} vs buddyId:...${buddy.badi.buddyUserId.takeLast(4)}",
+                    "🔍 MATCH: ${badi.user.uid == badi.badi.buddyUserId} | uid:...${badi.user.uid.takeLast(4)} vs buddyId:...${badi.badi.buddyUserId.takeLast(4)}",
                     style = MaterialTheme.typography.labelSmall,
                     color = Color.Red,
                     fontWeight = FontWeight.Bold
@@ -344,7 +344,7 @@ fun Chip(text: String) {
 }
 
 @Composable
-fun EmptyBuddyState(onAddBuddy: () -> Unit) {
+fun EmptyBadiState(onAddBadi: () -> Unit) {
     Box(
         modifier = Modifier.fillMaxSize(),
         contentAlignment = Alignment.Center
@@ -368,7 +368,7 @@ fun EmptyBuddyState(onAddBuddy: () -> Unit) {
                 color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f)
             )
             Spacer(modifier = Modifier.height(8.dp))
-            Button(onClick = onAddBuddy) {
+            Button(onClick = onAddBadi) {
                 Icon(Icons.Default.PersonAdd, "Ekle")
                 Spacer(modifier = Modifier.width(8.dp))
                 Text("Badi Ekle")
