@@ -107,8 +107,8 @@ fun PremiumScreen(
                 PremiumFeature("Gelişmiş ilaç istatistikleri ve grafikler")
                 PremiumFeature("Kişisel alışkanlıklara göre akıllı hatırlatmalar")
                 PremiumFeature("Bulut yedekleme ve cihazlar arası senkronizasyon")
+                PremiumFeature("Özel bildirim sesleri ve titreşim ayarları")
                 PremiumFeature("Aile üyelerini aynı ekrandan yönetme")
-                PremiumFeature("Reçeteden otomatik ilaç tanıma (OCR)")
                 PremiumFeature("Öncelikli destek ve erken erişim")
             }
 
@@ -140,7 +140,13 @@ fun PremiumScreen(
                     planType = PlanType.YEARLY,
                     isSelected = selectedPlan == PlanType.YEARLY,
                     onSelect = { selectedPlan = PlanType.YEARLY },
-                    highlight = "En İyi Değer"
+                    highlight = "En Popüler"
+                )
+                PricingOption(
+                    planType = PlanType.LIFETIME,
+                    isSelected = selectedPlan == PlanType.LIFETIME,
+                    onSelect = { selectedPlan = PlanType.LIFETIME },
+                    highlight = "Tek Seferlik Ödeme"
                 )
             }
 
@@ -334,5 +340,12 @@ enum class PlanType(
         "yıl",
         originalPrice = "839.88",
         equivalentPrice = "Sadece ₺49.99/ay"
+    ),
+    LIFETIME(
+        "Ömür Boyu",
+        "1999.99",
+        "tek seferlik",
+        originalPrice = "7199.64",
+        equivalentPrice = "Bir kez öde, sonsuza kadar kullan"
     )
 }

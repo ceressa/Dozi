@@ -546,7 +546,50 @@ service cloud.firestore {
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 🚫 BÖLÜM 9: VARSAYILAN REDDETME KURALI
+    // 🚫 BÖLÜM 9: BAN YÖNETİMİ (USER_BANS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Kullanıcı ban bilgilerini saklar
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Sadece kullanıcı kendi ban durumunu okuyabilir
+    //    - Ban oluşturma ve güncelleme Cloud Functions tarafından yapılır
+    //    - Kullanıcılar ban silemez
+    // ═══════════════════════════════════════════════════════════════════════
+
+    match /user_bans/{userId} {
+      // 📖 OKUMA: Sadece kullanıcı kendi ban durumunu okuyabilir
+      allow read: if isAuthenticated() && isOwner(userId);
+
+      // ✏️ OLUŞTURMA/GÜNCELLEME/SİLME: Sadece Cloud Functions (manual DB yönetimi için)
+      allow write: if false; // Sadece admin manuel olarak DB'den yapabilir
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 📊 BÖLÜM 10: ANALYTICS (ANALYTICS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Premium analytics ve günlük kullanım istatistikleri
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Hiç kimse okuyamaz (sadece admin/dashboard için)
+    //    - Yazma işlemleri Cloud Functions veya manual DB yönetimi ile yapılır
+    // ═══════════════════════════════════════════════════════════════════════
+
+    match /analytics/{doc} {
+      // Hiç kimse okuyamaz - sadece backend/admin
+      allow read: if false;
+      allow write: if false; // Sadece Cloud Functions veya manuel DB
+    }
+
+    match /daily_analytics/{date} {
+      // Hiç kimse okuyamaz - sadece backend/admin
+      allow read: if false;
+      allow write: if false; // Sadece Cloud Functions veya manuel DB
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🚫 BÖLÜM 11: VARSAYILAN REDDETME KURALI
     // ═══════════════════════════════════════════════════════════════════════
     // Yukarıda belirtilmeyen tüm koleksiyonlara erişim varsayılan olarak
     // engellenmiştir. Bu, güvenliği artırır ve yanlışlıkla veri sızıntısını
