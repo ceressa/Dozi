@@ -21,6 +21,7 @@ import android.content.pm.PackageManager
 import androidx.core.content.ContextCompat
 import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.core.data.repository.UserRepository
+import com.bardino.dozi.core.data.ThemePreferences
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.notifications.NotificationHelper
@@ -83,7 +84,7 @@ fun SettingsScreen(
             ) {
                 // Tema Ayarı
                 SettingsSection(title = "Görünüm") {
-                    var selectedTheme by remember { mutableStateOf(userData?.theme ?: "light") }
+                    var selectedTheme by remember { mutableStateOf(userData?.theme ?: "system") }
 
                     SettingsDropdown(
                         label = "Tema",
@@ -94,8 +95,18 @@ fun SettingsScreen(
                             selectedTheme = newTheme
                             scope.launch {
                                 try {
+                                    // 🎨 DataStore'a kaydet (gerçek zamanlı için)
+                                    ThemePreferences.saveTheme(context, newTheme)
+
+                                    // 📦 Firestore'a kaydet (senkronizasyon için)
                                     userRepository.updateUserField("theme", newTheme)
-                                    Toast.makeText(context, "Tema güncellendi", Toast.LENGTH_SHORT).show()
+
+                                    val themeText = when (newTheme) {
+                                        "dark" -> "Koyu tema"
+                                        "light" -> "Açık tema"
+                                        else -> "Sistem teması"
+                                    }
+                                    Toast.makeText(context, "$themeText etkinleştirildi", Toast.LENGTH_SHORT).show()
                                 } catch (e: Exception) {
                                     Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
                                 }
