@@ -1,7 +1,9 @@
 package com.bardino.dozi.notifications
 
 import android.Manifest
+import android.app.AlarmManager
 import android.app.AlertDialog
+import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -54,9 +56,25 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 handleBuddyReject(context, requestId, fromUserName, nm)
             }
             "ACTION_SNOOZE_TRIGGER" -> {
-                // Erteleme süresi doldu, yeni bildirim göster
+                // ⏰ Erteleme süresi doldu, yeni bildirim göster + escalation/auto-missed planla
                 if (hasNotificationPermission(context)) {
-                    NotificationHelper.showMedicationNotification(context, med)
+                    NotificationHelper.showMedicationNotification(
+                        context = context,
+                        medicineName = med,
+                        medicineId = medicineId,
+                        dosage = dosage,
+                        time = time,
+                        scheduledTime = scheduledTime
+                    )
+
+                    // ⏰ YENİ: 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
+                    if (medicineId.isNotEmpty()) {
+                        scheduleEscalationReminder(context, medicineId, med, dosage, time, scheduledTime)
+                        // ⏱️ YENİ: 1 saat sonra auto-MISSED (eğer hala aksiyon alınmadıysa)
+                        scheduleAutoMissed(context, medicineId, med, dosage, time, scheduledTime)
+                    }
+
+                    android.util.Log.d("NotificationActionReceiver", "⏰ Erteleme sonrası bildirim + escalation/auto-missed planlandı: $med")
                 }
             }
             ReminderScheduler.ACTION_REMINDER_TRIGGER -> {
@@ -115,9 +133,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
         prefs: SharedPreferences,
         nm: NotificationManagerCompat
     ) {
+        val takenTime = System.currentTimeMillis()
+
         prefs.edit {
             putString("last_action", "ALINDI:$medicineName")
-            putLong("last_taken_time", System.currentTimeMillis())
+            putLong("last_taken_time", takenTime)
             putString("last_medicine", medicineName)
         }
 
@@ -134,6 +154,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     scheduledTime = scheduledTime
                 )
                 android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: TAKEN")
+
+                // 🧠 Gecikme pattern'ini kaydet (gelecekteki öneriler için)
+                SmartReminderHelper.recordDelayPattern(
+                    context = context,
+                    medicineId = medicineId,
+                    scheduledTime = scheduledTime,
+                    takenTime = takenTime
+                )
             }
 
             // İptal: Escalation ve Auto-MISSED alarmları
@@ -213,6 +241,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 )
                 android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SNOOZED")
             }
+
+            // 🔥 FIX: Erteleme seçilince escalation ve auto-MISSED iptal et
+            cancelEscalationAndAutoMissed(context, medicineId, time)
         }
 
         // ✅ Kullanıcının ses seçimine göre erteleme sesi

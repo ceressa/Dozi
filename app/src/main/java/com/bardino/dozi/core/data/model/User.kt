@@ -40,6 +40,9 @@ data class User(
     val preferredMorningHour: Int = 8,           // Sabah tercihi (7-11)
     val preferredEveningHour: Int = 20,          // Akşam tercihi (18-22)
 
+    // 🧠 Smart reminder (akıllı hatırlatma önerileri)
+    val smartReminderEnabled: Boolean = false,   // Akıllı erteleme önerileri aktif mi? (default: kapalı)
+
     // 🎵 Bildirim sesi özelleştirme (Premium özellik)
     val customSoundUri: String? = null,          // Özel bildirim sesi URI
     val customSoundName: String = "Varsayılan"   // Özel ses adı

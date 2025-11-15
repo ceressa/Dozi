@@ -1337,48 +1337,205 @@ private fun TimeStep(
     onTimeChange: (Int, Int) -> Unit,
     context: Context
 ) {
-    Card(
-        onClick = {
-            TimePickerDialog(context, { _, h, m -> onTimeChange(h, m) }, hour, minute, true).show()
-        },
-        colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-        shape = MaterialTheme.shapes.large
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .background(
-                    brush = Brush.verticalGradient(
-                        listOf(DoziBlue, DoziBlue.copy(alpha = 0.8f))
-                    ),
-                    shape = MaterialTheme.shapes.large
-                )
-                .padding(vertical = 40.dp),
-            contentAlignment = Alignment.Center
+    // 🔕 DND ayarlarını çek
+    var dndEnabled by remember { mutableStateOf(false) }
+    var dndStartHour by remember { mutableStateOf(22) }
+    var dndStartMinute by remember { mutableStateOf(0) }
+    var dndEndHour by remember { mutableStateOf(8) }
+    var dndEndMinute by remember { mutableStateOf(0) }
+    var showDndWarning by remember { mutableStateOf(false) }
+    var pendingHour by remember { mutableStateOf(0) }
+    var pendingMinute by remember { mutableStateOf(0) }
+
+    // User DND ayarlarını yükle
+    LaunchedEffect(Unit) {
+        try {
+            val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
+            val user = userRepository.getUserData()
+            if (user != null) {
+                dndEnabled = user.dndEnabled
+                dndStartHour = user.dndStartHour
+                dndStartMinute = user.dndStartMinute
+                dndEndHour = user.dndEndHour
+                dndEndMinute = user.dndEndMinute
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("AddReminder", "Error loading DND settings", e)
+        }
+    }
+
+    // DND saati içinde mi kontrol et
+    fun isInDndPeriod(h: Int, m: Int): Boolean {
+        if (!dndEnabled) return false
+
+        val timeInMinutes = h * 60 + m
+        val dndStartInMinutes = dndStartHour * 60 + dndStartMinute
+        val dndEndInMinutes = dndEndHour * 60 + dndEndMinute
+
+        return if (dndStartInMinutes <= dndEndInMinutes) {
+            // Normal durum: 22:00 - 08:00
+            timeInMinutes >= dndStartInMinutes && timeInMinutes < dndEndInMinutes
+        } else {
+            // Gece yarısını geçen durum: 22:00 - 02:00
+            timeInMinutes >= dndStartInMinutes || timeInMinutes < dndEndInMinutes
+        }
+    }
+
+    val isCurrentTimeInDnd = isInDndPeriod(hour, minute)
+
+    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
+        Card(
+            onClick = {
+                TimePickerDialog(context, { _, h, m ->
+                    // Seçilen saat DND içinde mi kontrol et
+                    if (isInDndPeriod(h, m)) {
+                        // DND uyarısı göster
+                        pendingHour = h
+                        pendingMinute = m
+                        showDndWarning = true
+                    } else {
+                        // DND dışında, direkt uygula
+                        onTimeChange(h, m)
+                    }
+                }, hour, minute, true).show()
+            },
+            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
+            shape = MaterialTheme.shapes.large
         ) {
-            Column(
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.spacedBy(8.dp)
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(
+                        brush = Brush.verticalGradient(
+                            if (isCurrentTimeInDnd) {
+                                // 🔴 DND saati - kırmızı
+                                listOf(ErrorRed, ErrorRed.copy(alpha = 0.8f))
+                            } else {
+                                // Normal - mavi
+                                listOf(DoziBlue, DoziBlue.copy(alpha = 0.8f))
+                            }
+                        ),
+                        shape = MaterialTheme.shapes.large
+                    )
+                    .padding(vertical = 40.dp),
+                contentAlignment = Alignment.Center
             ) {
-                Icon(
-                    Icons.Default.Schedule,
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(32.dp)
-                )
-                Text(
-                    text = "%02d:%02d".format(hour, minute),
-                    style = MaterialTheme.typography.displayLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White
-                )
-                Text(
-                    text = "Dokunarak değiştir",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = Color.White.copy(alpha = 0.9f)
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        if (isCurrentTimeInDnd) Icons.Default.DoNotDisturb else Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                    Text(
+                        text = "%02d:%02d".format(hour, minute),
+                        style = MaterialTheme.typography.displayLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+                    Text(
+                        text = if (isCurrentTimeInDnd) "⚠️ DND saatinde" else "Dokunarak değiştir",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.9f)
+                    )
+                }
             }
         }
+
+        // 🔕 DND bilgilendirmesi
+        if (dndEnabled) {
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = if (isCurrentTimeInDnd) ErrorRed.copy(alpha = 0.1f) else DoziPurple.copy(alpha = 0.1f)
+                ),
+                shape = MaterialTheme.shapes.medium
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        Icons.Default.DoNotDisturb,
+                        contentDescription = null,
+                        tint = if (isCurrentTimeInDnd) ErrorRed else DoziPurple,
+                        modifier = Modifier.size(24.dp)
+                    )
+                    Column {
+                        Text(
+                            text = "🔕 Rahatsız Etme Modu Aktif",
+                            style = MaterialTheme.typography.bodyMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = if (isCurrentTimeInDnd) ErrorRed else DoziPurple
+                        )
+                        Text(
+                            text = "DND: %02d:%02d - %02d:%02d".format(dndStartHour, dndStartMinute, dndEndHour, dndEndMinute),
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+                }
+            }
+        }
+    }
+
+    // 🔴 DND Uyarı Dialog'u
+    if (showDndWarning) {
+        AlertDialog(
+            onDismissRequest = { showDndWarning = false },
+            icon = {
+                Icon(
+                    Icons.Default.DoNotDisturb,
+                    contentDescription = null,
+                    tint = ErrorRed,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "⚠️ Rahatsız Etme Saati",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Text(
+                        text = "Seçtiğiniz saat (%02d:%02d) Rahatsız Etme Modu saatleri içinde (%02d:%02d - %02d:%02d).".format(
+                            pendingHour, pendingMinute,
+                            dndStartHour, dndStartMinute,
+                            dndEndHour, dndEndMinute
+                        ),
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+                    Spacer(modifier = Modifier.height(8.dp))
+                    Text(
+                        text = "Bu saatte bildirimler sessiz gösterilecek. Devam etmek istiyor musunuz?",
+                        style = MaterialTheme.typography.bodyMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = ErrorRed
+                    )
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        onTimeChange(pendingHour, pendingMinute)
+                        showDndWarning = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
+                ) {
+                    Text("Devam Et")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showDndWarning = false }) {
+                    Text("İptal")
+                }
+            }
+        )
     }
 }
 

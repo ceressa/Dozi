@@ -27,7 +27,8 @@ import com.bardino.dozi.core.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun NotificationSettingsScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToAdvanced: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -147,6 +148,19 @@ fun NotificationSettingsScreen(
                     Icon(Icons.Default.Settings, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Uygulama Ayarlarına Git")
+                }
+            }
+
+            // Gelişmiş Bildirim Ayarları Butonu
+            if (hasNotificationPermission) {
+                Button(
+                    onClick = onNavigateToAdvanced,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(containerColor = DoziPurple)
+                ) {
+                    Icon(Icons.Default.Psychology, contentDescription = null)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text("Gelişmiş Bildirim Ayarları")
                 }
             }
 

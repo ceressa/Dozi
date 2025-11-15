@@ -25,6 +25,7 @@ import com.bardino.dozi.core.ui.screens.profile.ProfileScreen
 import com.bardino.dozi.core.ui.screens.reminder.AddReminderScreen
 import com.bardino.dozi.core.ui.screens.reminder.ReminderListScreen
 import com.bardino.dozi.core.ui.screens.settings.AboutScreen
+import com.bardino.dozi.core.ui.screens.settings.AdvancedNotificationSettingsScreen
 import com.bardino.dozi.core.ui.screens.settings.NotificationSettingsScreen
 import com.bardino.dozi.core.ui.screens.settings.SettingsScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiListScreen
@@ -313,7 +314,17 @@ fun NavGraph(
 
             // 🔔 Bildirim Ayarları
             composable(Screen.NotificationSettings.route) {
-                NotificationSettingsScreen(onNavigateBack = { navController.popBackStack() })
+                NotificationSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToAdvanced = { navController.navigate(Screen.AdvancedNotificationSettings.route) }
+                )
+            }
+
+            // 🔔 Gelişmiş Bildirim Ayarları
+            composable(Screen.AdvancedNotificationSettings.route) {
+                AdvancedNotificationSettingsScreen(
+                    onNavigateBack = { navController.popBackStack() }
+                )
             }
 
             // ℹ️ Hakkında

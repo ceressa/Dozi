@@ -33,6 +33,7 @@ sealed class Screen(val route: String) {
     object Locations : Screen("locations")
     object Settings : Screen("settings")
     object NotificationSettings : Screen("notification_settings")
+    object AdvancedNotificationSettings : Screen("advanced_notification_settings")
     object About : Screen("about")
 
     // Stats
