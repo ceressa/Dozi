@@ -209,9 +209,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
                 dialog.dismiss()
             }
-            setNegativeButton("İptal") { dialog, _ ->
+            setNegativeButton("İptal") @androidx.annotation.RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS) { dialog, _ ->
                 if (hasNotificationPermission(context)) {
-                    NotificationHelper.showMedicationNotification(context, medicineName)
                 }
                 dialog.dismiss()
             }
