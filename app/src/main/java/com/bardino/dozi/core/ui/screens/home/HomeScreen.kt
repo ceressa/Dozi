@@ -201,19 +201,15 @@ fun HomeScreen(
         }
     }
 
+    // 🎨 Tema renklerini al
+    val backgroundColor = MaterialTheme.colorScheme.background
+    val surfaceColor = MaterialTheme.colorScheme.surface
+
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
             modifier = Modifier
                 .fillMaxSize()
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            Color(0xFFB2EBF2),
-                            Color(0xFFE0F7FA),
-                            Color(0xFFF1F8FB)
-                        )
-                    )
-                )
+                .background(backgroundColor)
                 .padding(contentPadding)
                 .then(
                     if (uiState.showSuccessPopup || uiState.showSkippedPopup) Modifier.blur(10.dp)
@@ -621,7 +617,7 @@ fun HorizontalCalendar(
     ) {
         Card(
             shape = RoundedCornerShape(20.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(6.dp)
         ) {
             Column(
@@ -797,7 +793,7 @@ private fun CalendarExpandedContent(
             .padding(top = 8.dp)
             .shadow(8.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(16.dp)
     ) {
         Row(
@@ -965,7 +961,7 @@ private fun CurrentMedicineCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(6.dp)
     ) {
@@ -1126,7 +1122,7 @@ private fun EmptyMedicineCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(6.dp)
     ) {
@@ -1617,7 +1613,7 @@ private fun SnoozeDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(
@@ -1733,7 +1729,7 @@ private fun SkipReasonDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(
@@ -1894,7 +1890,7 @@ private fun EditNameDialog(
     Dialog(onDismissRequest = onDismiss) {
         Card(
             shape = RoundedCornerShape(24.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
             elevation = CardDefaults.cardElevation(8.dp)
         ) {
             Column(
@@ -2132,7 +2128,7 @@ private fun MultiMedicineCard(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(8.dp)
     ) {

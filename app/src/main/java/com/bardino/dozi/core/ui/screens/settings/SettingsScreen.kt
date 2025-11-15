@@ -59,10 +59,10 @@ fun SettingsScreen(
                 title = "Ayarlar",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                backgroundColor = Color.White
+                backgroundColor = MaterialTheme.colorScheme.surface
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (isLoading) {
             Box(
@@ -281,7 +281,7 @@ private fun SettingsSection(
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         elevation = CardDefaults.cardElevation(defaultElevation = 1.dp)
     ) {
         Column(
