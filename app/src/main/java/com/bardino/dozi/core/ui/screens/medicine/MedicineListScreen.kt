@@ -12,7 +12,6 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -33,7 +32,6 @@ import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -47,6 +45,7 @@ fun MedicineListScreen(
     showAddButton: Boolean = true
 ) {
     val context = LocalContext.current
+    val scope = rememberCoroutineScope()
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var medicineReminders by remember { mutableStateOf<Map<String, List<com.bardino.dozi.core.data.model.Medicine>>>(emptyMap()) }
     var isVisible by remember { mutableStateOf(false) }
@@ -57,7 +56,7 @@ fun MedicineListScreen(
             medicines = MedicineRepository.loadMedicines(context)
 
             // Firestore'dan hatırlatmaları yükle
-            CoroutineScope(Dispatchers.IO).launch {
+            scope.launch(Dispatchers.IO) {
                 try {
                     val firestoreRepo = com.bardino.dozi.core.data.repository.MedicineRepository()
                     val allReminders = firestoreRepo.getAllMedicines()
@@ -69,7 +68,7 @@ fun MedicineListScreen(
                     }
 
                     // UI thread'de güncelle
-                    CoroutineScope(Dispatchers.Main).launch {
+                    launch(Dispatchers.Main) {
                         medicineReminders = remindersMap
                     }
                 } catch (e: Exception) {
@@ -267,33 +266,30 @@ fun MedicineListScreen(
                                         onAddReminder = onNavigateToAddReminder?.let { callback ->
                                             { callback(medicine.id) }
                                         },
-                                        onReminderClick = onNavigateToReminderDetail
+                                        onReminderClick = onNavigateToReminderDetail,
+                                        onEdit = { onNavigateToDetail(medicine.id) },
+                                        onDelete = { showDeleteConfirm = true }
                                     )
                                 }
-                            ModernMedicineCard(
-                                medicine = medicine,
-                                onClick = { onNavigateToDetail(medicine.id) },
-                                onEdit = { onNavigateToDetail(medicine.id) },
-                                onDelete = { showDeleteConfirm = true }
                             )
-                        }
 
-                        if (showDeleteConfirm) {
-                            DeleteConfirmDialog(
-                                medicineName = medicine.name,
-                                onConfirm = {
-                                    MedicineRepository.deleteMedicine(context, medicine.id)
-                                    medicines = MedicineRepository.loadMedicines(context)
-                                    Toast.makeText(
-                                        context,
-                                        "${medicine.name} silindi",
-                                        Toast.LENGTH_SHORT
-                                    ).show()
-                                    showDeleteConfirm = false
-                                    dismissed = true
-                                },
-                                onDismiss = { showDeleteConfirm = false }
-                            )
+                            if (showDeleteConfirm) {
+                                DeleteConfirmDialog(
+                                    medicineName = medicine.name,
+                                    onConfirm = {
+                                        MedicineRepository.deleteMedicine(context, medicine.id)
+                                        medicines = MedicineRepository.loadMedicines(context)
+                                        Toast.makeText(
+                                            context,
+                                            "${medicine.name} silindi",
+                                            Toast.LENGTH_SHORT
+                                        ).show()
+                                        showDeleteConfirm = false
+                                        dismissed = true
+                                    },
+                                    onDismiss = { showDeleteConfirm = false }
+                                )
+                            }
                         }
                     }
 
@@ -305,12 +301,14 @@ fun MedicineListScreen(
 }
 
 @Composable
-private fun ModernMedicineCard(
+fun ModernMedicineCard(
     medicine: Medicine,
     onClick: () -> Unit,
     reminders: List<com.bardino.dozi.core.data.model.Medicine> = emptyList(),
     onAddReminder: (() -> Unit)? = null,
-    onReminderClick: ((String) -> Unit)? = null
+    onReminderClick: ((String) -> Unit)? = null,
+    onEdit: () -> Unit = {},
+    onDelete: () -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(
@@ -319,107 +317,106 @@ private fun ModernMedicineCard(
     )
 
     Card(
-        onClick = onClick,
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .shadow(8.dp, RoundedCornerShape(24.dp)),
         shape = RoundedCornerShape(24.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp)
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
+        onClick = onClick
     ) {
         Column {
-            Box {
-                // Dekoratif background pattern
-                Box(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(8.dp)
-                        .background(
-                            brush = Brush.horizontalGradient(
-                                listOf(
-                                    DoziTurquoise.copy(alpha = 0.8f),
-                                    DoziBlue.copy(alpha = 0.6f)
-                                )
-                            ),
-                            shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
-                        )
-                )
+            // Üst renkli şerit
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(8.dp)
+                    .background(
+                        brush = Brush.horizontalGradient(
+                            listOf(
+                                DoziTurquoise.copy(alpha = 0.8f),
+                                DoziBlue.copy(alpha = 0.6f)
+                            )
+                        ),
+                        shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
+                    )
+            )
 
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(top = 8.dp)
-                        .padding(horizontal = 20.dp, vertical = 20.dp),
-                    verticalArrangement = Arrangement.spacedBy(16.dp)
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 20.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.Top
                 ) {
-                    // Başlık kısmı
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = Alignment.Top
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(6.dp)
                     ) {
-                        Column(
-                            modifier = Modifier.weight(1f),
-                            verticalArrangement = Arrangement.spacedBy(6.dp)
-                        ) {
-                            Text(
-                                text = medicine.name,
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Text(
-                                text = medicine.dosage,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-
-                        Surface(
-                            shape = CircleShape,
-                            color = DoziTurquoise.copy(alpha = 0.1f)
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(10.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Icon(
-                                    Icons.Default.ChevronRight,
-                                    contentDescription = null,
-                                    tint = DoziTurquoise,
-                                    modifier = Modifier.size(24.dp)
-                                )
-                            }
-                        }
-                    }
-
-                    // Bilgi Satırları
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(10.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        InfoTag(
-                            Icons.Default.Inventory,
-                            "Stok: ${medicine.stock}",
-                            when {
-                                medicine.stock < 5 -> DoziRed
-                                medicine.stock < 10 -> WarningOrange
-                                else -> SuccessGreen
-                            }
+                        Text(
+                            text = medicine.name,
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                        Text(
+                            text = medicine.dosage,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontWeight = FontWeight.Medium
                         )
                     }
+
+                    Surface(
+                        shape = CircleShape,
+                        color = DoziTurquoise.copy(alpha = 0.1f)
+                    ) {
+                        Box(
+                            modifier = Modifier.padding(10.dp),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Icon(
+                                Icons.Default.ChevronRight,
+                                contentDescription = null,
+                                tint = DoziTurquoise,
+                                modifier = Modifier.size(24.dp)
+                            )
+                        }
+                    }
+                }
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    InfoTag(
+                        Icons.Default.Inventory,
+                        "Stok: ${medicine.stock}",
+                        when {
+                            medicine.stock < 5 -> DoziRed
+                            medicine.stock < 10 -> WarningOrange
+                            else -> SuccessGreen
+                        }
+                    )
                 }
             }
 
             // Hatırlatmalar bölümü
             if (reminders.isNotEmpty() || onAddReminder != null) {
+
                 HorizontalDivider(color = Gray200.copy(alpha = 0.5f))
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
                         .clickable { expanded = !expanded }
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
+                        .padding(horizontal = 20.dp, vertical = 16.dp),
                     horizontalArrangement = Arrangement.SpaceBetween,
                     verticalAlignment = Alignment.CenterVertically
                 ) {
@@ -440,70 +437,57 @@ private fun ModernMedicineCard(
                             color = DoziCoral
                         )
                     }
+
                     Icon(
                         Icons.Default.ExpandMore,
-                        contentDescription = if (expanded) "Kapat" else "Aç",
+                        contentDescription = null,
                         tint = DoziCoral,
                         modifier = Modifier
                             .size(24.dp)
                             .rotate(rotationAngle)
                     )
                 }
-            }
 
-            // Expandable hatırlatma listesi
-            AnimatedVisibility(
-                visible = expanded,
-                enter = expandVertically() + fadeIn(),
-                exit = shrinkVertically() + fadeOut()
-            ) {
-                Column(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .background(Gray100.copy(alpha = 0.3f))
-                        .padding(horizontal = 20.dp, vertical = 12.dp),
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                AnimatedVisibility(
+                    visible = expanded,
+                    enter = expandVertically() + fadeIn(),
+                    exit = shrinkVertically() + fadeOut()
                 ) {
-                    if (reminders.isEmpty()) {
-                        Text(
-                            text = "Henüz hatırlatma eklenmemiş",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = Gray600,
-                            modifier = Modifier.padding(vertical = 8.dp)
-                        )
-                    } else {
-                        reminders.forEach { reminder ->
-                            ReminderListItem(
-                                reminder = reminder,
-                                onClick = { onReminderClick?.invoke(reminder.id) }
-                            )
-                        }
-                    }
+                    Column(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 20.dp, vertical = 12.dp),
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
 
-                    // Yeni hatırlatma ekle butonu
-                    if (onAddReminder != null) {
-                        OutlinedButton(
-                            onClick = onAddReminder,
-                            modifier = Modifier.fillMaxWidth(),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = DoziCoral
-                            ),
-                            border = BorderStroke(
-                                1.dp,
-                                DoziCoral
-                            )
-                        ) {
-                            Icon(
-                                Icons.Default.Add,
-                                contentDescription = null,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Spacer(Modifier.width(8.dp))
+                        if (reminders.isEmpty()) {
                             Text(
-                                "Yeni Hatırlatma Ekle",
-                                fontWeight = FontWeight.Medium,
-                                style = MaterialTheme.typography.bodyMedium
+                                "Henüz hatırlatma eklenmemiş",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = Gray600
                             )
+                        } else {
+                            reminders.forEach { reminder ->
+                                ReminderListItem(
+                                    reminder = reminder,
+                                    onClick = { onReminderClick?.invoke(reminder.id) }
+                                )
+                            }
+                        }
+
+                        if (onAddReminder != null) {
+                            OutlinedButton(
+                                onClick = onAddReminder,
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = DoziCoral
+                                ),
+                                border = BorderStroke(1.dp, DoziCoral)
+                            ) {
+                                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
+                                Spacer(Modifier.width(8.dp))
+                                Text("Yeni Hatırlatma Ekle")
+                            }
                         }
                     }
                 }
@@ -551,12 +535,14 @@ private fun ReminderListItem(
                         color = Gray900
                     )
                 }
+
                 Text(
                     text = "${reminder.dosage} ${reminder.unit} • ${reminder.frequency}",
                     style = MaterialTheme.typography.bodySmall,
                     color = Gray600
                 )
             }
+
             Icon(
                 Icons.Default.ChevronRight,
                 contentDescription = null,
@@ -566,7 +552,6 @@ private fun ReminderListItem(
         }
     }
 }
-
 
 @Composable
 private fun InfoTag(
