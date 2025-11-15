@@ -33,7 +33,11 @@ data class Medicine(
     val activeIngredient: String? = null,       // Etken madde
 
     // 🚨 Acil durum ve kritiklik ayarları
-    val criticalityLevel: MedicineCriticality = MedicineCriticality.ROUTINE  // İlaç kritiklik seviyesi
+    val criticalityLevel: MedicineCriticality = MedicineCriticality.ROUTINE,  // İlaç kritiklik seviyesi
+
+    // 💡 Motivasyon ve görselleştirme
+    val motivationReason: String = "",           // "Şeker hastalığım için", "Sağlıklı kalmak için"
+    val color: MedicineColor = MedicineColor.BLUE  // İlaç renk kategorisi
 )
 
 /**
@@ -43,4 +47,18 @@ enum class MedicineCriticality {
     ROUTINE,      // Normal ilaç - DND'ye uyar
     IMPORTANT,    // Önemli ilaç - DND'de sessiz bildirim
     CRITICAL      // Kritik ilaç - DND'yi bypass eder
+}
+
+/**
+ * İlaç renk kategorileri (görsel ayırt etme için)
+ */
+enum class MedicineColor(val displayName: String, val hexColor: String, val emoji: String) {
+    BLUE("Mavi", "#2196F3", "💙"),        // Genel ilaçlar
+    RED("Kırmızı", "#F44336", "❤️"),      // Kalp/tansiyon
+    GREEN("Yeşil", "#4CAF50", "💚"),      // Vitamin/takviye
+    YELLOW("Sarı", "#FFEB3B", "💛"),      // Ağrı kesici
+    PURPLE("Mor", "#9C27B0", "💜"),       // Antibiyotik
+    ORANGE("Turuncu", "#FF9800", "🧡"),   // Şeker ilaçları
+    PINK("Pembe", "#E91E63", "💗"),       // Hormon
+    BROWN("Kahverengi", "#795548", "🤎")  // Diğer
 }

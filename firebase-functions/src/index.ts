@@ -363,6 +363,87 @@ export const sendMedicationReminderToBuddies = onCall(
 );
 
 /**
+ * 🎯 Buddy'ye "dürtme" göndermek için callable function
+ * Kullanıcı buddy'sine hatırlatma göndermek istediğinde çağrılır
+ */
+export const sendBuddyNudge = onCall(
+  {region: REGION},
+  async (request) => {
+    if (!request.auth) {
+      throw new HttpsError("unauthenticated", "Kullanıcı giriş yapmamış");
+    }
+
+    const {buddyUserId, message} = request.data;
+    const fromUserId = request.auth.uid;
+
+    console.log(`👋 Buddy nudge: ${fromUserId} → ${buddyUserId}`);
+
+    try {
+      // Gönderen kullanıcının bilgilerini al
+      const fromUserDoc = await db.collection("users").doc(fromUserId).get();
+      const fromUser = fromUserDoc.data();
+
+      if (!fromUser) {
+        throw new HttpsError("not-found", "Kullanıcı bulunamadı");
+      }
+
+      // Alıcının FCM token'ını al
+      const buddyUserDoc = await db.collection("users").doc(buddyUserId).get();
+      const buddyUser = buddyUserDoc.data();
+
+      if (!buddyUser || !buddyUser.fcmToken) {
+        throw new HttpsError("not-found", "Buddy bulunamadı veya FCM token yok");
+      }
+
+      // Push notification gönder
+      const fromName = fromUser.name || "Buddy'niz";
+      const notificationMessage = {
+        token: buddyUser.fcmToken,
+        notification: {
+          title: `💌 ${fromName} seni düşünüyor`,
+          body: message || "Bugün ilacını almayı unutma!",
+        },
+        data: {
+          type: "buddy_nudge",
+          fromUserId: fromUserId,
+          fromUserName: fromName,
+          message: message || "",
+        },
+        android: {
+          priority: "high" as const,
+          notification: {
+            sound: "default",
+            channelId: "dozi_med_channel",
+          },
+        },
+      };
+
+      await messaging.send(notificationMessage);
+      console.log("✅ Buddy nudge gönderildi");
+
+      // Notification kaydı oluştur
+      await db.collection("notifications").add({
+        userId: buddyUserId,
+        type: "BUDDY_NUDGE",
+        title: notificationMessage.notification.title,
+        body: notificationMessage.notification.body,
+        data: notificationMessage.data,
+        isRead: false,
+        isSent: true,
+        sentAt: admin.firestore.FieldValue.serverTimestamp(),
+        createdAt: admin.firestore.FieldValue.serverTimestamp(),
+        priority: "HIGH",
+      });
+
+      return {success: true, message: "Buddy'nize hatırlatma gönderildi"};
+    } catch (error) {
+      console.error("❌ sendBuddyNudge hatası:", error);
+      throw new HttpsError("internal", "Bildirim gönderilemedi");
+    }
+  }
+);
+
+/**
  * ⚠️ İlaç kaçırma kontrolü
  * Her 15 dakikada bir çalışır
  */
