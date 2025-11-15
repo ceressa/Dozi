@@ -166,7 +166,13 @@ fun ReminderListScreen(
                                 medicine = medicine,
                                 onDelete = {
                                     CoroutineScope(Dispatchers.IO).launch {
+                                        // 🚫 Önce alarmları iptal et
+                                        com.bardino.dozi.notifications.ReminderScheduler.cancelReminders(
+                                            context, medicine.id, medicine.times
+                                        )
+                                        // Sonra veritabanından sil
                                         medicineRepository.deleteMedicine(medicine.id)
+                                        android.util.Log.d("ReminderListScreen", "🗑️ ${medicine.name} silindi ve alarmları iptal edildi")
                                     }
                                 },
                                 onEdit = {

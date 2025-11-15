@@ -82,6 +82,7 @@
                 <action android:name="ACTION_SNOOZE" />
                 <action android:name="ACTION_SKIP" />
                 <action android:name="ACTION_SNOOZE_TRIGGER" />
+                <action android:name="com.bardino.dozi.ACTION_REMINDER_TRIGGER" />
             </intent-filter>
         </receiver>
 
