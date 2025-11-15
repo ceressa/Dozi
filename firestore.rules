@@ -221,6 +221,66 @@ service cloud.firestore {
 
       // 🗑️ SİLME: Sadece kendi profilini silebilir
       allow delete: if isOwner(userId);
+
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 💊 İLAÇLAR SUBCOLLECTION (users/{userId}/medicines)
+      // ═══════════════════════════════════════════════════════════════════════
+      match /medicines/{medicineId} {
+        // 📖 OKUMA: Kullanıcı kendi ilaçlarını veya badi olarak izin varsa okuyabilir
+        allow read: if isAuthenticated() && (
+          isOwner(userId) ||
+          canViewRemindersOf(userId)
+        );
+
+        // ✏️ OLUŞTURMA: Kullanıcı kendi ilacını veya badi olarak izin varsa ekleyebilir
+        allow create: if isAuthenticated() && (
+          isOwner(userId) ||
+          canAddMedicineFor(userId)
+        );
+
+        // 🔄 GÜNCELLEME: Kullanıcı kendi ilacını veya badi olarak izin varsa güncelleyebilir
+        allow update: if isAuthenticated() && (
+          isOwner(userId) ||
+          canEditRemindersOf(userId)
+        );
+
+        // 🗑️ SİLME: Kullanıcı kendi ilacını veya badi olarak izin varsa silebilir
+        allow delete: if isAuthenticated() && (
+          isOwner(userId) ||
+          canDeleteMedicineOf(userId)
+        );
+      }
+
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // ⏰ HATIRLATICILAR SUBCOLLECTION (users/{userId}/reminders)
+      // ═══════════════════════════════════════════════════════════════════════
+      match /reminders/{reminderId} {
+        // 📖 OKUMA: Kullanıcı kendi hatırlatıcılarını veya badi olarak izin varsa okuyabilir
+        allow read: if isAuthenticated() && (
+          isOwner(userId) ||
+          canViewRemindersOf(userId)
+        );
+
+        // ✏️ OLUŞTURMA: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa ekleyebilir
+        allow create: if isAuthenticated() && (
+          isOwner(userId) ||
+          canEditRemindersOf(userId)
+        );
+
+        // 🔄 GÜNCELLEME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa güncelleyebilir
+        allow update: if isAuthenticated() && (
+          isOwner(userId) ||
+          canEditRemindersOf(userId)
+        );
+
+        // 🗑️ SİLME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa silebilir
+        allow delete: if isAuthenticated() && (
+          isOwner(userId) ||
+          canEditRemindersOf(userId)
+        );
+      }
     }
 
 
@@ -325,94 +385,6 @@ service cloud.firestore {
       // 🗑️ SİLME: Sadece istek gönderen kişi silebilir
       allow delete: if isAuthenticated() &&
                        resource.data.fromUserId == request.auth.uid;
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // 💊 BÖLÜM 5: İLAÇLAR (MEDICINES COLLECTION)
-    // ═══════════════════════════════════════════════════════════════════════
-    // Kullanıcıların ilaç bilgilerini saklar: isim, dozaj, form, renk vb.
-    //
-    // 🔒 Güvenlik Politikası:
-    //    - Kullanıcı kendi ilaçlarını okuyabilir
-    //    - Badi, canViewReminders izni varsa ilaçları okuyabilir
-    //    - Kullanıcı kendi ilacını ekleyebilir
-    //    - Badi, canAddMedicine izni varsa ilaç ekleyebilir ✅
-    //    - Kullanıcı kendi ilacını güncelleyebilir
-    //    - Badi, canEditReminders izni varsa ilaç güncelleyebilir ✅
-    //    - Kullanıcı kendi ilacını silebilir
-    //    - Badi, canDeleteMedicine izni varsa ilaç silebilir ✅
-    // ═══════════════════════════════════════════════════════════════════════
-
-    match /medicines/{medicineId} {
-      // 📖 OKUMA: Kullanıcı kendi ilaçlarını veya badi olarak izin varsa okuyabilir
-      allow read: if isAuthenticated() && (
-        isOwner(resource.data.userId) ||
-        canViewRemindersOf(resource.data.userId)
-      );
-
-      // ✏️ OLUŞTURMA: Kullanıcı kendi ilacını veya badi olarak izin varsa ekleyebilir
-      allow create: if isAuthenticated() && (
-        isOwner(request.resource.data.userId) ||
-        canAddMedicineFor(request.resource.data.userId)
-      );
-
-      // 🔄 GÜNCELLEME: Kullanıcı kendi ilacını veya badi olarak izin varsa güncelleyebilir
-      allow update: if isAuthenticated() && (
-        isOwner(resource.data.userId) ||
-        canEditRemindersOf(resource.data.userId)
-      ) &&
-      request.resource.data.userId == resource.data.userId;
-
-      // 🗑️ SİLME: Kullanıcı kendi ilacını veya badi olarak izin varsa silebilir
-      allow delete: if isAuthenticated() && (
-        isOwner(resource.data.userId) ||
-        canDeleteMedicineOf(resource.data.userId)
-      );
-    }
-
-
-    // ═══════════════════════════════════════════════════════════════════════
-    // ⏰ BÖLÜM 6: HATIRLATICILAR (REMINDERS COLLECTION)
-    // ═══════════════════════════════════════════════════════════════════════
-    // İlaç hatırlatıcılarını yönetir: saat, frekans, notlar vb.
-    //
-    // 🔒 Güvenlik Politikası:
-    //    - Kullanıcı kendi hatırlatıcılarını okuyabilir
-    //    - Badi, canViewReminders izni varsa hatırlatıcıları okuyabilir
-    //    - Kullanıcı kendi hatırlatıcısını ekleyebilir
-    //    - Badi, canEditReminders izni varsa hatırlatıcı ekleyebilir ✅
-    //    - Kullanıcı kendi hatırlatıcısını güncelleyebilir
-    //    - Badi, canEditReminders izni varsa hatırlatıcı güncelleyebilir ✅
-    //    - Kullanıcı kendi hatırlatıcısını silebilir
-    //    - Badi, canEditReminders izni varsa hatırlatıcı silebilir ✅
-    // ═══════════════════════════════════════════════════════════════════════
-
-    match /reminders/{reminderId} {
-      // 📖 OKUMA: Kullanıcı kendi hatırlatıcılarını veya badi olarak izin varsa okuyabilir
-      allow read: if isAuthenticated() && (
-        isOwner(resource.data.userId) ||
-        canViewRemindersOf(resource.data.userId)
-      );
-
-      // ✏️ OLUŞTURMA: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa ekleyebilir
-      allow create: if isAuthenticated() && (
-        isOwner(request.resource.data.userId) ||
-        canEditRemindersOf(request.resource.data.userId)
-      );
-
-      // 🔄 GÜNCELLEME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa güncelleyebilir
-      allow update: if isAuthenticated() && (
-        isOwner(resource.data.userId) ||
-        canEditRemindersOf(resource.data.userId)
-      ) &&
-      request.resource.data.userId == resource.data.userId;
-
-      // 🗑️ SİLME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa silebilir
-      allow delete: if isAuthenticated() && (
-        isOwner(resource.data.userId) ||
-        canEditRemindersOf(resource.data.userId)
-      );
     }
 
 
