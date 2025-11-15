@@ -53,10 +53,10 @@ fun NotificationSoundSettingsScreen(
                 title = "Bildirim Sesi",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                actions = {
-                    if (isPremium) {
-                        PremiumBadge(size = 24.dp)
-                    }
+                actions = if (isPremium) {
+                    { PremiumBadge(size = 24.dp) }
+                } else {
+                    null
                 }
             )
         },
