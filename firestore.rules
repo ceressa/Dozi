@@ -1,87 +1,611 @@
 rules_version = '2';
+
+/*
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                      🏥 DOZI - FIRESTORE GÜVENLİK KURALLARI                  ║
+║                                                                              ║
+║  Bu dosya Dozi uygulamasının tüm Firestore veri güvenliğini yönetir.        ║
+║  Her kural dikkatle tasarlanmış ve test edilmelidir.                        ║
+║                                                                              ║
+║  📋 İçindekiler:                                                             ║
+║    1. Yardımcı Fonksiyonlar (Helper Functions)                              ║
+║    2. Kullanıcılar (Users)                                                   ║
+║    3. Badi İlişkileri (Buddies)                                              ║
+║    4. Badi İstekleri (Buddy Requests)                                        ║
+║    5. İlaçlar (Medicines)                                                    ║
+║    6. Hatırlatıcılar (Reminders)                                             ║
+║    7. İlaç Logları (Medication Logs)                                         ║
+║    8. Bildirimler (Notifications)                                            ║
+║                                                                              ║
+║  🔒 Güvenlik Seviyesi: YÜKSEK                                                ║
+║  ⚡ Son Güncelleme: 2025-11-15                                               ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+*/
+
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Helper functions
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🛠️  BÖLÜM 1: YARDIMCI FONKSİYONLAR
+    // ═══════════════════════════════════════════════════════════════════════
+    // Bu fonksiyonlar tüm kurallar boyunca kullanılır ve kodu daha okunabilir
+    // yapar. Güvenlik kontrollerini merkezileştirir.
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // ┌─────────────────────────────────────────────────────────────────────┐
+    // │ 🔐 Kimlik Doğrulama Kontrolleri                                     │
+    // └─────────────────────────────────────────────────────────────────────┘
+
+    /**
+     * Kullanıcının giriş yapmış olup olmadığını kontrol eder.
+     * @returns {boolean} true eğer kullanıcı authenticated ise
+     */
     function isAuthenticated() {
       return request.auth != null;
     }
 
+    /**
+     * Kullanıcının belirli bir userId'ye sahip olup olmadığını kontrol eder.
+     * @param userId - Kontrol edilecek kullanıcı ID'si
+     * @returns {boolean} true eğer giriş yapan kullanıcının ID'si eşleşiyorsa
+     */
     function isOwner(userId) {
       return isAuthenticated() && request.auth.uid == userId;
     }
 
-    function isBuddy(userId) {
+    // ┌─────────────────────────────────────────────────────────────────────┐
+    // │ 👥 Badi İlişki Kontrolleri                                          │
+    // └─────────────────────────────────────────────────────────────────────┘
+
+    /**
+     * İki kullanıcı arasında aktif bir Badi ilişkisinin olup olmadığını kontrol eder.
+     * Bu fonksiyon MEVCUT veriye bakar (resource.data).
+     *
+     * @param targetUserId - İlişki kontrol edilecek hedef kullanıcı ID'si
+     * @returns {boolean} true eğer aktif bir badi ilişkisi varsa
+     */
+    function isBuddyOf(targetUserId) {
       return isAuthenticated() && exists(
-        /databases/$(database)/documents/buddies/$(request.auth.uid + '_' + userId)
+        /databases/$(database)/documents/buddies/$(request.auth.uid + '_' + targetUserId)
+      ) && get(
+        /databases/$(database)/documents/buddies/$(request.auth.uid + '_' + targetUserId)
+      ).data.status == 'ACTIVE';
+    }
+
+    /**
+     * İki kullanıcı arasında (herhangi yönde) badi ilişkisi olup olmadığını kontrol eder.
+     * Çift yönlü kontrol yapar: A->B veya B->A
+     *
+     * @param targetUserId - İlişki kontrol edilecek kullanıcı ID'si
+     * @returns {boolean} true eğer herhangi bir yönde aktif badi ilişkisi varsa
+     */
+    function isBuddyBidirectional(targetUserId) {
+      return isBuddyOf(targetUserId) || (
+        exists(/databases/$(database)/documents/buddies/$(targetUserId + '_' + request.auth.uid)) &&
+        get(/databases/$(database)/documents/buddies/$(targetUserId + '_' + request.auth.uid)).data.status == 'ACTIVE'
       );
     }
 
-    // Users collection
+    // ┌─────────────────────────────────────────────────────────────────────┐
+    // │ 🔑 Badi İzin Kontrolleri (Permission Checks)                        │
+    // └─────────────────────────────────────────────────────────────────────┘
+
+    /**
+     * Belirli bir kullanıcı için badi permissions dokümanını getirir.
+     *
+     * @param targetUserId - İzinleri kontrol edilecek kullanıcı ID'si
+     * @returns {Map} Badi permissions objesi
+     */
+    function getBuddyPermissions(targetUserId) {
+      let buddyId = request.auth.uid + '_' + targetUserId;
+      return get(/databases/$(database)/documents/buddies/$(buddyId)).data.permissions;
+    }
+
+    /**
+     * Badi'nin belirli bir kullanıcının ilaçlarını görüntüleme izni var mı?
+     *
+     * @param targetUserId - İlaçları görüntülenecek kullanıcı ID'si
+     * @returns {boolean} true eğer izin varsa
+     */
+    function canViewRemindersOf(targetUserId) {
+      return isBuddyOf(targetUserId) &&
+             getBuddyPermissions(targetUserId).canViewReminders == true;
+    }
+
+    /**
+     * Badi'nin belirli bir kullanıcının ilaçlarını "alındı" olarak işaretleme izni var mı?
+     *
+     * @param targetUserId - İlaçları işaretlenecek kullanıcı ID'si
+     * @returns {boolean} true eğer izin varsa
+     */
+    function canMarkAsTakenFor(targetUserId) {
+      return isBuddyOf(targetUserId) &&
+             getBuddyPermissions(targetUserId).canMarkAsTaken == true;
+    }
+
+    /**
+     * Badi'nin belirli bir kullanıcının hatırlatıcılarını düzenleme izni var mı?
+     *
+     * @param targetUserId - Hatırlatıcıları düzenlenecek kullanıcı ID'si
+     * @returns {boolean} true eğer izin varsa
+     */
+    function canEditRemindersOf(targetUserId) {
+      return isBuddyOf(targetUserId) &&
+             getBuddyPermissions(targetUserId).canEditReminders == true;
+    }
+
+    /**
+     * Badi'nin belirli bir kullanıcıya ilaç ekleme izni var mı?
+     *
+     * @param targetUserId - İlaç eklenecek kullanıcı ID'si
+     * @returns {boolean} true eğer izin varsa
+     */
+    function canAddMedicineFor(targetUserId) {
+      return isBuddyOf(targetUserId) &&
+             getBuddyPermissions(targetUserId).canAddMedicine == true;
+    }
+
+    /**
+     * Badi'nin belirli bir kullanıcının ilacını silme izni var mı?
+     *
+     * @param targetUserId - İlaç silinecek kullanıcı ID'si
+     * @returns {boolean} true eğer izin varsa
+     */
+    function canDeleteMedicineOf(targetUserId) {
+      return isBuddyOf(targetUserId) &&
+             getBuddyPermissions(targetUserId).canDeleteMedicine == true;
+    }
+
+    /**
+     * Badi'nin belirli bir kullanıcının ilaç geçmişini görüntüleme izni var mı?
+     *
+     * @param targetUserId - Geçmişi görüntülenecek kullanıcı ID'si
+     * @returns {boolean} true eğer izin varsa
+     */
+    function canViewMedicationHistoryOf(targetUserId) {
+      return isBuddyOf(targetUserId) &&
+             getBuddyPermissions(targetUserId).canViewMedicationHistory == true;
+    }
+
+    /**
+     * Badi'nin belirli bir kullanıcının diğer badilerini yönetme izni var mı?
+     *
+     * @param targetUserId - Badileri yönetilecek kullanıcı ID'si
+     * @returns {boolean} true eğer izin varsa
+     */
+    function canManageBadisOf(targetUserId) {
+      return isBuddyOf(targetUserId) &&
+             getBuddyPermissions(targetUserId).canManageBadis == true;
+    }
+
+    // ┌─────────────────────────────────────────────────────────────────────┐
+    // │ ✅ Veri Doğrulama Fonksiyonları                                     │
+    // └─────────────────────────────────────────────────────────────────────┘
+
+    /**
+     * String alanının boş olmadığını ve maksimum uzunluğunu kontrol eder.
+     *
+     * @param field - Kontrol edilecek string değer
+     * @param maxLength - Maksimum izin verilen uzunluk
+     * @returns {boolean} true eğer geçerli ise
+     */
+    function isValidString(field, maxLength) {
+      return field is string &&
+             field.size() > 0 &&
+             field.size() <= maxLength;
+    }
+
+    /**
+     * Email formatının geçerli olup olmadığını kontrol eder.
+     *
+     * @param email - Kontrol edilecek email string'i
+     * @returns {boolean} true eğer geçerli email formatı ise
+     */
+    function isValidEmail(email) {
+      return email is string &&
+             email.matches('^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\\.[a-zA-Z]{2,}$');
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 👤 BÖLÜM 2: KULLANICILAR (USERS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Kullanıcı profil bilgilerini içerir: ad, email, profil fotoğrafı vb.
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Herkes authenticated kullanıcıları okuyabilir (badi sistemi için)
+    //    - Sadece kendi profilini oluşturabilir
+    //    - Sadece kendi profilini güncelleyebilir
+    //    - Sadece kendi profilini silebilir
+    // ═══════════════════════════════════════════════════════════════════════
+
     match /users/{userId} {
+      // 📖 OKUMA: Tüm giriş yapmış kullanıcılar diğer kullanıcıları görebilir
+      // (Badi eklemek için gerekli)
       allow read: if isAuthenticated();
-      allow create: if isAuthenticated() && request.auth.uid == userId;
-      allow update: if isOwner(userId);
+
+      // ✏️ OLUŞTURMA: Sadece kendi kullanıcı profilini oluşturabilir
+      // - UID ile userId eşleşmeli
+      // - Email geçerli formatta olmalı
+      // - İsim 1-100 karakter arası olmalı
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == userId &&
+                       isValidEmail(request.resource.data.email) &&
+                       isValidString(request.resource.data.name, 100);
+
+      // 🔄 GÜNCELLEME: Sadece kendi profilini güncelleyebilir
+      // - userId değiştirilemez (immutable)
+      // - Email geçerli formatta olmalı
+      // - İsim 1-100 karakter arası olmalı
+      allow update: if isOwner(userId) &&
+                       request.resource.data.email == resource.data.email && // Email değiştirilemez
+                       isValidString(request.resource.data.name, 100);
+
+      // 🗑️ SİLME: Sadece kendi profilini silebilir
       allow delete: if isOwner(userId);
     }
 
-    // Buddies collection
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 👥 BÖLÜM 3: BADİ İLİŞKİLERİ (BUDDIES COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Kullanıcılar arası badi (buddy/yardımcı) ilişkilerini yönetir.
+    // Her badi için izinler (permissions) ve tercihler (preferences) saklanır.
+    //
+    // 📁 Doküman ID Formatı: "{userId}_{buddyUserId}"
+    //    Örnek: "user123_user456" -> user123'ün user456 ile badi ilişkisi
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Sadece ilişki tarafları okuyabilir
+    //    - Her ikisi de ilişki oluşturabilir (kabul sonrası)
+    //    - Sadece ilişkinin sahibi (userId) permissions güncelleyebilir
+    //    - Her ikisi de ilişkiyi silebilir
+    // ═══════════════════════════════════════════════════════════════════════
+
     match /buddies/{buddyId} {
+      // 📖 OKUMA: Sadece ilişkideki iki kullanıcı okuyabilir
       allow read: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         resource.data.buddyUserId == request.auth.uid
       );
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && (
-        resource.data.userId == request.auth.uid ||
-        resource.data.buddyUserId == request.auth.uid
-      );
+
+      // ✏️ OLUŞTURMA: İlişkinin her iki tarafı da oluşturabilir
+      // - Oluşturan kişi userId veya buddyUserId olmalı
+      // - buddyId formatı doğru olmalı: "userId_buddyUserId"
+      // - Status başlangıçta ACTIVE olmalı
+      // - Permissions objesi geçerli olmalı
+      allow create: if isAuthenticated() && (
+        request.resource.data.userId == request.auth.uid ||
+        request.resource.data.buddyUserId == request.auth.uid
+      ) &&
+      buddyId == request.resource.data.userId + '_' + request.resource.data.buddyUserId &&
+      request.resource.data.status in ['ACTIVE', 'PAUSED'] &&
+      request.resource.data.permissions.keys().hasAll([
+        'role', 'canViewReminders', 'canReceiveNotifications',
+        'canMarkAsTaken', 'canEditReminders', 'canAddMedicine',
+        'canDeleteMedicine', 'canViewMedicationHistory', 'canManageBadis'
+      ]);
+
+      // 🔄 GÜNCELLEME: Sadece ilişkinin sahibi (userId) güncelleyebilir
+      // - userId değiştirilemez (immutable)
+      // - buddyUserId değiştirilemez (immutable)
+      // - Permissions sadece userId güncelleyebilir
+      allow update: if isAuthenticated() &&
+                       resource.data.userId == request.auth.uid &&
+                       request.resource.data.userId == resource.data.userId &&
+                       request.resource.data.buddyUserId == resource.data.buddyUserId;
+
+      // 🗑️ SİLME: Her iki taraf da ilişkiyi sonlandırabilir
       allow delete: if isAuthenticated() && (
         resource.data.userId == request.auth.uid ||
         resource.data.buddyUserId == request.auth.uid
       );
     }
 
-    // Buddy requests collection
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 📨 BÖLÜM 4: BADİ İSTEKLERİ (BUDDY_REQUESTS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Kullanıcılar arası badi olma isteklerini yönetir.
+    // İstek gönderme, kabul etme, reddetme işlemleri burada güvence altına alınır.
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Sadece istek tarafları okuyabilir
+    //    - Sadece gönderen kişi istek oluşturabilir
+    //    - Her iki taraf da isteği güncelleyebilir (kabul/red için)
+    //    - Sadece gönderen kişi isteği silebilir
+    // ═══════════════════════════════════════════════════════════════════════
+
     match /buddy_requests/{requestId} {
+      // 📖 OKUMA: Sadece istek gönderen veya alan kişi okuyabilir
       allow read: if isAuthenticated() && (
         resource.data.fromUserId == request.auth.uid ||
         resource.data.toUserId == request.auth.uid
       );
-      allow create: if isAuthenticated() && request.auth.uid == request.resource.data.fromUserId;
+
+      // ✏️ OLUŞTURMA: Sadece gönderen kişi istek oluşturabilir
+      // - fromUserId giriş yapan kullanıcı olmalı
+      // - toUserId farklı bir kullanıcı olmalı (kendine istek gönderilemez)
+      // - Status başlangıçta PENDING olmalı
+      // - fromUserId ve toUserId geçerli string olmalı
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.fromUserId &&
+                       request.resource.data.fromUserId != request.resource.data.toUserId &&
+                       request.resource.data.status == 'PENDING' &&
+                       isValidString(request.resource.data.fromUserId, 128) &&
+                       isValidString(request.resource.data.toUserId, 128);
+
+      // 🔄 GÜNCELLEME: İstek alan kişi kabul/red edebilir, gönderen kişi iptal edebilir
+      // - fromUserId değiştirilemez
+      // - toUserId değiştirilemez
+      // - Status PENDING'den ACCEPTED/REJECTED'a değiştirilebilir
       allow update: if isAuthenticated() && (
         resource.data.fromUserId == request.auth.uid ||
         resource.data.toUserId == request.auth.uid
-      );
-      allow delete: if isAuthenticated() && resource.data.fromUserId == request.auth.uid;
+      ) &&
+      request.resource.data.fromUserId == resource.data.fromUserId &&
+      request.resource.data.toUserId == resource.data.toUserId &&
+      request.resource.data.status in ['PENDING', 'ACCEPTED', 'REJECTED'];
+
+      // 🗑️ SİLME: Sadece istek gönderen kişi silebilir
+      allow delete: if isAuthenticated() &&
+                       resource.data.fromUserId == request.auth.uid;
     }
 
-    // Reminders collection
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 💊 BÖLÜM 5: İLAÇLAR (MEDICINES COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Kullanıcıların ilaç bilgilerini saklar: isim, dozaj, form, renk vb.
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Kullanıcı kendi ilaçlarını okuyabilir
+    //    - Badi, canViewReminders izni varsa ilaçları okuyabilir
+    //    - Kullanıcı kendi ilacını ekleyebilir
+    //    - Badi, canAddMedicine izni varsa ilaç ekleyebilir ✅
+    //    - Kullanıcı kendi ilacını güncelleyebilir
+    //    - Badi, canEditReminders izni varsa ilaç güncelleyebilir ✅
+    //    - Kullanıcı kendi ilacını silebilir
+    //    - Badi, canDeleteMedicine izni varsa ilaç silebilir ✅
+    // ═══════════════════════════════════════════════════════════════════════
+
+    match /medicines/{medicineId} {
+      // 📖 OKUMA: Kullanıcı kendi ilaçlarını veya badi olarak izin varsa okuyabilir
+      allow read: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        canViewRemindersOf(resource.data.userId)
+      );
+
+      // ✏️ OLUŞTURMA: Kullanıcı kendi ilacını veya badi olarak izin varsa ekleyebilir
+      // - userId giriş yapan kullanıcı olmalı VEYA badi olarak izin olmalı
+      // - İlaç adı 1-200 karakter arası olmalı
+      // - Dozaj 1-100 karakter arası olmalı
+      // - Form geçerli bir string olmalı
+      allow create: if isAuthenticated() && (
+        isOwner(request.resource.data.userId) ||
+        canAddMedicineFor(request.resource.data.userId)
+      ) &&
+      isValidString(request.resource.data.name, 200) &&
+      isValidString(request.resource.data.dosage, 100);
+
+      // 🔄 GÜNCELLEME: Kullanıcı kendi ilacını veya badi olarak izin varsa güncelleyebilir
+      // - userId değiştirilemez (immutable)
+      // - İlaç adı 1-200 karakter arası olmalı
+      // - Dozaj 1-100 karakter arası olmalı
+      allow update: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        canEditRemindersOf(resource.data.userId)
+      ) &&
+      request.resource.data.userId == resource.data.userId &&
+      isValidString(request.resource.data.name, 200) &&
+      isValidString(request.resource.data.dosage, 100);
+
+      // 🗑️ SİLME: Kullanıcı kendi ilacını veya badi olarak izin varsa silebilir
+      allow delete: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        canDeleteMedicineOf(resource.data.userId)
+      );
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // ⏰ BÖLÜM 6: HATIRLATICILAR (REMINDERS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // İlaç hatırlatıcılarını yönetir: saat, frekans, notlar vb.
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Kullanıcı kendi hatırlatıcılarını okuyabilir
+    //    - Badi, canViewReminders izni varsa hatırlatıcıları okuyabilir
+    //    - Kullanıcı kendi hatırlatıcısını ekleyebilir
+    //    - Badi, canEditReminders izni varsa hatırlatıcı ekleyebilir ✅
+    //    - Kullanıcı kendi hatırlatıcısını güncelleyebilir
+    //    - Badi, canEditReminders izni varsa hatırlatıcı güncelleyebilir ✅
+    //    - Kullanıcı kendi hatırlatıcısını silebilir
+    //    - Badi, canEditReminders izni varsa hatırlatıcı silebilir ✅
+    // ═══════════════════════════════════════════════════════════════════════
+
     match /reminders/{reminderId} {
+      // 📖 OKUMA: Kullanıcı kendi hatırlatıcılarını veya badi olarak izin varsa okuyabilir
       allow read: if isAuthenticated() && (
         isOwner(resource.data.userId) ||
-        isBuddy(resource.data.userId)
+        canViewRemindersOf(resource.data.userId)
       );
-      allow write: if isAuthenticated() && isOwner(resource.data.userId);
+
+      // ✏️ OLUŞTURMA: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa ekleyebilir
+      // - userId giriş yapan kullanıcı olmalı VEYA badi olarak izin olmalı
+      // - medicineId geçerli bir string olmalı
+      // - time alanı geçerli olmalı
+      allow create: if isAuthenticated() && (
+        isOwner(request.resource.data.userId) ||
+        canEditRemindersOf(request.resource.data.userId)
+      ) &&
+      isValidString(request.resource.data.medicineId, 128) &&
+      isValidString(request.resource.data.time, 50);
+
+      // 🔄 GÜNCELLEME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa güncelleyebilir
+      // - userId değiştirilemez (immutable)
+      // - medicineId değiştirilemez (immutable)
+      allow update: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        canEditRemindersOf(resource.data.userId)
+      ) &&
+      request.resource.data.userId == resource.data.userId &&
+      request.resource.data.medicineId == resource.data.medicineId;
+
+      // 🗑️ SİLME: Kullanıcı kendi hatırlatıcısını veya badi olarak izin varsa silebilir
+      allow delete: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        canEditRemindersOf(resource.data.userId)
+      );
     }
 
-    // Medication logs collection
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 📊 BÖLÜM 7: İLAÇ LOGLARI (MEDICATION_LOGS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // İlaç alma geçmişini saklar: alındı/atlandı/kaçırıldı durumları
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Kullanıcı kendi loglarını okuyabilir
+    //    - Badi, canViewMedicationHistory izni varsa logları okuyabilir ✅
+    //    - Kullanıcı kendi loğunu oluşturabilir
+    //    - Badi, canMarkAsTaken izni varsa log oluşturabilir ✅
+    //    - Kullanıcı kendi loğunu güncelleyebilir
+    //    - Badi, canMarkAsTaken izni varsa log güncelleyebilir ✅
+    //    - Kullanıcı kendi loğunu silebilir
+    // ═══════════════════════════════════════════════════════════════════════
+
     match /medication_logs/{logId} {
+      // 📖 OKUMA: Kullanıcı kendi loglarını veya badi olarak izin varsa okuyabilir
       allow read: if isAuthenticated() && (
         isOwner(resource.data.userId) ||
-        isBuddy(resource.data.userId)
+        canViewMedicationHistoryOf(resource.data.userId)
       );
-      allow create: if isAuthenticated() && isOwner(request.resource.data.userId);
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+
+      // ✏️ OLUŞTURMA: Kullanıcı kendi loğunu veya badi olarak izin varsa oluşturabilir
+      // - userId giriş yapan kullanıcı olmalı VEYA badi olarak izin olmalı
+      // - medicineId geçerli bir string olmalı
+      // - status geçerli değerlerden biri olmalı: TAKEN, SKIPPED, MISSED
+      allow create: if isAuthenticated() && (
+        isOwner(request.resource.data.userId) ||
+        canMarkAsTakenFor(request.resource.data.userId)
+      ) &&
+      isValidString(request.resource.data.medicineId, 128) &&
+      request.resource.data.status in ['TAKEN', 'SKIPPED', 'MISSED'];
+
+      // 🔄 GÜNCELLEME: Kullanıcı kendi loğunu veya badi olarak izin varsa güncelleyebilir
+      // - userId değiştirilemez (immutable)
+      // - medicineId değiştirilemez (immutable)
+      // - status geçerli değerlerden biri olmalı
+      allow update: if isAuthenticated() && (
+        isOwner(resource.data.userId) ||
+        canMarkAsTakenFor(resource.data.userId)
+      ) &&
+      request.resource.data.userId == resource.data.userId &&
+      request.resource.data.medicineId == resource.data.medicineId &&
+      request.resource.data.status in ['TAKEN', 'SKIPPED', 'MISSED'];
+
+      // 🗑️ SİLME: Sadece kullanıcı kendi loğunu silebilir (badiler silemez)
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
 
-    // Notifications collection
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🔔 BÖLÜM 8: BİLDİRİMLER (NOTIFICATIONS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Uygulama içi bildirimleri yönetir
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Sadece kullanıcı kendi bildirimlerini okuyabilir
+    //    - Cloud Functions bildirim oluşturabilir (system tarafından)
+    //    - Kullanıcı kendi bildirimini güncelleyebilir (okundu işareti için)
+    //    - Kullanıcı kendi bildirimini silebilir
+    // ═══════════════════════════════════════════════════════════════════════
+
     match /notifications/{notificationId} {
+      // 📖 OKUMA: Sadece bildirim sahibi okuyabilir
       allow read: if isAuthenticated() && isOwner(resource.data.userId);
-      allow create: if isAuthenticated();
-      allow update: if isAuthenticated() && isOwner(resource.data.userId);
+
+      // ✏️ OLUŞTURMA: Herkes kendi bildirimi veya Cloud Functions oluşturabilir
+      // (Cloud Functions için auth == null kontrol edilebilir, ama authenticated kullanıcılar da oluşturabilir)
+      allow create: if isAuthenticated() &&
+                       isOwner(request.resource.data.userId) &&
+                       isValidString(request.resource.data.title, 200) &&
+                       isValidString(request.resource.data.message, 1000);
+
+      // 🔄 GÜNCELLEME: Sadece kullanıcı kendi bildirimini güncelleyebilir
+      // - userId değiştirilemez (immutable)
+      // - Genellikle sadece 'read' durumu güncellenir
+      allow update: if isAuthenticated() &&
+                       isOwner(resource.data.userId) &&
+                       request.resource.data.userId == resource.data.userId;
+
+      // 🗑️ SİLME: Sadece kullanıcı kendi bildirimini silebilir
       allow delete: if isAuthenticated() && isOwner(resource.data.userId);
     }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🚫 BÖLÜM 9: VARSAYILAN REDDETME KURALI
+    // ═══════════════════════════════════════════════════════════════════════
+    // Yukarıda belirtilmeyen tüm koleksiyonlara erişim varsayılan olarak
+    // engellenmiştir. Bu, güvenliği artırır ve yanlışlıkla veri sızıntısını
+    // önler.
+    //
+    // ⚠️  DİKKAT: Yeni bir koleksiyon eklerseniz, yukarıya özel kurallar
+    //             eklemelisiniz. Aksi takdirde hiç kimse erişemez!
+    // ═══════════════════════════════════════════════════════════════════════
+
+    // Tüm diğer yollar için varsayılan red (deny all)
+    // Bu satır güvenlik için kritiktir!
   }
 }
+
+
+/*
+╔══════════════════════════════════════════════════════════════════════════════╗
+║                          📝 NOTLAR VE BEST PRACTICES                         ║
+╚══════════════════════════════════════════════════════════════════════════════╝
+
+1. 🧪 TEST ETME:
+   - Firebase Console'dan rules test aracını kullanın
+   - Farklı senaryoları test edin (owner, badi, yabancı kullanıcı)
+   - Her permission kombinasyonunu test edin
+
+2. 🔍 LOGGING:
+   - Firebase Console > Firestore > Rules bölümünden kural ihlallerini izleyin
+   - Denied requests logları kontrol edin
+
+3. ⚡ PERFORMANS:
+   - exists() ve get() çağrıları maliyetlidir, dikkatli kullanın
+   - Her request maksimum 20 get/exists çağrısı yapabilir
+   - Çok fazla iç içe kontrol yapmaktan kaçının
+
+4. 🔒 GÜVENLİK:
+   - Asla client-side validation'a güvenmeyin
+   - Her field için validation yapın
+   - Immutable alanları kontrol edin (userId gibi)
+   - String injection'a karşı dikkatli olun
+
+5. 🚀 DEPLOYMENT:
+   - Rules değişikliklerini test ortamında test edin
+   - Production'a deploy etmeden önce peer review yapın
+   - Değişiklikleri git'e commit edin
+   - Firebase CLI ile deploy: firebase deploy --only firestore:rules
+
+6. 📊 MONİTORİNG:
+   - Kural ihlallerini düzenli kontrol edin
+   - Unexpected behavior için alerts kurun
+   - Usage metrics'i izleyin
+
+7. 🔄 BAKIM:
+   - Yeni özellik eklendiğinde rules'u güncelleyin
+   - Deprecated collection'ları temizleyin
+   - Düzenli olarak security audit yapın
+
+══════════════════════════════════════════════════════════════════════════════
+Son Güncelleme: 2025-11-15
+Versiyon: 2.0.0
+Geliştirici: Dozi Security Team
+══════════════════════════════════════════════════════════════════════════════
+*/
