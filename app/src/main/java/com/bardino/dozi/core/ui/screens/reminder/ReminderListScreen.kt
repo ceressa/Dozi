@@ -93,7 +93,7 @@ fun ReminderListScreen(
                 )
             }
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         if (medicines.isEmpty()) {
@@ -253,14 +253,14 @@ private fun MedicineCard(
                                     text = medicine.name,
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
-                                    color = TextPrimaryLight,
+                                    color = MaterialTheme.colorScheme.onSurface,
                                     maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
                                 Text(
                                     text = "${medicine.dosage} ${medicine.unit}",
                                     style = MaterialTheme.typography.bodyMedium,
-                                    color = TextSecondaryLight,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontWeight = FontWeight.Medium
                                 )
                             }
@@ -408,13 +408,13 @@ private fun MedicineCard(
                             text = "Hatırlatmayı Sil?",
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryLight
+                            color = MaterialTheme.colorScheme.onSurface
                         )
 
                         Text(
                             text = "${medicine.name} için ayarlanan hatırlatmayı silmek istediğinize emin misiniz?",
                             style = MaterialTheme.typography.bodyLarge,
-                            color = TextSecondaryLight,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             textAlign = androidx.compose.ui.text.style.TextAlign.Center
                         )
                     }
@@ -462,7 +462,7 @@ private fun MedicineCard(
                                 "İptal",
                                 style = MaterialTheme.typography.titleMedium,
                                 fontWeight = FontWeight.Bold,
-                                color = TextSecondaryLight
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
                             )
                         }
                     }

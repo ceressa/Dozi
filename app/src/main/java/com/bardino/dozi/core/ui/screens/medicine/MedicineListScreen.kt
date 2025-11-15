@@ -91,7 +91,7 @@ fun MedicineListScreen(
                 )
             }
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         if (medicines.isEmpty()) {
@@ -314,12 +314,12 @@ private fun ModernMedicineCard(
                             text = medicine.name,
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryLight
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             text = medicine.dosage,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondaryLight,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -417,7 +417,7 @@ private fun EmptyMedicineState(
             text = "Henüz İlaç Eklemediniz",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = TextPrimaryLight,
+            color = MaterialTheme.colorScheme.onSurface,
             textAlign = TextAlign.Center
         )
 
@@ -426,7 +426,7 @@ private fun EmptyMedicineState(
         Text(
             text = "İlaçlarınızı ekleyerek takibini kolaylaştırın ve asla unutmayın!",
             style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondaryLight,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
         )
 
@@ -501,13 +501,13 @@ private fun DeleteConfirmDialog(
                         text = "İlacı Sil?",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryLight
+                        color = MaterialTheme.colorScheme.onSurface
                     )
 
                     Text(
                         text = "$medicineName ilacını silmek istediğinize emin misiniz?",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = TextSecondaryLight,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                         textAlign = TextAlign.Center
                     )
                 }
@@ -528,7 +528,7 @@ private fun DeleteConfirmDialog(
                             "İptal",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = TextSecondaryLight
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
 

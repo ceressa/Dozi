@@ -57,7 +57,7 @@ fun AnalyticsDashboardScreen(
                 }
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -112,7 +112,7 @@ fun AnalyticsDashboardScreen(
                     text = "Günlük İstatistikler (Son 7 Gün)",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface
                     modifier = Modifier.padding(top = 16.dp)
                 )
             }
