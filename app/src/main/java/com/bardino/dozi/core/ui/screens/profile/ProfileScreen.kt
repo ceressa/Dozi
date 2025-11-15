@@ -155,7 +155,7 @@ fun ProfileScreen(
                 DoziTopBar(
                     title = "Profil",
                     canNavigateBack = false,
-                    backgroundColor = Color.White,
+                    backgroundColor = MaterialTheme.colorScheme.surface,
                     actions = {
                         IconButton(
                             onClick = {
@@ -176,7 +176,7 @@ fun ProfileScreen(
                     }
                 )
             },
-            containerColor = BackgroundLight
+            containerColor = MaterialTheme.colorScheme.background
         ) { padding ->
             Column(
                 modifier = Modifier
@@ -275,7 +275,7 @@ private fun ProfileHeader(
     Box(
         modifier = Modifier
             .fillMaxWidth()
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .padding(24.dp),
         contentAlignment = Alignment.Center
     ) {
@@ -375,7 +375,7 @@ fun GoogleSignInButton(onClick: () -> Unit) {
             .fillMaxWidth(0.8f)
             .height(52.dp),
         shape = RoundedCornerShape(50),
-        colors = ButtonDefaults.buttonColors(containerColor = Color.White)
+        colors = ButtonDefaults.buttonColors(containerColor = MaterialTheme.colorScheme.surface)
     ) {
         Image(
             painter = painterResource(id = R.drawable.ic_google),
@@ -429,7 +429,7 @@ private fun MenuCard(
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(16.dp))
-            .background(Color.White)
+            .background(MaterialTheme.colorScheme.surface)
             .clickable(onClick = onClick)
             .padding(16.dp)
     ) {
