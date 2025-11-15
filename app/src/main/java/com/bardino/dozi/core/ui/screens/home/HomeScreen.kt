@@ -36,6 +36,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -225,6 +226,13 @@ fun HomeScreen(
                 modifier = Modifier
                     .fillMaxSize()
                     .verticalScroll(scrollState)
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = {
+                            if (selectedDate != null) {
+                                selectedDate = null
+                            }
+                        })
+                    }
             ) {
                 Spacer(Modifier.height(12.dp))
 
@@ -592,8 +600,6 @@ fun HorizontalCalendar(
         }
     }
 
-    var expandedDate by remember { mutableStateOf<LocalDate?>(null) }
-
     LaunchedEffect(selectedDate) {
         selectedDate?.let { date ->
             val index = dates.indexOf(date)
@@ -609,6 +615,9 @@ fun HorizontalCalendar(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
+            .pointerInput(Unit) {
+                detectTapGestures(onTap = {})
+            }
     ) {
         Card(
             shape = RoundedCornerShape(20.dp),
@@ -646,13 +655,12 @@ fun HorizontalCalendar(
                 ) {
                     items(dates) { date ->
                         val status = dayStatuses[date] ?: MedicineStatus.NONE
-                        val isSelected = date == expandedDate
+                        val isSelected = date == selectedDate
                         CalendarDayCircle(
                             date = date,
                             status = status,
                             isSelected = isSelected,
                             onClick = {
-                                expandedDate = if (expandedDate == date) null else date
                                 onDateSelected(date)
                             }
                         )
@@ -662,11 +670,11 @@ fun HorizontalCalendar(
         }
 
         AnimatedVisibility(
-            visible = expandedDate != null,
+            visible = selectedDate != null,
             enter = expandVertically(animationSpec = tween(400)) + fadeIn(),
             exit = shrinkVertically(animationSpec = tween(300)) + fadeOut()
         ) {
-            expandedDate?.let { date ->
+            selectedDate?.let { date ->
                 val status = dayStatuses[date] ?: MedicineStatus.NONE
                 CalendarExpandedContent(
                     date = date,
@@ -1710,6 +1718,7 @@ private fun SkipReasonDialog(
     var selectedReason by remember { mutableStateOf<String?>(null) }
     var customNote by remember { mutableStateOf("") }
     var showCustomNoteField by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
 
     val reasons = listOf(
         "💊 İlacım bitti",
@@ -1731,7 +1740,12 @@ private fun SkipReasonDialog(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(24.dp)
-                    .verticalScroll(rememberScrollState()),
+                    .verticalScroll(rememberScrollState())
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = {
+                            focusManager.clearFocus()
+                        })
+                    },
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(
@@ -1875,6 +1889,7 @@ private fun EditNameDialog(
 ) {
     var nameText by remember { mutableStateOf(currentName) }
     var isError by remember { mutableStateOf(false) }
+    val focusManager = LocalFocusManager.current
 
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -1885,7 +1900,12 @@ private fun EditNameDialog(
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(24.dp),
+                    .padding(24.dp)
+                    .pointerInput(Unit) {
+                        detectTapGestures(onTap = {
+                            focusManager.clearFocus()
+                        })
+                    },
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
                 Row(
