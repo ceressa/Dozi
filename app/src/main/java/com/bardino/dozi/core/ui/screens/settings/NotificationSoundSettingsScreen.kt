@@ -71,7 +71,7 @@ fun NotificationSoundSettingsScreen(
                 }
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         LazyColumn(
             modifier = Modifier
@@ -124,7 +124,7 @@ fun NotificationSoundSettingsScreen(
                     text = "Mevcut Sesler",
                     style = MaterialTheme.typography.titleMedium,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
@@ -186,7 +186,7 @@ fun NotificationSoundSettingsScreen(
                             Text(
                                 text = "Özel sesleri kullanmak için Dozi Ekstra'ya geç",
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = TextPrimary,
+                                color = MaterialTheme.colorScheme.onSurface
                                 modifier = Modifier.weight(1f)
                             )
                             Icon(

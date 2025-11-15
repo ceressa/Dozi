@@ -179,10 +179,10 @@ fun MedicineEditScreen(
                 title = if (medicineId == "new") "Yeni İlaç Ekle" else "İlaç Düzenle",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                backgroundColor = Color.White
+                backgroundColor = MaterialTheme.colorScheme.surface
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
 
         Column(
@@ -203,7 +203,7 @@ fun MedicineEditScreen(
                     text = if (medicineId == "new") "✨ Yeni ilaç ekle" else "İlaç bilgilerini düzenle",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = TextPrimaryLight
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
 
@@ -214,7 +214,7 @@ fun MedicineEditScreen(
                     OutlinedTextField(
                         value = name,
                         onValueChange = { name = it; nameError = it.isBlank() },
-                        label = { Text("İlaç Adı *", color = TextSecondaryLight) },
+                        label = { Text("İlaç Adı *", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingIcon = {
                             Icon(Icons.Default.LocalPharmacy, null, tint = DoziCoralDark)
                         },
@@ -232,7 +232,7 @@ fun MedicineEditScreen(
                         ),
                         singleLine = true,
                         isError = nameError,
-                        placeholder = { Text("İlaç adını girin", color = TextSecondaryLight) }
+                        placeholder = { Text("İlaç adını girin", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     )
 
                     if (nameError) ErrorCard("İlaç adı boş bırakılamaz.")
@@ -249,7 +249,7 @@ fun MedicineEditScreen(
                                 }
                             }
                         },
-                        label = { Text("Evde Kaç Adet Var? (1–999) *", color = TextSecondaryLight) },
+                        label = { Text("Evde Kaç Adet Var? (1–999) *", color = MaterialTheme.colorScheme.onSurfaceVariant) },
                         leadingIcon = { Icon(Icons.Default.Inventory, null, tint = DoziCoralDark) },
                         modifier = Modifier
                             .fillMaxWidth()
@@ -266,7 +266,7 @@ fun MedicineEditScreen(
                         singleLine = true,
                         keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
                         isError = stockError,
-                        placeholder = { Text("Örn: 20 (kaç tablet/kapsül var)", color = TextSecondaryLight) }
+                        placeholder = { Text("Örn: 20 (kaç tablet/kapsül var)", color = MaterialTheme.colorScheme.onSurfaceVariant) }
                     )
 
                     if (stockError) ErrorCard("Stok bilgisi geçersiz.")

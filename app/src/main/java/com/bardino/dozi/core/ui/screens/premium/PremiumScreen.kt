@@ -49,7 +49,7 @@ fun PremiumScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -177,7 +177,7 @@ fun PremiumScreen(
                 Text(
                     text = "7 gün ücretsiz dene • İstediğin zaman iptal et",
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -298,7 +298,7 @@ private fun PricingOption(
                 Text(
                     text = " / ${planType.period}",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                     modifier = Modifier.padding(start = 4.dp)
                 )
             }
@@ -317,7 +317,7 @@ private fun PricingOption(
                 Text(
                     text = it,
                     style = MaterialTheme.typography.bodySmall,
-                    color = TextPrimaryLight
+                    color = MaterialTheme.colorScheme.onSurface
                 )
             }
         }

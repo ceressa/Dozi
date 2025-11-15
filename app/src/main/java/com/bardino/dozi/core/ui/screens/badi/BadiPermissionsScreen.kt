@@ -310,7 +310,7 @@ private fun BadiInfoCard(user: User) {
                     Text(
                         text = user.email,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                         fontSize = 14.sp
                     )
                 }
@@ -368,7 +368,7 @@ private fun RoleSelectionCard(
             Text(
                 text = "Önceden tanımlı rolleri kullanarak hızlıca izin ayarlayabilirsiniz",
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
                 fontSize = 13.sp
             )
 
@@ -417,7 +417,7 @@ private fun RoleOption(
             Text(
                 text = role.toDescription(),
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
                 fontSize = 12.sp
             )
         }
@@ -476,7 +476,7 @@ private fun PermissionCard(
                     text = title,
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
-                    color = TextPrimary,
+                    color = MaterialTheme.colorScheme.onSurface
                     fontSize = 15.sp
                 )
                 if (isWarning) {
@@ -491,7 +491,7 @@ private fun PermissionCard(
             Text(
                 text = description,
                 style = MaterialTheme.typography.bodySmall,
-                color = TextSecondary,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
                 fontSize = 12.sp
             )
         }

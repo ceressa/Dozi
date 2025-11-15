@@ -86,7 +86,7 @@ fun MedicineDetailScreen(
                 Text(
                     text = error ?: "Bilinmeyen hata",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryLight
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Button(onClick = onNavigateBack) {
                     Text("Geri Dön")
@@ -113,7 +113,7 @@ fun MedicineDetailScreen(
                 Text(
                     text = "Bu ilaç silinmiş olabilir.",
                     style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondaryLight
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Button(onClick = onNavigateBack) {
                     Text("Geri Dön")
@@ -131,7 +131,7 @@ fun MedicineDetailScreen(
                 title = "İlaç Detayı",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                backgroundColor = Color.White,
+                backgroundColor = MaterialTheme.colorScheme.surface,
                 actions = {
                     IconButton(
                         onClick = { onEditMedicine(med.id) },
@@ -148,7 +148,7 @@ fun MedicineDetailScreen(
                 }
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -186,7 +186,7 @@ fun MedicineDetailScreen(
             Text(
                 text = "Bu ekran sadece görüntüleme içindir. İlaç bilgilerini düzenlemek için sağ üstteki 'Düzenle' butonuna dokun.",
                 style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondaryLight
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
     }
@@ -198,13 +198,13 @@ private fun DetailRow(label: String, value: String) {
         Text(
             text = label,
             style = MaterialTheme.typography.labelMedium,
-            color = TextSecondaryLight
+            color = MaterialTheme.colorScheme.onSurfaceVariant
         )
         Text(
             text = value,
             style = MaterialTheme.typography.titleMedium,
             fontWeight = FontWeight.Bold,
-            color = TextPrimaryLight
+            color = MaterialTheme.colorScheme.onSurface
         )
     }
 }
@@ -227,7 +227,7 @@ private fun StockProgressIndicator(
             Text(
                 text = "Stok Durumu",
                 style = MaterialTheme.typography.labelMedium,
-                color = TextSecondaryLight
+                color = MaterialTheme.colorScheme.onSurfaceVariant
             )
             Text(
                 text = "$currentStock / $boxSize ${if (boxSize > 0) "adet" else ""}",
@@ -274,7 +274,7 @@ private fun StockProgressIndicator(
                 text = "$currentStock adet",
                 style = MaterialTheme.typography.titleMedium,
                 fontWeight = FontWeight.Bold,
-                color = TextPrimaryLight
+                color = MaterialTheme.colorScheme.onSurface
             )
         }
     }

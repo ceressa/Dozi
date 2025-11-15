@@ -202,7 +202,7 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
             }
         },
         snackbarHost = { SnackbarHost(snackbarHostState) },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         if (places.isEmpty()) {
             EmptyLocationsState(
@@ -397,7 +397,7 @@ private fun EmptyLocationsState(
             text = "Henüz konum eklemedin",
             style = MaterialTheme.typography.headlineSmall,
             fontWeight = FontWeight.Bold,
-            color = TextPrimary,
+            color = MaterialTheme.colorScheme.onSurface
             textAlign = TextAlign.Center
         )
 
@@ -406,7 +406,7 @@ private fun EmptyLocationsState(
         Text(
             text = "Ev, iş, okul gibi sık gittiğin yerleri ekle. Bu konumlara vardığında ilaç hatırlatması yapalım! 📍",
             style = MaterialTheme.typography.bodyLarge,
-            color = TextSecondary,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
             textAlign = TextAlign.Center
         )
 
@@ -482,7 +482,7 @@ private fun LocationCard(
                     Text(
                         text = place.address,
                         style = MaterialTheme.typography.bodySmall,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                         maxLines = 1
                     )
                 }
@@ -490,7 +490,7 @@ private fun LocationCard(
                 Text(
                     text = "📍 ${String.format("%.4f", place.lat)}, ${String.format("%.4f", place.lng)}",
                     style = MaterialTheme.typography.labelSmall,
-                    color = TextSecondary.copy(alpha = 0.7f)
+                    color = MaterialTheme.colorScheme.onSurfaceVariantcopy(alpha = 0.7f)
                 )
             }
 

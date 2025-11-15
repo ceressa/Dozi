@@ -91,7 +91,7 @@ fun MedicationActionScreen(
                 )
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         when {
             isLoading -> {
@@ -125,12 +125,12 @@ fun MedicationActionScreen(
                             "Bu saatte ilaç yok",
                             style = MaterialTheme.typography.titleLarge,
                             fontWeight = FontWeight.Bold,
-                            color = TextPrimaryLight
+                            color = MaterialTheme.colorScheme.onSurface
                         )
                         Text(
                             "Tüm ilaçlarınız alındı veya bu saatte planlanmış ilaç bulunamadı",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondaryLight
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
                 }
@@ -173,7 +173,7 @@ fun MedicationActionScreen(
                                     Text(
                                         "Her ilaç için ayrı ayrı işlem yapabilirsiniz",
                                         style = MaterialTheme.typography.bodySmall,
-                                        color = TextSecondaryLight
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
                                     )
                                 }
                             }
@@ -264,12 +264,12 @@ private fun MedicationActionCard(
                         medicine.name,
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimaryLight
+                        color = MaterialTheme.colorScheme.onSurface
                     )
                     Text(
                         medicine.dosage,
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondaryLight
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     if (medicine.stockCount > 0) {
                         Text(

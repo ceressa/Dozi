@@ -43,10 +43,10 @@ fun AboutScreen(
                 title = "Hakkında",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack,
-                backgroundColor = Color.White
+                backgroundColor = MaterialTheme.colorScheme.surface
             )
         },
-        containerColor = BackgroundLight
+        containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
         Column(
             modifier = Modifier
@@ -113,7 +113,7 @@ fun AboutScreen(
                     Text(
                         text = "Dozi, ilaç takibinizi kolaylaştıran ve sağlığınızı kontrol altında tutmanıza yardımcı olan modern bir mobil uygulamadır. İlaçlarınızı zamanında almayı unutmayın!",
                         style = MaterialTheme.typography.bodyMedium,
-                        color = TextSecondary,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                         textAlign = TextAlign.Justify
                     )
                 }
@@ -135,7 +135,7 @@ fun AboutScreen(
                         text = "Özellikler",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
-                        color = TextPrimary,
+                        color = MaterialTheme.colorScheme.onSurface
                         modifier = Modifier.padding(bottom = 8.dp)
                     )
 
