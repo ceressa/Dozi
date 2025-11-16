@@ -218,9 +218,13 @@ class ProfileViewModel @Inject constructor(
 
             profileManager.updateProfileName(profileId, name).fold(
                 onSuccess = {
+                    android.util.Log.d("ProfileViewModel", "✅ Profile name updated: $name")
                     _uiState.update { it.copy(isLoading = false, error = null) }
+                    // 🔥 Force refresh profiles to update UI
+                    updateCanAddMoreProfiles()
                 },
                 onFailure = { error ->
+                    android.util.Log.e("ProfileViewModel", "❌ Failed to update name: ${error.message}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -241,9 +245,13 @@ class ProfileViewModel @Inject constructor(
 
             profileManager.updateProfileAvatar(profileId, avatarIcon).fold(
                 onSuccess = {
+                    android.util.Log.d("ProfileViewModel", "✅ Profile avatar updated: $avatarIcon")
                     _uiState.update { it.copy(isLoading = false, error = null) }
+                    // 🔥 Force refresh profiles to update UI
+                    updateCanAddMoreProfiles()
                 },
                 onFailure = { error ->
+                    android.util.Log.e("ProfileViewModel", "❌ Failed to update avatar: ${error.message}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,
@@ -264,9 +272,13 @@ class ProfileViewModel @Inject constructor(
 
             profileManager.updateProfileColor(profileId, color).fold(
                 onSuccess = {
+                    android.util.Log.d("ProfileViewModel", "✅ Profile color updated: $color")
                     _uiState.update { it.copy(isLoading = false, error = null) }
+                    // 🔥 Force refresh profiles to update UI
+                    updateCanAddMoreProfiles()
                 },
                 onFailure = { error ->
+                    android.util.Log.e("ProfileViewModel", "❌ Failed to update color: ${error.message}")
                     _uiState.update {
                         it.copy(
                             isLoading = false,

@@ -74,13 +74,17 @@ class ProfileManager @Inject constructor(
         val profileCount = profileRepository.getProfileCount()
         val isPremium = premiumManager.isPremium()
 
+        android.util.Log.d("ProfileManager", "🔍 canCreateNewProfile: count=$profileCount, isPremium=$isPremium, MAX=$MAX_FREE_PROFILES")
+
         return when {
             // Free users can only have 1 profile
             !isPremium && profileCount >= MAX_FREE_PROFILES -> {
-                Pair(false, "Birden fazla profil premium üyelik gerektirir")
+                android.util.Log.w("ProfileManager", "❌ Cannot create: Free user reached limit")
+                Pair(false, "Birden fazla aile üyesi premium üyelik gerektirir")
             }
             // Premium users can create unlimited profiles
             else -> {
+                android.util.Log.d("ProfileManager", "✅ Can create profile")
                 Pair(true, "")
             }
         }
