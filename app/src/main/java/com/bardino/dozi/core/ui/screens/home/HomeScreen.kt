@@ -22,10 +22,8 @@ import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.runtime.getValue
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.ViewModelProvider
+import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
@@ -49,6 +47,7 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.compose.ui.window.DialogProperties
 import androidx.navigation.NavController
+import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.R
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.User
@@ -244,15 +243,8 @@ fun HomeScreen(
 ) {
     val context = LocalContext.current
 
-    // ✅ ViewModelFactory ile context inject et
-    val viewModel: HomeViewModel = viewModel(
-        factory = object : ViewModelProvider.Factory {
-            @Suppress("UNCHECKED_CAST")
-            override fun <T : ViewModel> create(modelClass: Class<T>): T {
-                return HomeViewModel(context.applicationContext) as T
-            }
-        }
-    )
+    // ✅ Hilt ile ViewModel inject et
+    val viewModel: HomeViewModel = hiltViewModel()
 
     // ✅ ViewModel'den state'leri al
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()

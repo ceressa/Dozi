@@ -7,6 +7,7 @@ import com.bardino.dozi.core.data.local.entity.MedicationLogEntity
 import com.bardino.dozi.core.data.local.entity.SyncQueueEntity
 import com.bardino.dozi.core.data.local.entity.SyncActionType
 import com.bardino.dozi.core.data.model.*
+import com.bardino.dozi.core.profile.ProfileManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -27,7 +28,8 @@ import java.util.*
 class MedicationLogRepository(
     private val context: Context,
     private val auth: FirebaseAuth = FirebaseAuth.getInstance(),
-    private val db: FirebaseFirestore = FirebaseFirestore.getInstance()
+    private val db: FirebaseFirestore = FirebaseFirestore.getInstance(),
+    private val profileManager: ProfileManager
 ) {
 
     private val localDb = DoziDatabase.getDatabase(context)
@@ -50,6 +52,7 @@ class MedicationLogRepository(
      */
     suspend fun createMedicationLog(log: MedicationLog): Result<String> {
         val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
+        val profileId = profileManager.getActiveProfileId()
 
         return try {
             val logId = UUID.randomUUID().toString()
@@ -59,6 +62,7 @@ class MedicationLogRepository(
             val entity = MedicationLogEntity(
                 id = logId,
                 userId = userId,
+                profileId = profileId,
                 medicineId = log.medicineId,
                 medicineName = log.medicineName,
                 dosage = log.dosage,
