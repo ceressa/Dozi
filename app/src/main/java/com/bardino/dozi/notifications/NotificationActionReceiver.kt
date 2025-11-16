@@ -2,34 +2,28 @@ package com.bardino.dozi.notifications
 
 import android.Manifest
 import android.app.AlarmManager
-import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.media.RingtoneManager
 import android.os.Build
-import android.os.VibrationEffect
-import android.os.Vibrator
-import android.speech.tts.TextToSpeech
-import android.view.WindowManager
+import android.util.Log
 import android.widget.Toast
 import androidx.annotation.RequiresPermission
-import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.core.data.repository.BadiRepository
+import com.bardino.dozi.core.data.repository.MedicineRepository
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import java.util.Calendar
 
 class NotificationActionReceiver : BroadcastReceiver() {
-
-    private var tts: TextToSpeech? = null
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     override fun onReceive(context: Context, intent: Intent) {
@@ -64,7 +58,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         medicineId = medicineId,
                         dosage = dosage,
                         time = time,
-                        scheduledTime = scheduledTime
+                        scheduledTime = scheduledTime,
+                        timeNote = "" // Erteleme durumunda not yok
                     )
 
                     // ⏰ YENİ: 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
@@ -74,7 +69,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         scheduleAutoMissed(context, medicineId, med, dosage, time, scheduledTime)
                     }
 
-                    android.util.Log.d("NotificationActionReceiver", "⏰ Erteleme sonrası bildirim + escalation/auto-missed planlandı: $med")
+                    Log.d("NotificationActionReceiver", "⏰ Erteleme sonrası bildirim + escalation/auto-missed planlandı: $med")
                 }
             }
             ReminderScheduler.ACTION_REMINDER_TRIGGER -> {
@@ -94,9 +89,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         medicineId = medicineId,
                         dosage = dosage,
                         time = time,
-                        scheduledTime = scheduledTime
+                        scheduledTime = scheduledTime,
+                        timeNote = "" // Escalation durumunda not yok
                     )
-                    android.util.Log.d("NotificationActionReceiver", "⏰ Escalation bildirimi gösterildi: $med")
+                    Log.d("NotificationActionReceiver", "⏰ Escalation bildirimi gösterildi: $med")
                 }
             }
             "ACTION_AUTO_MISSED" -> {
@@ -113,7 +109,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                             notes = "Otomatik olarak kaçırıldı olarak işaretlendi (1 saat cevapsız)"
                         )
                         medicationLogRepository.createMedicationLog(log)
-                        android.util.Log.d("NotificationActionReceiver", "⏱️ Otomatik MISSED kaydı oluşturuldu: $med")
+                        Log.d("NotificationActionReceiver", "⏱️ Otomatik MISSED kaydı oluşturuldu: $med")
                     }
 
                     // Bildirimi kapat
@@ -153,7 +149,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     dosage = dosage,
                     scheduledTime = scheduledTime
                 )
-                android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: TAKEN")
+                Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: TAKEN")
 
                 // 🧠 Gecikme pattern'ini kaydet (gelecekteki öneriler için)
                 SmartReminderHelper.recordDelayPattern(
@@ -173,7 +169,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // ✅ Kullanıcının ses seçimine göre başarı sesi
         SoundHelper.playSound(context, SoundHelper.SoundType.HERSEY_TAMAM)
     }
-
 
     private fun handleSkip(
         context: Context,
@@ -203,7 +198,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     scheduledTime = scheduledTime,
                     reason = "Kullanıcı atladı"
                 )
-                android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SKIPPED")
+                Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SKIPPED")
             }
 
             // İptal: Escalation ve Auto-MISSED alarmları
@@ -215,7 +210,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // ✅ Kullanıcının ses seçimine göre atla sesi
         SoundHelper.playSound(context, SoundHelper.SoundType.PEKALA)
     }
-
 
     private fun handleSnooze(
         context: Context,
@@ -239,7 +233,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     scheduledTime = scheduledTime,
                     snoozeMinutes = 10 // Default, kullanıcı seçerse değişecek
                 )
-                android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SNOOZED")
+                Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SNOOZED")
             }
 
             // 🔥 FIX: Erteleme seçilince escalation ve auto-MISSED iptal et
@@ -333,102 +327,64 @@ class NotificationActionReceiver : BroadcastReceiver() {
         time: String,
         nm: NotificationManagerCompat
     ) {
-        android.util.Log.d("NotificationActionReceiver", "🔔 Hatırlatma tetiklendi: $medicineName ($time)")
+        Log.d("NotificationActionReceiver", "🔔 Hatırlatma tetiklendi: $medicineName ($time)")
 
         // Bildirim izni kontrolü
         if (!hasNotificationPermission(context)) {
-            android.util.Log.w("NotificationActionReceiver", "⚠️ Bildirim izni yok")
+            Log.w("NotificationActionReceiver", "⚠️ Bildirim izni yok")
             return
         }
 
         // Medicine bilgilerini al
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val medicineRepository = com.bardino.dozi.core.data.repository.MedicineRepository()
+                val medicineRepository = MedicineRepository()
                 val medicine = medicineRepository.getMedicine(medicineId)
 
-                if (medicine != null) {
-                    // scheduledTime hesapla (bugünün bu saati)
-                    val (hour, minute) = time.split(":").map { it.toInt() }
-                    val calendar = java.util.Calendar.getInstance().apply {
-                        set(java.util.Calendar.HOUR_OF_DAY, hour)
-                        set(java.util.Calendar.MINUTE, minute)
-                        set(java.util.Calendar.SECOND, 0)
-                        set(java.util.Calendar.MILLISECOND, 0)
-                    }
-                    val scheduledTime = calendar.timeInMillis
-
-                    // Bildirim göster (medicineId, dosage ve time note ile)
-                    if (hasNotificationPermission(context)) {
-                        val timeNote = parseTimeNoteFromMedicine(medicine.notes, time)
-                        NotificationHelper.showMedicationNotification(
-                            context = context,
-                            medicineName = medicine.name,
-                            medicineId = medicine.id,
-                            dosage = "${medicine.dosage} ${medicine.unit}",
-                            time = time,
-                            scheduledTime = scheduledTime,
-                            timeNote = timeNote
-                        )
-                    }
-
-                    // 🔄 Sonraki alarmı planla (frequency'ye göre)
-                    if (medicine.reminderEnabled) {
-                        ReminderScheduler.scheduleReminders(context, medicine, isRescheduling = true)
-                        android.util.Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı: $medicineName (frequency: ${medicine.frequency})")
-                    }
-
-                    // ⏰ 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
-                    scheduleEscalationReminder(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
-
-                    // ⏱️ 1 saat sonra auto-MISSED (eğer hala aksiyon alınmadıysa)
-                    scheduleAutoMissed(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+                if (medicine == null) {
+                    Log.w("NotificationActionReceiver", "⚠️ İlaç bulunamadı: $medicineId")
+                    return@launch
                 }
+
+                // scheduledTime hesapla (bugünün bu saati)
+                val (hour, minute) = time.split(":").map { it.toInt() }
+                val calendar = Calendar.getInstance().apply {
+                    set(Calendar.HOUR_OF_DAY, hour)
+                    set(Calendar.MINUTE, minute)
+                    set(Calendar.SECOND, 0)
+                    set(Calendar.MILLISECOND, 0)
+                }
+                val scheduledTime = calendar.timeInMillis
+
+                // Bildirim göster (medicineId, dosage ve time note ile)
+                val timeNote = parseTimeNoteFromMedicine(medicine.notes, time)
+                NotificationHelper.showMedicationNotification(
+                    context = context,
+                    medicineName = medicine.name,
+                    medicineId = medicine.id,
+                    dosage = "${medicine.dosage} ${medicine.unit}",
+                    time = time,
+                    scheduledTime = scheduledTime,
+                    timeNote = timeNote
+                )
+
+                // 🔄 Sonraki alarmı planla (frequency'ye göre)
+                if (medicine.reminderEnabled) {
+                    ReminderScheduler.scheduleReminders(context, medicine, isRescheduling = true)
+                    Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı: $medicineName (frequency: ${medicine.frequency})")
+                }
+
+                // ⏰ 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
+                scheduleEscalationReminder(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+
+                // ⏱️ 1 saat sonra auto-MISSED (eğer hala aksiyon alınmadıysa)
+                scheduleAutoMissed(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+
             } catch (e: Exception) {
-                android.util.Log.e("NotificationActionReceiver", "❌ Hatırlatma işlenirken hata", e)
+                Log.e("NotificationActionReceiver", "❌ Hatırlatma işlenirken hata", e)
             }
         }
     }
-
-
-
-    private fun showSmartSnoozeDialog(context: Context, medicineName: String) {
-        val times = arrayOf("5 dakika", "15 dakika", "30 dakika", "1 saat")
-        val minutes = arrayOf(5, 15, 30, 60)
-
-        val builder = AlertDialog.Builder(context).apply {
-            setTitle("💧 Dozi - Erteleme")
-            setMessage("$medicineName için ne kadar sonra hatırlatayım?")
-            setItems(times) { dialog, which ->
-                val min = minutes[which]
-
-                NotificationHelper.scheduleSnooze(context, medicineName, min)
-
-                context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE).edit {
-                    putString("last_action", "ERTELENDI:$medicineName:$min dk")
-                    putLong("snooze_until", System.currentTimeMillis() + min * 60_000L)
-                }
-
-                dialog.dismiss()
-            }
-            setNegativeButton("İptal") @androidx.annotation.RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS) { dialog, _ ->
-                if (hasNotificationPermission(context)) {
-                }
-                dialog.dismiss()
-            }
-        }
-
-        val dialog = builder.create()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            dialog.window?.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
-        } else {
-            @Suppress("DEPRECATION")
-            dialog.window?.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
-        }
-
-        dialog.show()
-    }
-
 
     private fun hasNotificationPermission(context: Context): Boolean {
         return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
@@ -441,33 +397,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     private fun showToast(context: Context, message: String) {
         Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
-    }
-
-    private fun playSuccessSoundSafe(context: Context) {
-        try {
-            if (ActivityCompat.checkSelfPermission(
-                    context,
-                    Manifest.permission.POST_NOTIFICATIONS
-                ) == PackageManager.PERMISSION_GRANTED || Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU
-            ) {
-                val notification = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                RingtoneManager.getRingtone(context, notification)?.play()
-            }
-        } catch (e: SecurityException) {
-            e.printStackTrace()
-        }
-    }
-
-    private fun vibrateDevice(context: Context, duration: Long = 200) {
-        val vibrator = ContextCompat.getSystemService(context, Vibrator::class.java)
-        vibrator?.let {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                it.vibrate(VibrationEffect.createOneShot(duration, VibrationEffect.DEFAULT_AMPLITUDE))
-            } else {
-                @Suppress("DEPRECATION")
-                it.vibrate(duration)
-            }
-        }
     }
 
     /**
@@ -511,7 +440,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
         }
 
-        android.util.Log.d("NotificationActionReceiver", "⏰ Escalation planlandı: $medicineName - 30 dk sonra")
+        Log.d("NotificationActionReceiver", "⏰ Escalation planlandı: $medicineName - 30 dk sonra")
     }
 
     /**
@@ -555,7 +484,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, autoMissedTime, pendingIntent)
         }
 
-        android.util.Log.d("NotificationActionReceiver", "⏱️ Auto-MISSED planlandı: $medicineName - 1 saat sonra")
+        Log.d("NotificationActionReceiver", "⏱️ Auto-MISSED planlandı: $medicineName - 1 saat sonra")
     }
 
     /**
@@ -600,16 +529,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
         alarmManager.cancel(autoMissedPendingIntent)
         autoMissedPendingIntent.cancel()
 
-        android.util.Log.d("NotificationActionReceiver", "🚫 Escalation ve Auto-MISSED iptal edildi: $medicineId - $time")
+        Log.d("NotificationActionReceiver", "🚫 Escalation ve Auto-MISSED iptal edildi: $medicineId - $time")
     }
 
     override fun toString(): String = "NotificationActionReceiver - Dozi Bildirim İşleyici"
-}
-
-private fun listAvailableVoices(tts: TextToSpeech) {
-    tts.voices?.forEach { voice ->
-        println("Ses adı: ${voice.name}, locale: ${voice.locale}, quality: ${voice.quality}, latency: ${voice.latency}")
-    }
 }
 
 /**
@@ -640,4 +563,3 @@ private fun parseTimeNoteFromMedicine(notes: String, time: String): String {
 
     return ""
 }
-
