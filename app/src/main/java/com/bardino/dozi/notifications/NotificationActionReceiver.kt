@@ -249,14 +249,22 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         // ✅ MedicationLog'a kaydet (SNOOZED)
         if (medicineId.isNotEmpty()) {
-            val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(context)
+            val app = context.applicationContext as DoziApplication
+
+            val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
+                context,
+                com.google.firebase.auth.FirebaseAuth.getInstance(),
+                com.google.firebase.firestore.FirebaseFirestore.getInstance(),
+                app.profileManager
+            )
+
             CoroutineScope(Dispatchers.IO).launch {
                 medicationLogRepository.logMedicationSnoozed(
                     medicineId = medicineId,
                     medicineName = medicineName,
                     dosage = dosage,
                     scheduledTime = scheduledTime,
-                    snoozeMinutes = 10 // Default, kullanıcı seçerse değişecek
+                    snoozeMinutes = 10
                 )
                 android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SNOOZED")
             }
@@ -265,20 +273,21 @@ class NotificationActionReceiver : BroadcastReceiver() {
             cancelEscalationAndAutoMissed(context, medicineId, time)
         }
 
-        // ✅ Kullanıcının ses seçimine göre erteleme sesi
+        // Ses çal
         SoundHelper.playSound(context, SoundHelper.SoundType.ERTELE)
 
-        // ✅ Yeni: Dialog yerine Activity başlat
+        // Yeni activity aç
         val intent = Intent(context, SnoozePromptActivity::class.java).apply {
             putExtra("medicine", medicineName)
             putExtra("medicineId", medicineId)
             putExtra("dosage", dosage)
             putExtra("time", time)
             putExtra("scheduledTime", scheduledTime)
-            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK) // 🔥 Önemli!
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(intent)
     }
+
 
     private fun handleBuddyAccept(
         context: Context,
