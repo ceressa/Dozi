@@ -64,7 +64,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         medicineId = medicineId,
                         dosage = dosage,
                         time = time,
-                        scheduledTime = scheduledTime
+                        scheduledTime = scheduledTime,
+                        timeNote = "" // Erteleme durumunda not yok
                     )
 
                     // ⏰ YENİ: 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
@@ -94,7 +95,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         medicineId = medicineId,
                         dosage = dosage,
                         time = time,
-                        scheduledTime = scheduledTime
+                        scheduledTime = scheduledTime,
+                        timeNote = "" // Escalation durumunda not yok
                     )
                     android.util.Log.d("NotificationActionReceiver", "⏰ Escalation bildirimi gösterildi: $med")
                 }
