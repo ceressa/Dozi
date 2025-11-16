@@ -188,10 +188,10 @@ class MedicineRepository {
     /**
      * Add a new medicine
      */
-    suspend fun addMedicine(medicine: Medicine): Boolean {
-        val collection = getMedicinesCollection() ?: return false
+    suspend fun addMedicine(medicine: Medicine): Medicine? {
+        val collection = getMedicinesCollection() ?: return null
         return try {
-            val user = auth.currentUser ?: return false
+            val user = auth.currentUser ?: return null
             val medicineWithUser = medicine.copy(
                 userId = user.uid,
                 id = if (medicine.id.isEmpty()) collection.document().id else medicine.id,
@@ -199,9 +199,11 @@ class MedicineRepository {
                 updatedAt = System.currentTimeMillis()
             )
             collection.document(medicineWithUser.id).set(medicineWithUser).await()
-            true
+            android.util.Log.d("MedicineRepository", "✅ Medicine added with ID: ${medicineWithUser.id}")
+            medicineWithUser
         } catch (e: Exception) {
-            false
+            android.util.Log.e("MedicineRepository", "❌ Error adding medicine", e)
+            null
         }
     }
 
