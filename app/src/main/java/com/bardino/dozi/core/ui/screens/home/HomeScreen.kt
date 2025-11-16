@@ -71,6 +71,7 @@ import java.time.temporal.ChronoUnit
 import java.util.*
 
 // Helper function: Belirli bir tarihte ilacın gösterilip gösterilmeyeceğini kontrol eder
+@RequiresApi(Build.VERSION_CODES.O)
 fun shouldMedicineShowOnDate(medicine: Medicine, date: LocalDate): Boolean {
     // startDate kontrolü
     val startLocalDate = Instant.ofEpochMilli(medicine.startDate)
@@ -661,7 +662,6 @@ fun HorizontalCalendar(
     val coroutineScope = rememberCoroutineScope()
 
     // 🔹 Medicines listesini Firebase'den al
-    val context = LocalContext.current
     val app = context.applicationContext as com.bardino.dozi.DoziApplication
     val medicineRepository = remember { MedicineRepository(app.profileManager) }
     var allMedicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
