@@ -17,6 +17,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
@@ -132,15 +133,6 @@ class HomeViewModel @Inject constructor(
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Error updating medicines state: ${e.message}")
         }
-    }
-
-    /**
-     * Helper: Get current date string in dd/MM/yyyy format
-     */
-    @RequiresApi(Build.VERSION_CODES.O)
-    private fun getCurrentDateString(): String {
-        val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
-        return java.time.LocalDate.now().format(formatter)
     }
 
     /**

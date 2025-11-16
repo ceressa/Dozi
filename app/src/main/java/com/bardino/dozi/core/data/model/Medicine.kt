@@ -38,7 +38,10 @@ data class Medicine(
 
     // 💡 Motivasyon ve görselleştirme
     val motivationReason: String = "",           // "Şeker hastalığım için", "Sağlıklı kalmak için"
-    val color: MedicineColor = MedicineColor.BLUE  // İlaç renk kategorisi
+    val color: MedicineColor = MedicineColor.BLUE , // İlaç renk kategorisi
+
+    val selectedDays: List<String> = emptyList(),
+    val selectedDates: List<String> = emptyList()
 )
 
 /**
