@@ -34,9 +34,6 @@ class DoziApplication : Application() {
     @Inject
     lateinit var userRepository: UserRepository
 
-    @Inject
-    lateinit var profileRepository: com.bardino.dozi.core.data.repository.ProfileRepository
-
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     @OptIn(ExperimentalFoundationApi::class)
@@ -51,11 +48,8 @@ class DoziApplication : Application() {
         MedicineRepository.initialize(this)
 
         // 👥 Default profil oluştur (eğer yoksa) - kullanıcının adını kullan
+        // Not: Firestore sync MainActivity'de yapılıyor (kullanıcı login olduktan sonra)
         applicationScope.launch {
-            // 📥 Firestore'dan profilleri senkronize et
-            android.util.Log.d("DoziApplication", "📥 Syncing profiles from Firestore...")
-            profileRepository.syncProfilesFromFirestore()
-
             val defaultProfileId = profileManager.ensureDefaultProfile(userRepository)
 
             // 🔧 MIGRATION: Eski medicines'lere profileId ekle (bir kere çalışır)

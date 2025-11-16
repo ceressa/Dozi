@@ -46,6 +46,7 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
+import javax.inject.Inject
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -53,6 +54,9 @@ class MainActivity : ComponentActivity() {
     private val userRepository = UserRepository()
     private var currentIntent by mutableStateOf<Intent?>(null)
     private var navController: androidx.navigation.NavHostController? = null
+
+    @Inject
+    lateinit var profileRepository: com.bardino.dozi.core.data.repository.ProfileRepository
 
     // 🔹 Çoklu izin isteyici (bildirim, kamera, konum)
     private val permissionLauncher =
@@ -104,6 +108,10 @@ class MainActivity : ComponentActivity() {
                                             Log.d("PREMIUM_TRIAL", "1 haftalık trial aktivasyonu yapıldı")
                                         }
 
+                                        // 👥 Firestore'dan profilleri senkronize et
+                                        profileRepository.syncProfilesFromFirestore()
+                                        Log.d("GOOGLE_AUTH", "Profiller Firestore'dan senkronize edildi")
+
                                         // ✅ FCM token'ı al ve kaydet (retry logic ile)
                                         saveFCMToken()
                                     } catch (e: Exception) {
@@ -134,10 +142,14 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         currentIntent = intent
 
-        // ✅ Uygulama başlangıcında FCM token'ı kaydet (login olan kullanıcılar için)
+        // ✅ Uygulama başlangıcında kullanıcı login olmuşsa profilleri sync et ve FCM token'ı kaydet
         CoroutineScope(Dispatchers.IO).launch {
             val currentUser = FirebaseAuth.getInstance().currentUser
             if (currentUser != null) {
+                // 👥 Firestore'dan profilleri senkronize et
+                profileRepository.syncProfilesFromFirestore()
+                Log.d("MainActivity", "Profiller Firestore'dan senkronize edildi")
+
                 saveFCMToken()
             }
         }
