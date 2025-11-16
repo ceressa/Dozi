@@ -50,11 +50,6 @@ abstract class DoziDatabase : RoomDatabase() {
                     """.trimIndent()
                 )
 
-                // Add profileId column to medication_logs
-                database.execSQL(
-                    "ALTER TABLE medication_logs ADD COLUMN profileId TEXT DEFAULT NULL"
-                )
-
                 // Create a default profile for existing users
                 val currentTime = System.currentTimeMillis()
                 val defaultProfileId = "default-profile"
@@ -65,10 +60,48 @@ abstract class DoziDatabase : RoomDatabase() {
                     """.trimIndent()
                 )
 
-                // Update existing medication_logs to use default profile
+                // Recreate medication_logs table with profileId as NOT NULL
+                // Step 1: Create new table with correct schema
                 database.execSQL(
-                    "UPDATE medication_logs SET profileId = '$defaultProfileId' WHERE profileId IS NULL"
+                    """
+                    CREATE TABLE IF NOT EXISTS medication_logs_new (
+                        id TEXT PRIMARY KEY NOT NULL,
+                        userId TEXT NOT NULL,
+                        profileId TEXT NOT NULL,
+                        medicineId TEXT NOT NULL,
+                        medicineName TEXT NOT NULL,
+                        dosage TEXT NOT NULL,
+                        scheduledTime INTEGER NOT NULL,
+                        takenAt INTEGER,
+                        status TEXT NOT NULL,
+                        notes TEXT,
+                        sideEffects TEXT,
+                        mood TEXT,
+                        locationLat REAL,
+                        locationLng REAL,
+                        createdAt INTEGER NOT NULL,
+                        updatedAt INTEGER NOT NULL,
+                        isSynced INTEGER NOT NULL DEFAULT 0
+                    )
+                    """.trimIndent()
                 )
+
+                // Step 2: Copy data from old table to new table with default profileId
+                database.execSQL(
+                    """
+                    INSERT INTO medication_logs_new
+                    SELECT id, userId, '$defaultProfileId' as profileId, medicineId, medicineName,
+                           dosage, scheduledTime, takenAt, status, notes, sideEffects, mood,
+                           locationLat, locationLng, createdAt, updatedAt, isSynced
+                    FROM medication_logs
+                    """.trimIndent()
+                )
+
+                // Step 3: Drop old table
+                database.execSQL("DROP TABLE medication_logs")
+
+                // Step 4: Rename new table to original name
+                database.execSQL("ALTER TABLE medication_logs_new RENAME TO medication_logs")
             }
         }
 
