@@ -58,4 +58,12 @@ object RepositoryModule {
     ): UserRepository {
         return UserRepository(auth, firestore)
     }
+
+    @Provides
+    @Singleton
+    fun provideMedicineRepository(
+        profileManager: com.bardino.dozi.core.profile.ProfileManager
+    ): MedicineRepository {
+        return MedicineRepository(profileManager)
+    }
 }

@@ -18,7 +18,8 @@ import java.util.Calendar
 class EscalationManager(
     private val context: Context
 ) {
-    private val medicineRepository = MedicineRepository()
+    private val app = context.applicationContext as com.bardino.dozi.DoziApplication
+    private val medicineRepository = MedicineRepository(app.profileManager)
     private val medicationLogRepository = MedicationLogRepository(context)
     private val badiRepository = BadiRepository()
     private val notificationRepository = NotificationRepository()

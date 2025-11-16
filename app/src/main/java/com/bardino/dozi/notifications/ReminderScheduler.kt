@@ -299,7 +299,8 @@ class ReminderScheduler {
         fun rescheduleAllReminders(context: Context) {
             Log.d(TAG, "📅 Tüm hatırlatmalar yeniden planlanıyor...")
 
-            val medicineRepository = MedicineRepository()
+            val app = context.applicationContext as com.bardino.dozi.DoziApplication
+            val medicineRepository = MedicineRepository(app.profileManager)
 
             CoroutineScope(Dispatchers.IO).launch {
                 try {

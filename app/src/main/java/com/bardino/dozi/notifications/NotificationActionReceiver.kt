@@ -345,7 +345,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // Medicine bilgilerini al
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                val medicineRepository = com.bardino.dozi.core.data.repository.MedicineRepository()
+                val app = context.applicationContext as DoziApplication
+                val medicineRepository = com.bardino.dozi.core.data.repository.MedicineRepository(app.profileManager)
                 val medicine = medicineRepository.getMedicine(medicineId)
 
                 if (medicine != null) {

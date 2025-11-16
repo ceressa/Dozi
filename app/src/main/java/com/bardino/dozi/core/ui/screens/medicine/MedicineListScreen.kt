@@ -58,7 +58,8 @@ fun MedicineListScreen(
             // Firestore'dan hatırlatmaları yükle
             scope.launch(Dispatchers.IO) {
                 try {
-                    val firestoreRepo = com.bardino.dozi.core.data.repository.MedicineRepository()
+                    val app = context.applicationContext as DoziApplication
+                    val firestoreRepo = com.bardino.dozi.core.data.repository.MedicineRepository(app.profileManager)
                     val allReminders = firestoreRepo.getAllMedicines()
 
                     // Her ilaç adına göre grupla

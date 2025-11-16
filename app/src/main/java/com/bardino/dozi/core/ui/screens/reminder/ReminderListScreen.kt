@@ -39,7 +39,8 @@ fun ReminderListScreen(
     onNavigateToEditReminder: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val medicineRepository = remember { MedicineRepository() }
+    val app = context.applicationContext as com.bardino.dozi.DoziApplication
+    val medicineRepository = remember { MedicineRepository(app.profileManager) }
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var isVisible by remember { mutableStateOf(false) }
 

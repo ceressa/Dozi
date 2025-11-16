@@ -168,7 +168,8 @@ fun AddReminderScreen(
     LaunchedEffect(medicineId) {
         if (isEditMode && medicineId != null) {
             try {
-                val repository = FirestoreMedicineRepository()
+                val app = context.applicationContext as com.bardino.dozi.DoziApplication
+                val repository = FirestoreMedicineRepository(app.profileManager)
                 val medicine = repository.getMedicineById(medicineId)
 
                 if (medicine != null) {
@@ -2201,7 +2202,8 @@ private fun saveMedicinesToFirestore(
         return
     }
 
-    val medicineRepository = FirestoreMedicineRepository()
+    val app = context.applicationContext as com.bardino.dozi.DoziApplication
+    val medicineRepository = FirestoreMedicineRepository(app.profileManager)
 
     // Zamanları listele
     val times = selectedTimes.map { it.time }
