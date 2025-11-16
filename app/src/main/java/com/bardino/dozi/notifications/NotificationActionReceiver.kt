@@ -326,6 +326,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
     }
 
+    @androidx.annotation.RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
     private fun handleReminderTrigger(
         context: Context,
         medicineId: String,
@@ -388,50 +389,6 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 android.util.Log.e("NotificationActionReceiver", "❌ Hatırlatma işlenirken hata", e)
             }
         }
-    }
-
-
-
-    private fun showSmartSnoozeDialog(context: Context, medicineName: String) {
-        val times = arrayOf("5 dakika", "15 dakika", "30 dakika", "1 saat")
-        val minutes = arrayOf(5, 15, 30, 60)
-
-        val builder = AlertDialog.Builder(context).apply {
-            setTitle("💧 Dozi - Erteleme")
-            setMessage("$medicineName için ne kadar sonra hatırlatayım?")
-            setItems(times) { dialog, which ->
-                val min = minutes[which]
-
-                NotificationHelper.scheduleSnooze(
-                    context = context,
-                    medicineName = medicineName,
-                    minutes = min
-                )
-
-
-                context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE).edit {
-                    putString("last_action", "ERTELENDI:$medicineName:$min dk")
-                    putLong("snooze_until", System.currentTimeMillis() + min * 60_000L)
-                }
-
-                dialog.dismiss()
-            }
-            setNegativeButton("İptal") @androidx.annotation.RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS) { dialog, _ ->
-                if (hasNotificationPermission(context)) {
-                }
-                dialog.dismiss()
-            }
-        }
-
-        val dialog = builder.create()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            dialog.window?.setType(WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY)
-        } else {
-            @Suppress("DEPRECATION")
-            dialog.window?.setType(WindowManager.LayoutParams.TYPE_SYSTEM_ALERT)
-        }
-
-        dialog.show()
     }
 
 
