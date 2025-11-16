@@ -45,13 +45,17 @@ fun ReminderListScreen(
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var isVisible by remember { mutableStateOf(false) }
 
-    // Firebase'den ilaçları sürekli dinle
+    // Firebase'den sadece aktif profile ait hatırlatmaları sürekli dinle
     LaunchedEffect(Unit) {
         isVisible = true
         while (true) {
             try {
-                medicines = medicineRepository.getAllMedicines()
+                // Get active profile ID and load only that profile's medicines
+                val activeProfileId = app.profileManager.getActiveProfileId()
+                medicines = medicineRepository.getMedicinesForProfile(activeProfileId)
+                android.util.Log.d("ReminderListScreen", "✅ Loaded ${medicines.size} reminders for profile: $activeProfileId")
             } catch (e: Exception) {
+                android.util.Log.e("ReminderListScreen", "❌ Error loading reminders", e)
                 e.printStackTrace()
             }
             delay(3000) // Her 3 saniyede bir yenile

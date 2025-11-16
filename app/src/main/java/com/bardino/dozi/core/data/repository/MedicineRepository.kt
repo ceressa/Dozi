@@ -57,6 +57,30 @@ class MedicineRepository @Inject constructor(
     }
 
     /**
+     * Get medicines for a specific profile (for reminders/notifications)
+     * Returns only medicines that belong to the specified profile
+     * Used for profile-specific reminder lists
+     */
+    suspend fun getMedicinesForProfile(profileId: String): List<Medicine> {
+        val collection = getMedicinesCollection() ?: return emptyList()
+
+        return try {
+            val snapshot = collection
+                .whereEqualTo("ownerProfileId", profileId)
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            val medicines = snapshot.documents.mapNotNull { it.toObject(Medicine::class.java) }
+            android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: $profileId")
+            medicines
+        } catch (e: Exception) {
+            android.util.Log.e("MedicineRepository", "❌ Error getting medicines for profile: ${e.message}")
+            emptyList()
+        }
+    }
+
+    /**
      * Get medicines with real-time updates
      * ✅ All profiles see all medicines (shared across family members)
      */
@@ -207,22 +231,26 @@ class MedicineRepository @Inject constructor(
 
     /**
      * Add a new medicine
-     * ✅ Medicines are shared across all profiles (ownerProfileId = null)
+     * Assigns medicine to the currently active profile
+     * ownerProfileId is set to active profile ID
      */
     suspend fun addMedicine(medicine: Medicine): Medicine? {
         val collection = getMedicinesCollection() ?: return null
         return try {
             val user = auth.currentUser ?: return null
 
+            // Get active profile ID
+            val activeProfileId = profileManager.getActiveProfileId()
+
             val medicineWithUser = medicine.copy(
                 userId = user.uid,
-                ownerProfileId = null, // ✅ Shared across all profiles
+                ownerProfileId = activeProfileId, // Profile-specific reminder
                 id = if (medicine.id.isEmpty()) collection.document().id else medicine.id,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
             collection.document(medicineWithUser.id).set(medicineWithUser).await()
-            android.util.Log.d("MedicineRepository", "✅ Medicine added (shared): ${medicineWithUser.id}")
+            android.util.Log.d("MedicineRepository", "✅ Medicine added for profile $activeProfileId: ${medicineWithUser.id}")
             medicineWithUser
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Error adding medicine", e)
@@ -346,14 +374,14 @@ class MedicineRepository @Inject constructor(
 
     /**
      * 🔧 MIGRATION: Fix ownerProfileId for all medicines
-     * This should be called once after multi-profile feature is added
+     * This should be called once after profile-specific reminders feature is added
      *
      * Migration strategy:
-     * 1. ownerProfileId null/empty -> Leave as null (default profile) ✅
-     * 2. ownerProfileId is invalid (profile doesn't exist) -> Set to null (default profile)
+     * 1. ownerProfileId null/empty -> Set to default profile ID
+     * 2. ownerProfileId is invalid (profile doesn't exist) -> Set to default profile ID
      * 3. ownerProfileId is valid -> Keep as is
      *
-     * @param defaultProfileId The default profile ID (not used, kept for compatibility)
+     * @param defaultProfileId The default profile ID to assign to medicines without an owner
      * @return Number of medicines migrated
      */
     suspend fun migrateOldMedicines(defaultProfileId: String): Int {
@@ -370,18 +398,26 @@ class MedicineRepository @Inject constructor(
                 if (medicine != null) {
                     val currentOwnerProfileId = medicine.ownerProfileId
 
-                    // ✅ Set all ownerProfileId to null (medicines are now shared across all profiles)
-                    if (!currentOwnerProfileId.isNullOrEmpty()) {
-                        android.util.Log.d("MedicineRepository", "🔄 Migrating '${medicine.name}' ownerProfileId '$currentOwnerProfileId' -> null (shared)")
-                        collection.document(medicine.id).update("ownerProfileId", null).await()
+                    // Assign null/empty ownerProfileId to default profile
+                    if (currentOwnerProfileId.isNullOrEmpty()) {
+                        android.util.Log.d("MedicineRepository", "🔄 Migrating '${medicine.name}' ownerProfileId null -> $defaultProfileId")
+                        collection.document(medicine.id).update("ownerProfileId", defaultProfileId).await()
                         migratedCount++
                     } else {
-                        android.util.Log.d("MedicineRepository", "✅ Medicine '${medicine.name}' already shared (ownerProfileId = null)")
+                        // Verify profile exists
+                        val profileExists = profileManager.getProfileById(currentOwnerProfileId) != null
+                        if (!profileExists) {
+                            android.util.Log.d("MedicineRepository", "🔄 Migrating '${medicine.name}' invalid ownerProfileId '$currentOwnerProfileId' -> $defaultProfileId")
+                            collection.document(medicine.id).update("ownerProfileId", defaultProfileId).await()
+                            migratedCount++
+                        } else {
+                            android.util.Log.d("MedicineRepository", "✅ Medicine '${medicine.name}' already has valid profile: $currentOwnerProfileId")
+                        }
                     }
                 }
             }
 
-            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines migrated to shared")
+            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines migrated to default profile")
             migratedCount
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Migration failed: ${e.message}")

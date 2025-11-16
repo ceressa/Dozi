@@ -52,16 +52,16 @@ class DoziApplication : Application() {
         applicationScope.launch {
             val defaultProfileId = profileManager.ensureDefaultProfile(userRepository)
 
-            // 🔧 MIGRATION: Make all medicines shared (set ownerProfileId to null)
+            // 🔧 MIGRATION: Assign profile-specific reminders (set ownerProfileId to default profile)
             val prefs = getSharedPreferences("dozi_migrations", MODE_PRIVATE)
-            val migrationDone = prefs.getBoolean("medicines_shared_migration_v3", false)
+            val migrationDone = prefs.getBoolean("profile_reminders_migration_v4", false)
 
             if (!migrationDone) {
-                android.util.Log.d("DoziApplication", "🔧 Starting medicines shared migration v3...")
+                android.util.Log.d("DoziApplication", "🔧 Starting profile-specific reminders migration v4...")
                 val migratedCount = firebaseMedicineRepository.migrateOldMedicines(defaultProfileId)
                 if (migratedCount >= 0) {
-                    prefs.edit().putBoolean("medicines_shared_migration_v3", true).apply()
-                    android.util.Log.d("DoziApplication", "✅ Medicines shared migration v3 completed: $migratedCount medicines migrated")
+                    prefs.edit().putBoolean("profile_reminders_migration_v4", true).apply()
+                    android.util.Log.d("DoziApplication", "✅ Profile-specific reminders migration v4 completed: $migratedCount medicines migrated")
                 }
             }
         }
