@@ -11,6 +11,8 @@ import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.UserRepository
+import dagger.hilt.android.lifecycle.HiltViewModel
+import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -18,6 +20,7 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.util.Calendar
+import javax.inject.Inject
 
 /**
  * HomeScreen için ViewModel
@@ -25,11 +28,12 @@ import java.util.Calendar
  * ✅ Offline-first: MedicationLogRepository kullanır
  */
 @RequiresApi(Build.VERSION_CODES.O)
-class HomeViewModel(
-    private val context: Context,
-    private val medicineRepository: MedicineRepository = MedicineRepository(),
-    private val medicationLogRepository: MedicationLogRepository = MedicationLogRepository(context),
-    private val userRepository: UserRepository = UserRepository()
+@HiltViewModel
+class HomeViewModel @Inject constructor(
+    @ApplicationContext private val context: Context,
+    private val medicineRepository: MedicineRepository,
+    private val medicationLogRepository: MedicationLogRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     companion object {

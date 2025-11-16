@@ -44,7 +44,8 @@ fun MedicationActionScreen(
     onNavigateBack: () -> Unit
 ) {
     val context = LocalContext.current
-    val medicineRepository = remember { MedicineRepository() }
+    val app = context.applicationContext as com.bardino.dozi.DoziApplication
+    val medicineRepository = remember { MedicineRepository(app.profileManager) }
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var completedMedicines by remember { mutableStateOf<Set<String>>(emptySet()) }
     var isLoading by remember { mutableStateOf(true) }

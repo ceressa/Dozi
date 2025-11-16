@@ -669,7 +669,9 @@ fun HorizontalCalendar(
     val coroutineScope = rememberCoroutineScope()
 
     // 🔹 Medicines listesini Firebase'den al
-    val medicineRepository = remember { MedicineRepository() }
+    val context = LocalContext.current
+    val app = context.applicationContext as com.bardino.dozi.DoziApplication
+    val medicineRepository = remember { MedicineRepository(app.profileManager) }
     var allMedicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
 
     LaunchedEffect(Unit) {

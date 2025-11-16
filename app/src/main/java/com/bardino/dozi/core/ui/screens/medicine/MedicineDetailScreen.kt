@@ -30,7 +30,8 @@ fun MedicineDetailScreen(
     onEditMedicine: (String) -> Unit
 ) {
     val context = LocalContext.current
-    val repository = remember { MedicineRepository() }
+    val app = context.applicationContext as com.bardino.dozi.DoziApplication
+    val repository = remember { MedicineRepository(app.profileManager) }
 
     // Mevcut ilacı yükle
     var medicine by remember { mutableStateOf<Medicine?>(null) }
