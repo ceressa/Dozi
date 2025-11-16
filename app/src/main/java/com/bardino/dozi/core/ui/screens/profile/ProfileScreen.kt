@@ -42,7 +42,6 @@ import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.screens.login.LoginScreen
-import com.bardino.dozi.core.ui.screens.onboarding.OnboardingScreen
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.notifications.NotificationHelper
 import com.google.android.gms.auth.api.signin.GoogleSignIn
@@ -121,17 +120,12 @@ fun ProfileScreen(
     // Screen state'e göre farklı ekranlar göster
     when (screenState) {
         ProfileScreenState.ONBOARDING -> {
-            OnboardingScreen(
-                onFinish = {
-                    // Onboarding tamamlandı, artık bir daha gösterme
-                    sharedPrefs.edit().putBoolean("has_seen_onboarding", true).apply()
-                    hasSeenOnboarding = true
-                    screenState = ProfileScreenState.LOGIN
+            LoginScreen(
+                onLoginSuccess = {
+                    // Login başarılı olunca otomatik güncellenecek
                 },
                 onSkip = {
-                    // Skip edildi, Home'a git
-                    sharedPrefs.edit().putBoolean("has_seen_onboarding", true).apply()
-                    hasSeenOnboarding = true
+                    // Login skip edildi, Home'a git
                     onNavigateToHome()
                 }
             )

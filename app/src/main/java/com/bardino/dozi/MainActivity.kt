@@ -19,11 +19,14 @@ import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
+import androidx.compose.runtime.DisposableEffect
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.setValue
 import androidx.compose.runtime.collectAsState
+import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
 import com.bardino.dozi.core.data.IlacRepository
@@ -45,6 +48,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 
@@ -150,58 +154,54 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         currentIntent = intent
 
-        // ✅ Uygulama başlangıcında kullanıcı login olmuşsa profilleri sync et ve FCM token'ı kaydet
+        // Başlangıçta kullanıcı varsa arka plan sync
         CoroutineScope(Dispatchers.IO).launch {
             val currentUser = FirebaseAuth.getInstance().currentUser
             if (currentUser != null) {
-                // 📱 Device ID'yi kaydet (her açılışta kontrol et ve kaydet)
                 val deviceId = Settings.Secure.getString(
                     contentResolver,
                     Settings.Secure.ANDROID_ID
                 )
                 userRepository.updateUserField("deviceId", deviceId)
-                Log.d("MainActivity", "Device ID kaydedildi/güncellendi: $deviceId")
-
-                // 👥 Firestore'dan profilleri senkronize et
                 profileRepository.syncProfilesFromFirestore()
-                Log.d("MainActivity", "Profiller Firestore'dan senkronize edildi")
-
                 saveFCMToken()
             }
         }
 
         setContent {
-            // 🎨 Tema tercihini oku (DataStore'dan Flow olarak)
+
+            // Tema
             val themeMode by ThemePreferences.getThemeFlow(this).collectAsState(initial = "system")
             val systemInDarkTheme = isSystemInDarkTheme()
-
-            // Tema tercihine göre dark mode aktif mi belirle
             val isDarkTheme = when (themeMode) {
                 "dark" -> true
                 "light" -> false
-                else -> systemInDarkTheme // "system" veya tanımsız ise sistem ayarını kullan
+                else -> systemInDarkTheme
             }
 
             DoziAppTheme(darkTheme = isDarkTheme) {
+
                 navController = rememberNavController()
 
-                // İlk açılışta deep link varsa handle et
-                androidx.compose.runtime.LaunchedEffect(Unit) {
-                    handleDeepLink(intent, navController!!)
+                // 🔥 LOGIN STATE REACTIVE HALE GETİRİLİYOR
+                val auth = FirebaseAuth.getInstance()
+                var currentUser by remember { mutableStateOf(auth.currentUser) }
+
+                DisposableEffect(Unit) {
+                    val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
+                        currentUser = firebaseAuth.currentUser
+                    }
+                    auth.addAuthStateListener(listener)
+
+                    onDispose { auth.removeAuthStateListener(listener) }
                 }
 
-                // Başlangıç ekranını belirle - DeviceId ve Firestore kontrolü
-                var startDestination by androidx.compose.runtime.remember {
-                    androidx.compose.runtime.mutableStateOf<String?>(null)
-                }
-
-                androidx.compose.runtime.LaunchedEffect(Unit) {
-                    val currentUser = FirebaseAuth.getInstance().currentUser
-
-                    startDestination = if (currentUser != null) {
-                        // ✅ Kullanıcı zaten login, Firestore'dan onboarding durumunu kontrol et
+                // 🔥 startDestination artık currentUser'a göre hesaplanıyor
+                val startDestination = remember(currentUser) {
+                    if (currentUser != null) {
+                        // Kullanıcı login → onboarding kontrolü
                         try {
-                            val userData = userRepository.getUserData()
+                            val userData = runBlocking { userRepository.getUserData() }
                             if (userData?.onboardingCompleted == true) {
                                 Screen.Home.route
                             } else {
@@ -215,40 +215,38 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     } else {
-                        // 📱 Kullanıcı login değil - DeviceId ile tanıma sistemi
+                        // Kullanıcı login değil → deviceId kontrolü
                         val deviceId = Settings.Secure.getString(
                             contentResolver,
                             Settings.Secure.ANDROID_ID
                         )
+                        runBlocking {
+                            val userWithDevice = userRepository.getUserByDeviceId(deviceId)
 
-                        // Firestore'da bu deviceId'ye sahip kullanıcı var mı?
-                        val userWithDevice = userRepository.getUserByDeviceId(deviceId)
+                            when {
+                                userWithDevice != null && userWithDevice.onboardingCompleted ->
+                                    Screen.Login.route
 
-                        if (userWithDevice != null && userWithDevice.onboardingCompleted) {
-                            // ✅ DeviceId tanındı ve onboarding tamamlanmış
-                            // Kullanıcıyı direkt login ekranına götür
-                            Log.d("MainActivity", "📱 DeviceId tanındı: ${userWithDevice.email}, direkt login ekranına yönlendiriliyor")
-                            Screen.Login.route
-                        } else if (userWithDevice != null && !userWithDevice.onboardingCompleted) {
-                            // DeviceId tanındı ama onboarding tamamlanmamış
-                            Log.d("MainActivity", "📱 DeviceId tanındı ama onboarding tamamlanmamış, onboarding'e yönlendiriliyor")
-                            Screen.OnboardingWelcome.route
-                        } else {
-                            // DeviceId tanınmadı - İlk kez kullanıyor
-                            Log.d("MainActivity", "📱 DeviceId tanınmadı, onboarding'e yönlendiriliyor")
-                            Screen.OnboardingWelcome.route
+                                userWithDevice != null && !userWithDevice.onboardingCompleted ->
+                                    Screen.OnboardingWelcome.route
+
+                                else -> Screen.OnboardingWelcome.route
+                            }
                         }
                     }
                 }
 
-                // startDestination hazır olana kadar loading göster
-                if (startDestination != null) {
-                    NavGraph(
-                        navController = navController!!,
-                        startDestination = startDestination!!,
-                        onGoogleSignInClick = { signInWithGoogle() }
-                    )
+                // Deep link işle
+                LaunchedEffect(Unit) {
+                    handleDeepLink(intent, navController!!)
                 }
+
+                // 🔥 Artık login state değişince NavGraph otomatik güncellenir
+                NavGraph(
+                    navController = navController!!,
+                    startDestination = startDestination,
+                    onGoogleSignInClick = { signInWithGoogle() }
+                )
             }
         }
     }
