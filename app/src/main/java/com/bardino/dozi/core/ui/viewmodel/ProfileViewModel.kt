@@ -7,6 +7,7 @@ import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.local.entity.ProfileEntity
 import com.bardino.dozi.core.data.model.ProfileStats
 import com.bardino.dozi.core.data.repository.ProfileStatsRepository
+import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.premium.PremiumManager
 import com.bardino.dozi.core.profile.ProfileManager
 import com.bardino.dozi.core.profile.PremiumRequiredException
@@ -27,7 +28,8 @@ data class ProfileUiState(
     val isLoadingStats: Boolean = false,
     val error: String? = null,
     val isPremium: Boolean = false,
-    val canAddMoreProfiles: Boolean = false
+    val canAddMoreProfiles: Boolean = false,
+    val userName: String? = null  // User's display name from Firestore
 )
 
 /**
@@ -37,7 +39,8 @@ data class ProfileUiState(
 class ProfileViewModel @Inject constructor(
     private val profileManager: ProfileManager,
     private val premiumManager: PremiumManager,
-    private val profileStatsRepository: ProfileStatsRepository
+    private val profileStatsRepository: ProfileStatsRepository,
+    private val userRepository: UserRepository
 ) : ViewModel() {
 
     private val auth = FirebaseAuth.getInstance()
@@ -63,6 +66,7 @@ class ProfileViewModel @Inject constructor(
         loadProfiles()
         loadActiveProfile()
         checkPremiumStatus()
+        loadUserName()
     }
 
     /**
@@ -172,6 +176,22 @@ class ProfileViewModel @Inject constructor(
                     _uiState.update { it.copy(isPremium = isPremium) }
                     updateCanAddMoreProfiles()
                 }
+        }
+    }
+
+    /**
+     * Load user name from Firestore
+     */
+    private fun loadUserName() {
+        viewModelScope.launch {
+            try {
+                val user = userRepository.getUserData()
+                val userName = user?.name?.takeIf { it.isNotBlank() }
+                _uiState.update { it.copy(userName = userName) }
+            } catch (e: Exception) {
+                android.util.Log.e("ProfileViewModel", "❌ Failed to load user name: ${e.message}")
+                // Don't update error state - this is not critical
+            }
         }
     }
 

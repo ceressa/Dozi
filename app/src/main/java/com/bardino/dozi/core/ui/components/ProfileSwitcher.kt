@@ -25,11 +25,13 @@ import com.bardino.dozi.core.ui.viewmodel.ProfileViewModel
 
 /**
  * Helper function to get display name for profile
- * Shows "Aile Üyesi" instead of "Varsayılan Profil" for better UX
+ * Shows user's actual name for default profile, otherwise shows profile name
  */
-private fun getProfileDisplayName(profile: ProfileEntity): String {
-    return when (profile.name) {
-        "Varsayılan Profil", "default-profile" -> "Aile Üyesi"
+private fun getProfileDisplayName(profile: ProfileEntity, userName: String?): String {
+    return when {
+        // If this is the default profile and we have a user name, show that
+        (profile.name == "Varsayılan Profil" || profile.name == "default-profile") && !userName.isNullOrBlank() -> userName
+        // Otherwise, show the profile name
         else -> profile.name
     }
 }
@@ -47,6 +49,7 @@ fun ProfileSwitcher(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val activeProfile = uiState.activeProfile
+    val userName = uiState.userName
     var showBottomSheet by remember { mutableStateOf(false) }
 
     // Active profile chip
@@ -79,7 +82,7 @@ fun ProfileSwitcher(
 
                 // Profile name
                 Text(
-                    text = getProfileDisplayName(activeProfile),
+                    text = getProfileDisplayName(activeProfile, userName),
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp
                 )
@@ -99,6 +102,7 @@ fun ProfileSwitcher(
         ProfileSwitcherBottomSheet(
             profiles = uiState.profiles,
             activeProfileId = activeProfile?.id,
+            userName = userName,
             onDismiss = { showBottomSheet = false },
             onProfileSelect = { profileId ->
                 viewModel.switchToProfile(profileId)
@@ -117,6 +121,7 @@ fun ProfileSwitcher(
 fun ProfileSwitcherBottomSheet(
     profiles: List<ProfileEntity>,
     activeProfileId: String?,
+    userName: String?,
     onDismiss: () -> Unit,
     onProfileSelect: (String) -> Unit,
     onManageProfiles: () -> Unit
@@ -144,19 +149,19 @@ fun ProfileSwitcherBottomSheet(
             ) {
                 Column {
                     Text(
-                        "Aile Üyesi Seç",
+                        "Profil Seç",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "${profiles.size} aile üyesi",
+                        "${profiles.size} profil",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 IconButton(onClick = onManageProfiles) {
-                    Icon(Icons.Default.Settings, "Aile üyesi yönetimi")
+                    Icon(Icons.Default.Settings, "Profil yönetimi")
                 }
             }
 
@@ -173,6 +178,7 @@ fun ProfileSwitcherBottomSheet(
                 items(profiles) { profile ->
                     ProfileItem(
                         profile = profile,
+                        userName = userName,
                         isActive = profile.id == activeProfileId,
                         onClick = { onProfileSelect(profile.id) }
                     )
@@ -185,6 +191,7 @@ fun ProfileSwitcherBottomSheet(
 @Composable
 fun ProfileItem(
     profile: ProfileEntity,
+    userName: String?,
     isActive: Boolean,
     onClick: () -> Unit
 ) {
@@ -227,7 +234,7 @@ fun ProfileItem(
             // Profile info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = getProfileDisplayName(profile),
+                    text = getProfileDisplayName(profile, userName),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
