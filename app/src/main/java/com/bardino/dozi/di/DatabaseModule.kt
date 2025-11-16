@@ -1,29 +1,42 @@
-package com.dozi.dozi.di
+package com.bardino.dozi.di
 
+import android.content.Context
+import com.bardino.dozi.core.data.local.DoziDatabase
+import com.bardino.dozi.core.data.local.dao.MedicationLogDao
+import com.bardino.dozi.core.data.local.dao.ProfileDao
+import com.bardino.dozi.core.data.local.dao.SyncQueueDao
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
+import dagger.hilt.android.qualifiers.ApplicationContext
 import dagger.hilt.components.SingletonComponent
-
-// Eğer Room DAO ve Database sınıflarını eklediğinde çalışır.
-// Şimdilik iskelet: derleme hatası olmaması için yorumlu bırakıldı.
-/*
-@Database(entities = [Medicine::class], version = 1)
-abstract class DoziDatabase : RoomDatabase() {
-    abstract fun medicineDao(): MedicineDao
-}
-*/
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object DatabaseModule {
 
-    // Örnek sağlayıcı – Room eklenince aç
-    /*
     @Provides
     @Singleton
-    fun provideDatabase(@ApplicationContext ctx: Context): DoziDatabase =
-        Room.databaseBuilder(ctx, DoziDatabase::class.java, DATABASE_NAME)
-            .fallbackToDestructiveMigration()
-            .build()
-    */
+    fun provideDatabase(@ApplicationContext context: Context): DoziDatabase {
+        return DoziDatabase.getDatabase(context)
+    }
+
+    @Provides
+    @Singleton
+    fun provideMedicationLogDao(database: DoziDatabase): MedicationLogDao {
+        return database.medicationLogDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideSyncQueueDao(database: DoziDatabase): SyncQueueDao {
+        return database.syncQueueDao()
+    }
+
+    @Provides
+    @Singleton
+    fun provideProfileDao(database: DoziDatabase): ProfileDao {
+        return database.profileDao()
+    }
 }

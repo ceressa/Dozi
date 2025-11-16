@@ -7,6 +7,7 @@ package com.bardino.dozi.core.data.model
 data class Medicine(
     val id: String = "",
     val userId: String = "",                    // Firebase Auth UID
+    val profileId: String = "",                 // 🆕 Profile ID for multi-user support (local profiles)
     val name: String = "",
     val dosage: String = "",                    // "1", "1.5", "2" etc.
     val unit: String = "hap",                   // hap, doz, mg, ml, adet, damla, kaşık
