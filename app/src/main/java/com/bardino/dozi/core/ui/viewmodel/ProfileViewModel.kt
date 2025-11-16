@@ -281,11 +281,11 @@ class ProfileViewModel @Inject constructor(
     /**
      * Switch to a different profile
      */
-    fun switchToProfile(profileId: String) {
+    fun switchToProfile(profileId: String, pinCode: String? = null) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true, error = null) }
 
-            profileManager.switchToProfile(profileId).fold(
+            profileManager.switchToProfile(profileId, pinCode).fold(
                 onSuccess = {
                     _uiState.update { it.copy(isLoading = false, error = null) }
                 },
@@ -299,6 +299,41 @@ class ProfileViewModel @Inject constructor(
                 }
             )
         }
+    }
+
+    /**
+     * Set PIN for profile
+     */
+    fun setProfilePin(profileId: String, pinCode: String) {
+        viewModelScope.launch {
+            profileManager.setProfilePin(profileId, pinCode).fold(
+                onSuccess = {},
+                onFailure = { error ->
+                    _uiState.update { it.copy(error = error.message) }
+                }
+            )
+        }
+    }
+
+    /**
+     * Remove PIN from profile
+     */
+    fun removeProfilePin(profileId: String) {
+        viewModelScope.launch {
+            profileManager.removeProfilePin(profileId).fold(
+                onSuccess = {},
+                onFailure = { error ->
+                    _uiState.update { it.copy(error = error.message) }
+                }
+            )
+        }
+    }
+
+    /**
+     * Check if profile has PIN
+     */
+    suspend fun hasPin(profileId: String): Boolean {
+        return profileManager.hasPin(profileId)
     }
 
     /**
