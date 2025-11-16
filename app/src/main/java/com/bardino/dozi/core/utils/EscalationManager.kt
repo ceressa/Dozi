@@ -2,6 +2,7 @@ package com.bardino.dozi.core.utils
 
 import android.content.Context
 import android.util.Log
+import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.core.data.model.*
 import com.bardino.dozi.core.data.repository.BadiRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
@@ -20,7 +21,12 @@ class EscalationManager(
 ) {
     private val app = context.applicationContext as com.bardino.dozi.DoziApplication
     private val medicineRepository = MedicineRepository(app.profileManager)
-    private val medicationLogRepository = MedicationLogRepository(context)
+    private val medicationLogRepository = MedicationLogRepository(
+        context,
+        com.google.firebase.auth.FirebaseAuth.getInstance(),
+        com.google.firebase.firestore.FirebaseFirestore.getInstance(),
+        app.profileManager
+    )
     private val badiRepository = BadiRepository()
     private val notificationRepository = NotificationRepository()
 

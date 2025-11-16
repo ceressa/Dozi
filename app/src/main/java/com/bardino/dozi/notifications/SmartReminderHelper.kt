@@ -34,7 +34,13 @@ object SmartReminderHelper {
         scheduledTime: Long
     ): Pair<Int?, String?> = withContext(Dispatchers.IO) {
         try {
-            val logRepository = MedicationLogRepository(context)
+            val app = context.applicationContext as com.bardino.dozi.DoziApplication
+            val logRepository = MedicationLogRepository(
+                context,
+                com.google.firebase.auth.FirebaseAuth.getInstance(),
+                com.google.firebase.firestore.FirebaseFirestore.getInstance(),
+                app.profileManager
+            )
 
             // Son 14 gün içinde bu ilaç için alınan/ertelenen logları al
             // TODO: MedicationLogRepository'de getLogsByMedicineId() metodu eklenecek
@@ -68,7 +74,13 @@ object SmartReminderHelper {
         scheduledTimeStr: String // "09:00"
     ): Pair<String?, String?> = withContext(Dispatchers.IO) {
         try {
-            val logRepository = MedicationLogRepository(context)
+            val app = context.applicationContext as com.bardino.dozi.DoziApplication
+            val logRepository = MedicationLogRepository(
+                context,
+                com.google.firebase.auth.FirebaseAuth.getInstance(),
+                com.google.firebase.firestore.FirebaseFirestore.getInstance(),
+                app.profileManager
+            )
 
             // TODO: Son N hatırlatmayı analiz et
             // - scheduledTime vs takenAt farkını hesapla

@@ -40,6 +40,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
+import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.R
 import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.data.OnboardingPreferences
