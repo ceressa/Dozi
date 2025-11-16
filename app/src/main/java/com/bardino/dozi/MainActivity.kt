@@ -154,6 +154,14 @@ class MainActivity : ComponentActivity() {
         CoroutineScope(Dispatchers.IO).launch {
             val currentUser = FirebaseAuth.getInstance().currentUser
             if (currentUser != null) {
+                // 📱 Device ID'yi kaydet (her açılışta kontrol et ve kaydet)
+                val deviceId = Settings.Secure.getString(
+                    contentResolver,
+                    Settings.Secure.ANDROID_ID
+                )
+                userRepository.updateUserField("deviceId", deviceId)
+                Log.d("MainActivity", "Device ID kaydedildi/güncellendi: $deviceId")
+
                 // 👥 Firestore'dan profilleri senkronize et
                 profileRepository.syncProfilesFromFirestore()
                 Log.d("MainActivity", "Profiller Firestore'dan senkronize edildi")

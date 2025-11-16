@@ -13,6 +13,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
+import kotlinx.coroutines.flow.firstOrNull
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,10 +29,6 @@ class MedicineRepository @Inject constructor(
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
-    companion object {
-        private const val DEFAULT_PROFILE_NAME = "Varsayılan Profil"
-    }
-
     /**
      * Get current user's medicine collection reference
      */
@@ -41,10 +38,22 @@ class MedicineRepository @Inject constructor(
 
     /**
      * Check if given profile is the default/main profile
+     * Logic:
+     * - If user has only 1 profile, it's the default
+     * - If user has multiple profiles, the first created profile (oldest) is default
      */
     private suspend fun isDefaultProfile(profileId: String): Boolean {
-        val profile = profileManager.getProfileById(profileId)
-        return profile?.name == DEFAULT_PROFILE_NAME || profile?.name == "default-profile"
+        val profileCount = profileManager.getProfileCount()
+
+        // If only 1 profile exists, it's the default
+        if (profileCount == 1) {
+            return true
+        }
+
+        // If multiple profiles, check if this is the first created one
+        val allProfiles = profileManager.getAllProfiles().firstOrNull()
+        val firstProfile = allProfiles?.minByOrNull { it.createdAt }
+        return firstProfile?.id == profileId
     }
 
     /**
@@ -84,44 +93,55 @@ class MedicineRepository @Inject constructor(
      * Get medicines with real-time updates for active profile
      * 🔥 BUG FIX: Now properly reacts to profile changes and filters by ownerProfileId
      */
-    fun getMedicinesFlow(): Flow<List<Medicine>> = profileManager.getActiveProfile()
-        .flatMapLatest { activeProfile ->
-            val collection = getMedicinesCollection()
-            if (collection == null || activeProfile == null) {
-                return@flatMapLatest flowOf(emptyList())
-            }
+    fun getMedicinesFlow(): Flow<List<Medicine>> = profileManager.getAllProfiles()
+        .flatMapLatest { allProfiles ->
+            profileManager.getActiveProfile().flatMapLatest { activeProfile ->
+                val collection = getMedicinesCollection()
+                if (collection == null || activeProfile == null) {
+                    return@flatMapLatest flowOf(emptyList())
+                }
 
-            callbackFlow {
-                val listener = collection
-                    // Get all medicines, filter client-side
-                    .addSnapshotListener { snapshot, error ->
-                        if (error != null) {
-                            android.util.Log.e("MedicineRepository", "Error listening to medicines: ${error.message}")
-                            trySend(emptyList())
-                            return@addSnapshotListener
+                // Determine if this is the default profile
+                val isDefault = if (allProfiles.size == 1) {
+                    // Only 1 profile = default
+                    true
+                } else {
+                    // Multiple profiles = check if this is the first created one
+                    val firstProfile = allProfiles.minByOrNull { it.createdAt }
+                    firstProfile?.id == activeProfile.id
+                }
+
+                callbackFlow {
+                    val listener = collection
+                        // Get all medicines, filter client-side
+                        .addSnapshotListener { snapshot, error ->
+                            if (error != null) {
+                                android.util.Log.e("MedicineRepository", "Error listening to medicines: ${error.message}")
+                                trySend(emptyList())
+                                return@addSnapshotListener
+                            }
+
+                            var medicines = snapshot?.documents?.mapNotNull {
+                                it.toObject(Medicine::class.java)
+                            }?.filter { medicine ->
+                                if (isDefault) {
+                                    // Default profile sees medicines with null or empty ownerProfileId
+                                    medicine.ownerProfileId.isNullOrEmpty()
+                                } else {
+                                    // Other profiles see only their own medicines
+                                    medicine.ownerProfileId == activeProfile.id
+                                }
+                            } ?: emptyList()
+
+                            // Client-side sorting
+                            medicines = medicines.sortedByDescending { it.createdAt }
+
+                            android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: ${activeProfile.name} (${activeProfile.id}), isDefault: $isDefault")
+                            trySend(medicines)
                         }
 
-                        val isDefault = activeProfile.name == DEFAULT_PROFILE_NAME || activeProfile.name == "default-profile"
-                        var medicines = snapshot?.documents?.mapNotNull {
-                            it.toObject(Medicine::class.java)
-                        }?.filter { medicine ->
-                            if (isDefault) {
-                                // Default profile sees medicines with null or empty ownerProfileId
-                                medicine.ownerProfileId.isNullOrEmpty()
-                            } else {
-                                // Other profiles see only their own medicines
-                                medicine.ownerProfileId == activeProfile.id
-                            }
-                        } ?: emptyList()
-
-                        // Client-side sorting
-                        medicines = medicines.sortedByDescending { it.createdAt }
-
-                        android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: ${activeProfile.name} (${activeProfile.id}), isDefault: $isDefault")
-                        trySend(medicines)
-                    }
-
-                awaitClose { listener.remove() }
+                    awaitClose { listener.remove() }
+                }
             }
         }
 
