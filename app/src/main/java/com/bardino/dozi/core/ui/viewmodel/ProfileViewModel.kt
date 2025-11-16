@@ -90,6 +90,13 @@ class ProfileViewModel @Inject constructor(
         }
     }
 
+    private suspend fun refreshProfiles() {
+        val profiles = profileManager.getAllProfiles().first()
+        val active = profileManager.getActiveProfileDirect()
+        _uiState.update { it.copy(profiles = profiles, activeProfile = active) }
+    }
+
+
     /**
      * Load statistics for all profiles
      */
@@ -218,6 +225,7 @@ class ProfileViewModel @Inject constructor(
 
             profileManager.updateProfileName(profileId, name).fold(
                 onSuccess = {
+                    refreshProfiles()
                     android.util.Log.d("ProfileViewModel", "✅ Profile name updated: $name")
                     _uiState.update { it.copy(isLoading = false, error = null) }
                     // 🔥 Force refresh profiles to update UI
