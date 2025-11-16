@@ -358,15 +358,17 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     }
                     val scheduledTime = calendar.timeInMillis
 
-                    // Bildirim göster (medicineId ve dosage ile)
+                    // Bildirim göster (medicineId, dosage ve time note ile)
                     if (hasNotificationPermission(context)) {
+                        val timeNote = parseTimeNoteFromMedicine(medicine.notes, time)
                         NotificationHelper.showMedicationNotification(
                             context = context,
                             medicineName = medicine.name,
                             medicineId = medicine.id,
                             dosage = "${medicine.dosage} ${medicine.unit}",
                             time = time,
-                            scheduledTime = scheduledTime
+                            scheduledTime = scheduledTime,
+                            timeNote = timeNote
                         )
                     }
 
@@ -608,5 +610,34 @@ private fun listAvailableVoices(tts: TextToSpeech) {
     tts.voices?.forEach { voice ->
         println("Ses adı: ${voice.name}, locale: ${voice.locale}, quality: ${voice.quality}, latency: ${voice.latency}")
     }
+}
+
+/**
+ * Medicine.notes'tan belirli bir saat için notu parse et
+ *
+ * Format: "08:00: Tok karnına | 20:00: Yemekten sonra | Her 3 günde bir"
+ *
+ * @param notes Medicine.notes string
+ * @param time Aranacak saat (örn: "08:00")
+ * @return Bu saat için not, yoksa boş string
+ */
+private fun parseTimeNoteFromMedicine(notes: String, time: String): String {
+    if (notes.isEmpty()) return ""
+
+    // "|" ile ayır (birden fazla saat notu olabilir)
+    val parts = notes.split("|").map { it.trim() }
+
+    parts.forEach { part ->
+        // "08:00: Tok karnına" formatında mı?
+        if (part.contains(":") && part.startsWith(time)) {
+            // "08:00: Tok karnına" -> "Tok karnına"
+            val noteText = part.substringAfter("$time:").trim()
+            if (noteText.isNotEmpty()) {
+                return noteText
+            }
+        }
+    }
+
+    return ""
 }
 
