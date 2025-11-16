@@ -32,7 +32,9 @@ import kotlinx.coroutines.launch
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun SettingsScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToProfileManagement: () -> Unit = {},
+    onNavigateToProfileDashboard: () -> Unit = {}
 ) {
     val context = LocalContext.current
     val userRepository = remember { UserRepository() }
@@ -83,6 +85,14 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Profil Ayarları
+                SettingsSection(title = "Profil") {
+                    ProfileSettingsSection(
+                        onNavigateToProfileManagement = onNavigateToProfileManagement,
+                        onNavigateToProfileDashboard = onNavigateToProfileDashboard
+                    )
+                }
+
                 // Tema Ayarı
                 SettingsSection(title = "Görünüm") {
                     var selectedTheme by remember { mutableStateOf(userData?.theme ?: "system") }

@@ -1,11 +1,16 @@
 package com.bardino.dozi.core.ui.viewmodel
 
+import android.os.Build
+import androidx.annotation.RequiresApi
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.local.entity.ProfileEntity
+import com.bardino.dozi.core.data.model.ProfileStats
+import com.bardino.dozi.core.data.repository.ProfileStatsRepository
 import com.bardino.dozi.core.premium.PremiumManager
 import com.bardino.dozi.core.profile.ProfileManager
 import com.bardino.dozi.core.profile.PremiumRequiredException
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -17,7 +22,9 @@ import javax.inject.Inject
 data class ProfileUiState(
     val profiles: List<ProfileEntity> = emptyList(),
     val activeProfile: ProfileEntity? = null,
+    val profileStats: Map<String, ProfileStats> = emptyMap(),  // profileId -> stats
     val isLoading: Boolean = false,
+    val isLoadingStats: Boolean = false,
     val error: String? = null,
     val isPremium: Boolean = false,
     val canAddMoreProfiles: Boolean = false
@@ -29,8 +36,11 @@ data class ProfileUiState(
 @HiltViewModel
 class ProfileViewModel @Inject constructor(
     private val profileManager: ProfileManager,
-    private val premiumManager: PremiumManager
+    private val premiumManager: PremiumManager,
+    private val profileStatsRepository: ProfileStatsRepository
 ) : ViewModel() {
+
+    private val auth = FirebaseAuth.getInstance()
 
     private val _uiState = MutableStateFlow(ProfileUiState())
     val uiState: StateFlow<ProfileUiState> = _uiState.asStateFlow()
@@ -53,6 +63,57 @@ class ProfileViewModel @Inject constructor(
         loadProfiles()
         loadActiveProfile()
         checkPremiumStatus()
+    }
+
+    /**
+     * Load statistics for a specific profile
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun loadProfileStats(profileId: String, profileName: String) {
+        val userId = auth.currentUser?.uid ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingStats = true) }
+            try {
+                val stats = profileStatsRepository.getProfileStats(userId, profileId, profileName)
+                _uiState.update { state ->
+                    val updatedStats = state.profileStats.toMutableMap()
+                    updatedStats[profileId] = stats
+                    state.copy(
+                        profileStats = updatedStats,
+                        isLoadingStats = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoadingStats = false, error = e.message) }
+            }
+        }
+    }
+
+    /**
+     * Load statistics for all profiles
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun loadAllProfilesStats() {
+        val userId = auth.currentUser?.uid ?: return
+
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoadingStats = true) }
+            try {
+                val profiles = _uiState.value.profiles.map { it.id to it.name }
+                val allStats = profileStatsRepository.getAllProfilesStats(userId, profiles)
+
+                val statsMap = allStats.associateBy { it.profileId }
+                _uiState.update { state ->
+                    state.copy(
+                        profileStats = statsMap,
+                        isLoadingStats = false
+                    )
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoadingStats = false, error = e.message) }
+            }
+        }
     }
 
     /**

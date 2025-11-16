@@ -54,6 +54,7 @@ import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.UserRepository
+import com.bardino.dozi.core.ui.components.ProfileSwitcher
 import com.bardino.dozi.core.ui.screens.home.MedicineStatus
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.core.utils.SoundHelper
@@ -162,7 +163,8 @@ fun HomeScreen(
     contentPadding: PaddingValues = PaddingValues(),
     onNavigateToMedicines: () -> Unit,
     onNavigateToReminders: () -> Unit,
-    onNavigateToProfile: () -> Unit
+    onNavigateToProfile: () -> Unit,
+    onNavigateToProfileManagement: () -> Unit = {}
 ) {
     val context = LocalContext.current
 
@@ -217,6 +219,19 @@ fun HomeScreen(
                 )
         ) {
             DoziHeader(firestoreUser = uiState.user, isLoggedIn = uiState.isLoggedIn)
+
+            // 👥 Profil Değiştirici
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                ProfileSwitcher(
+                    onNavigateToProfileManagement = onNavigateToProfileManagement
+                )
+            }
 
             Column(
                 modifier = Modifier
