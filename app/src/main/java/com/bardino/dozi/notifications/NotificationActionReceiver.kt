@@ -370,10 +370,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         )
                     }
 
-                    // 🔄 Sonraki günün alarmını planla
+                    // 🔄 Sonraki alarmı planla (frequency'ye göre)
                     if (medicine.reminderEnabled) {
-                        ReminderScheduler.scheduleReminders(context, medicine)
-                        android.util.Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı: $medicineName")
+                        ReminderScheduler.scheduleReminders(context, medicine, isRescheduling = true)
+                        android.util.Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı: $medicineName (frequency: ${medicine.frequency})")
                     }
 
                     // ⏰ 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
