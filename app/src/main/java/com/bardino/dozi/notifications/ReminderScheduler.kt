@@ -43,6 +43,19 @@ class ReminderScheduler {
                 return
             }
 
+            // ✅ Medicine ID kontrolü
+            if (medicine.id.isEmpty()) {
+                Log.e(TAG, "❌ Medicine ID boş! ${medicine.name} için alarmlar kurulamıyor.")
+                return
+            }
+
+            // ✅ Exact alarm izni kontrolü (Android 12+)
+            if (!PermissionHandler.hasExactAlarmPermission(context)) {
+                Log.w(TAG, "⚠️ SCHEDULE_EXACT_ALARM izni yok! ${medicine.name} için alarmlar kurulamıyor.")
+                Log.w(TAG, "⚠️ Kullanıcının Settings > Apps > Dozi > Alarms & reminders'dan izni vermesi gerekiyor.")
+                return
+            }
+
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
             // Her saat için bir alarm kur
