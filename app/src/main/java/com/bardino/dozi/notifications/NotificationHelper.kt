@@ -44,7 +44,8 @@ object NotificationHelper {
         medicineId: String = "",
         dosage: String = "",
         time: String = getCurrentTime(),
-        scheduledTime: Long = System.currentTimeMillis()
+        scheduledTime: Long = System.currentTimeMillis(),
+        timeNote: String = ""  // "Tok karnına", "Aç karnına", vs.
     ) {
         createDoziChannel(context)
         val nm = NotificationManagerCompat.from(context)
@@ -68,17 +69,32 @@ object NotificationHelper {
         // Dozi large icon
         val largeIcon = BitmapFactory.decodeResource(context.resources, R.drawable.dozi)
 
-        // 🎨 Kısa ve öz bildirim metni
+        // 🎨 Bildirim metni - ilaç adı, dozaj ve not ile
+        val contentTitle = if (medicineName.isNotEmpty()) "💊 $medicineName" else "💊 İlaç Hatırlatması"
+        val contentText = buildString {
+            append("⏰ $time")
+            if (dosage.isNotEmpty()) append(" • $dosage")
+            if (timeNote.isNotEmpty()) append(" • $timeNote")
+        }
+
+        val bigText = buildString {
+            append("⏰ Saat: $time\n")
+            if (medicineName.isNotEmpty()) append("💊 İlaç: $medicineName\n")
+            if (dosage.isNotEmpty()) append("💉 Dozaj: $dosage\n")
+            if (timeNote.isNotEmpty()) append("📝 $timeNote\n")
+            append("\nDetayları görmek için dokunun.")
+        }
+
         val notification = NotificationCompat.Builder(context, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_notification_pill)
             .setColor(Color.parseColor("#26C6DA"))
             .setLargeIcon(largeIcon)
-            .setContentTitle("💊 İlaç Hatırlatması")
-            .setContentText("$time • Hatırlatmalarınızı görüntüleyin")
+            .setContentTitle(contentTitle)
+            .setContentText(contentText)
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("⏰ Saat: $time\n\n📋 İlaçlarınızı almayı unutmayın. Detayları görmek için dokunun.")
-                    .setBigContentTitle("💊 İlaç Hatırlatması")
+                    .bigText(bigText)
+                    .setBigContentTitle(contentTitle)
                     .setSummaryText("Dozi")
             )
             .setAutoCancel(false) // Butonlarla kontrol ediyoruz

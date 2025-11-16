@@ -1729,30 +1729,56 @@ private fun SummaryStep(
                         "custom" -> medicine.customDosage
                         else -> medicine.dosageType
                     }
-                    val dosageText = "$dosageAmount ${medicine.unit}"
 
-                    Surface(
-                        color = DoziTurquoise.copy(alpha = 0.1f),
-                        shape = MaterialTheme.shapes.small
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = DoziTurquoise.copy(alpha = 0.05f)
+                        ),
+                        border = BorderStroke(1.dp, DoziTurquoise.copy(alpha = 0.3f)),
+                        shape = MaterialTheme.shapes.small,
+                        elevation = CardDefaults.cardElevation(0.dp)
                     ) {
-                        Row(
+                        Column(
                             modifier = Modifier
                                 .fillMaxWidth()
                                 .padding(12.dp),
-                            horizontalArrangement = Arrangement.SpaceBetween
+                            verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
+                            // İlaç ismi - uzun isimleri ellipsize ile kes
                             Text(
-                                "${index + 1}. ${medicine.name}",
+                                text = "${index + 1}. ${medicine.name}",
                                 style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Medium,
-                                color = MaterialTheme.colorScheme.onSurface
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface,
+                                maxLines = 2,
+                                overflow = TextOverflow.Ellipsis
                             )
-                            Text(
-                                dosageText,
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = DoziTurquoise,
-                                fontWeight = FontWeight.Bold
-                            )
+
+                            // Dozaj bilgisi - yatay düzen
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    Icons.Default.LocalHospital,
+                                    contentDescription = null,
+                                    tint = DoziTurquoise,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Surface(
+                                    color = DoziTurquoise.copy(alpha = 0.15f),
+                                    shape = MaterialTheme.shapes.extraSmall
+                                ) {
+                                    Text(
+                                        text = "$dosageAmount ${medicine.unit}",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        color = DoziTurquoise,
+                                        fontWeight = FontWeight.Bold,
+                                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                                    )
+                                }
+                            }
                         }
                     }
                 }
