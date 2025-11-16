@@ -259,17 +259,9 @@ fun HomeScreen(
 
     // ✅ Context gerektiren ViewModel fonksiyonlarını çağır
     LaunchedEffect(context) {
-        viewModel.refreshMedicines(context)
+        // 🔥 Not: refreshMedicines artık Flow ile otomatik - polling kaldırıldı
         viewModel.loadSnoozeStateFromContext(context)
         viewModel.startSnoozeTimerWithContext(context)
-    }
-
-    // ✅ Periyodik ilaç güncelleme (context gerektiğinde)
-    LaunchedEffect(context) {
-        while (true) {
-            delay(3000)
-            viewModel.refreshMedicines(context)
-        }
     }
 
     // 🎨 Tema renklerini al

@@ -66,9 +66,99 @@ class HomeViewModel @Inject constructor(
 
     init {
         loadData()
-        startPollingData()
+        // 🔥 Medicines Flow'u dinle (polling yerine)
+        observeMedicinesFlow()
         loadSnoozeState()
         startSnoozeTimer()
+    }
+
+    /**
+     * 🔥 BUG FIX: Medicines Flow'unu dinle (profil değişikliklerini yakala)
+     */
+    private fun observeMedicinesFlow() {
+        viewModelScope.launch {
+            medicineRepository.getMedicinesFlow()
+                .catch { error ->
+                    android.util.Log.e(TAG, "Error observing medicines: ${error.message}")
+                }
+                .collect { medicines ->
+                    android.util.Log.d(TAG, "🔄 Medicines updated: ${medicines.size} medicines")
+                    updateMedicinesState(medicines)
+                }
+        }
+    }
+
+    /**
+     * Medicines state'ini güncelle
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private suspend fun updateMedicinesState(allMedicines: List<Medicine>) {
+        try {
+            val todaysMeds = allMedicines.filter { medicine ->
+                val today = System.currentTimeMillis()
+                val todayDateString = getCurrentDateString()
+
+                when (medicine.frequency) {
+                    "Günlük" -> true
+                    "Haftalık" -> {
+                        val currentDayName = getCurrentDayName()
+                        medicine.selectedDays.contains(currentDayName)
+                    }
+                    "Belirli günlerde" -> {
+                        medicine.selectedDates.contains(todayDateString)
+                    }
+                    else -> false
+                }
+            }
+
+            val upcoming = todaysMeds.flatMap { medicine ->
+                medicine.times.map { time -> Pair(medicine, time) }
+            }.filter { (medicine, time) ->
+                val (hour, minute) = time.split(":").map { it.toInt() }
+                val currentHour = java.time.LocalTime.now().hour
+                val currentMinute = java.time.LocalTime.now().minute
+                val medicineTime = hour * 60 + minute
+                val currentTime = currentHour * 60 + currentMinute
+                medicineTime >= currentTime
+            }.sortedBy { it.second }
+
+            _uiState.update {
+                it.copy(
+                    todaysMedicines = todaysMeds,
+                    allUpcomingMedicines = upcoming,
+                    upcomingMedicine = upcoming.firstOrNull()
+                )
+            }
+        } catch (e: Exception) {
+            android.util.Log.e(TAG, "Error updating medicines state: ${e.message}")
+        }
+    }
+
+    /**
+     * Helper: Get current date string in dd/MM/yyyy format
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getCurrentDateString(): String {
+        val formatter = java.time.format.DateTimeFormatter.ofPattern("dd/MM/yyyy")
+        return java.time.LocalDate.now().format(formatter)
+    }
+
+    /**
+     * Helper: Get current day name in Turkish
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun getCurrentDayName(): String {
+        val dayOfWeek = java.time.LocalDate.now().dayOfWeek.value
+        return when (dayOfWeek) {
+            1 -> "Pazartesi"
+            2 -> "Salı"
+            3 -> "Çarşamba"
+            4 -> "Perşembe"
+            5 -> "Cuma"
+            6 -> "Cumartesi"
+            7 -> "Pazar"
+            else -> ""
+        }
     }
 
     /**
