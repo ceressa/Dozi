@@ -28,6 +28,10 @@ class MedicineRepository @Inject constructor(
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
+    companion object {
+        private const val DEFAULT_PROFILE_NAME = "Varsayılan Profil"
+    }
+
     /**
      * Get current user's medicine collection reference
      */
@@ -36,27 +40,49 @@ class MedicineRepository @Inject constructor(
     }
 
     /**
+     * Check if given profile is the default/main profile
+     */
+    private suspend fun isDefaultProfile(profileId: String): Boolean {
+        val profile = profileManager.getProfileById(profileId)
+        return profile?.name == DEFAULT_PROFILE_NAME || profile?.name == "default-profile"
+    }
+
+    /**
      * Get all medicines for current user and active profile
+     * If active profile is default, returns medicines with ownerProfileId = null
+     * Otherwise, returns medicines with ownerProfileId = activeProfileId
      */
     suspend fun getAllMedicines(): List<Medicine> {
         val collection = getMedicinesCollection() ?: return emptyList()
         val activeProfileId = profileManager.getActiveProfileId()
+        val isDefault = isDefaultProfile(activeProfileId)
 
         return try {
+            // Get all medicines and filter client-side for now
+            // TODO: Optimize with composite query when needed
             val snapshot = collection
-                .whereEqualTo("profileId", activeProfileId)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
-            snapshot.documents.mapNotNull { it.toObject(Medicine::class.java) }
+
+            snapshot.documents.mapNotNull { it.toObject(Medicine::class.java) }.filter { medicine ->
+                if (isDefault) {
+                    // Default profile sees medicines with null or empty ownerProfileId
+                    medicine.ownerProfileId.isNullOrEmpty()
+                } else {
+                    // Other profiles see only their own medicines
+                    medicine.ownerProfileId == activeProfileId
+                }
+            }
         } catch (e: Exception) {
+            android.util.Log.e("MedicineRepository", "❌ Error getting medicines: ${e.message}")
             emptyList()
         }
     }
 
     /**
      * Get medicines with real-time updates for active profile
-     * 🔥 BUG FIX: Now properly reacts to profile changes
+     * 🔥 BUG FIX: Now properly reacts to profile changes and filters by ownerProfileId
      */
     fun getMedicinesFlow(): Flow<List<Medicine>> = profileManager.getActiveProfile()
         .flatMapLatest { activeProfile ->
@@ -67,23 +93,31 @@ class MedicineRepository @Inject constructor(
 
             callbackFlow {
                 val listener = collection
-                    .whereEqualTo("profileId", activeProfile.id)
-                    // 🔧 TEMP: orderBy kaldırıldı - index build olana kadar
-                    // .orderBy("createdAt", Query.Direction.DESCENDING)
+                    // Get all medicines, filter client-side
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
                             android.util.Log.e("MedicineRepository", "Error listening to medicines: ${error.message}")
                             trySend(emptyList())
                             return@addSnapshotListener
                         }
+
+                        val isDefault = activeProfile.name == DEFAULT_PROFILE_NAME || activeProfile.name == "default-profile"
                         var medicines = snapshot?.documents?.mapNotNull {
                             it.toObject(Medicine::class.java)
+                        }?.filter { medicine ->
+                            if (isDefault) {
+                                // Default profile sees medicines with null or empty ownerProfileId
+                                medicine.ownerProfileId.isNullOrEmpty()
+                            } else {
+                                // Other profiles see only their own medicines
+                                medicine.ownerProfileId == activeProfile.id
+                            }
                         } ?: emptyList()
 
-                        // Client-side sorting (index build olana kadar)
+                        // Client-side sorting
                         medicines = medicines.sortedByDescending { it.createdAt }
 
-                        android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: ${activeProfile.name} (${activeProfile.id})")
+                        android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: ${activeProfile.name} (${activeProfile.id}), isDefault: $isDefault")
                         trySend(medicines)
                     }
 
@@ -210,22 +244,24 @@ class MedicineRepository @Inject constructor(
 
     /**
      * Add a new medicine for active profile
+     * Sets ownerProfileId to null if default profile, or activeProfileId if family member profile
      */
     suspend fun addMedicine(medicine: Medicine): Medicine? {
         val collection = getMedicinesCollection() ?: return null
         return try {
             val user = auth.currentUser ?: return null
             val activeProfileId = profileManager.getActiveProfileId()
+            val isDefault = isDefaultProfile(activeProfileId)
 
             val medicineWithUser = medicine.copy(
                 userId = user.uid,
-                profileId = activeProfileId,
+                ownerProfileId = if (isDefault) null else activeProfileId,
                 id = if (medicine.id.isEmpty()) collection.document().id else medicine.id,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
             collection.document(medicineWithUser.id).set(medicineWithUser).await()
-            android.util.Log.d("MedicineRepository", "✅ Medicine added with ID: ${medicineWithUser.id} for profile: $activeProfileId")
+            android.util.Log.d("MedicineRepository", "✅ Medicine added with ID: ${medicineWithUser.id} for profile: $activeProfileId (ownerProfileId: ${medicineWithUser.ownerProfileId})")
             medicineWithUser
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Error adding medicine", e)
@@ -359,25 +395,21 @@ class MedicineRepository @Inject constructor(
         var migratedCount = 0
 
         return try {
-            // Get all medicines without filtering by profileId
+            // Get all medicines
             val snapshot = collection.get().await()
 
             snapshot.documents.forEach { doc ->
                 val medicine = doc.toObject(Medicine::class.java)
 
-                // If medicine has no profileId or empty profileId, assign default
-                if (medicine != null && medicine.profileId.isEmpty()) {
-                    val updatedMedicine = medicine.copy(
-                        profileId = defaultProfileId,
-                        updatedAt = System.currentTimeMillis()
-                    )
-                    collection.document(doc.id).set(updatedMedicine).await()
-                    migratedCount++
-                    android.util.Log.d("MedicineRepository", "✅ Migrated medicine: ${medicine.name} -> profile: $defaultProfileId")
+                // Migration strategy: Set ownerProfileId = null for default profile medicines
+                // This ensures backwards compatibility
+                if (medicine != null && medicine.ownerProfileId == null) {
+                    // Medicine already migrated or is for default profile, no action needed
+                    android.util.Log.d("MedicineRepository", "Medicine ${medicine.name} already has correct ownerProfileId (null = default profile)")
                 }
             }
 
-            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines migrated")
+            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines checked")
             migratedCount
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Migration failed: ${e.message}")

@@ -36,6 +36,9 @@ data class User(
     val fcmToken: String? = null,                // Firebase Cloud Messaging token
     val buddyCode: String? = null,               // 6 haneli buddy kodu
 
+    // 📱 Device bilgileri
+    val deviceId: String? = null,                // Android Device ID (telefonu tanımlamak için)
+
     // 🔕 DND (Do Not Disturb) ayarları
     val dndEnabled: Boolean = false,             // DND aktif mi?
     val dndStartHour: Int = 22,                  // DND başlangıç saati (0-23)

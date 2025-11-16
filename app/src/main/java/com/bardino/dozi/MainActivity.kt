@@ -102,6 +102,14 @@ class MainActivity : ComponentActivity() {
                                         userRepository.createUserIfNotExists()
                                         Log.d("GOOGLE_AUTH", "Kullanıcı Firestore'a kaydedildi/güncellendi")
 
+                                        // 📱 Device ID'yi kaydet
+                                        val deviceId = Settings.Secure.getString(
+                                            contentResolver,
+                                            Settings.Secure.ANDROID_ID
+                                        )
+                                        userRepository.updateUserField("deviceId", deviceId)
+                                        Log.d("GOOGLE_AUTH", "Device ID kaydedildi: $deviceId")
+
                                         // 🎁 Onboarding tamamlandıysa 1 haftalık ücretsiz trial ver
                                         if (!OnboardingPreferences.isFirstTime(this@MainActivity)) {
                                             userRepository.activateTrialIfOnboarding()
@@ -174,18 +182,50 @@ class MainActivity : ComponentActivity() {
                     handleDeepLink(intent, navController!!)
                 }
 
-                // Başlangıç ekranını belirle
-                val startDestination = if (OnboardingPreferences.isFirstTime(this)) {
-                    Screen.OnboardingWelcome.route
-                } else {
-                    Screen.Home.route
+                // Başlangıç ekranını belirle - Firestore'dan onboarding durumunu kontrol et
+                var startDestination by androidx.compose.runtime.remember {
+                    androidx.compose.runtime.mutableStateOf<String?>(null)
                 }
 
-                NavGraph(
-                    navController = navController!!,
-                    startDestination = startDestination,
-                    onGoogleSignInClick = { signInWithGoogle() }
-                )
+                androidx.compose.runtime.LaunchedEffect(Unit) {
+                    val currentUser = FirebaseAuth.getInstance().currentUser
+                    startDestination = if (currentUser != null) {
+                        // Kullanıcı login, Firestore'dan onboarding durumunu kontrol et
+                        try {
+                            val userData = userRepository.getUserData()
+                            if (userData?.onboardingCompleted == true) {
+                                // Firestore'da onboarding tamamlanmış, Home'a git
+                                Screen.Home.route
+                            } else {
+                                // Firestore'da onboarding tamamlanmamış, Onboarding'e git
+                                Screen.OnboardingWelcome.route
+                            }
+                        } catch (e: Exception) {
+                            // Hata olursa local SharedPreferences kontrolü yap
+                            if (OnboardingPreferences.isFirstTime(this@MainActivity)) {
+                                Screen.OnboardingWelcome.route
+                            } else {
+                                Screen.Home.route
+                            }
+                        }
+                    } else {
+                        // Kullanıcı login değil, SharedPreferences kontrolü yap
+                        if (OnboardingPreferences.isFirstTime(this@MainActivity)) {
+                            Screen.OnboardingWelcome.route
+                        } else {
+                            Screen.Home.route
+                        }
+                    }
+                }
+
+                // startDestination hazır olana kadar loading göster
+                if (startDestination != null) {
+                    NavGraph(
+                        navController = navController!!,
+                        startDestination = startDestination!!,
+                        onGoogleSignInClick = { signInWithGoogle() }
+                    )
+                }
             }
         }
     }
