@@ -68,16 +68,21 @@ class MedicineRepository @Inject constructor(
             callbackFlow {
                 val listener = collection
                     .whereEqualTo("profileId", activeProfile.id)
-                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    // 🔧 TEMP: orderBy kaldırıldı - index build olana kadar
+                    // .orderBy("createdAt", Query.Direction.DESCENDING)
                     .addSnapshotListener { snapshot, error ->
                         if (error != null) {
                             android.util.Log.e("MedicineRepository", "Error listening to medicines: ${error.message}")
                             trySend(emptyList())
                             return@addSnapshotListener
                         }
-                        val medicines = snapshot?.documents?.mapNotNull {
+                        var medicines = snapshot?.documents?.mapNotNull {
                             it.toObject(Medicine::class.java)
                         } ?: emptyList()
+
+                        // Client-side sorting (index build olana kadar)
+                        medicines = medicines.sortedByDescending { it.createdAt }
+
                         android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: ${activeProfile.name} (${activeProfile.id})")
                         trySend(medicines)
                     }
