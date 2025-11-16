@@ -273,9 +273,21 @@ class ProfileManager @Inject constructor(
     /**
      * Ensure default profile exists
      * Call this on app startup
+     * Uses user's name from Firestore if available
      */
-    suspend fun ensureDefaultProfile(): String {
-        return profileRepository.ensureDefaultProfile()
+    suspend fun ensureDefaultProfile(userRepository: com.bardino.dozi.core.data.repository.UserRepository): String {
+        // Try to get user name from UserRepository
+        val user = try {
+            userRepository.getUserData()
+        } catch (e: Exception) {
+            android.util.Log.w("ProfileManager", "Could not fetch user data: ${e.message}")
+            null
+        }
+
+        val userName = user?.name?.takeIf { it.isNotBlank() }
+        android.util.Log.d("ProfileManager", "📝 Ensuring default profile with user name: $userName")
+
+        return profileRepository.ensureDefaultProfile(userName)
     }
 
     /**

@@ -98,10 +98,16 @@ class ProfileRepository @Inject constructor(
      * Update profile
      */
     suspend fun updateProfile(profile: ProfileEntity) {
+        android.util.Log.d("ProfileRepository", "📝 Updating profile: ${profile.name} (${profile.id})")
         val updatedProfile = profile.copy(
             updatedAt = System.currentTimeMillis()
         )
         profileDao.updateProfile(updatedProfile)
+        android.util.Log.d("ProfileRepository", "✅ Profile DAO update completed - Room should trigger Flow")
+
+        // Debug: Verify update
+        val verifyProfile = profileDao.getProfileById(profile.id)
+        android.util.Log.d("ProfileRepository", "🔍 Verification: name=${verifyProfile?.name}, avatar=${verifyProfile?.avatarIcon}, color=${verifyProfile?.color}")
     }
 
     /**
@@ -165,12 +171,15 @@ class ProfileRepository @Inject constructor(
     /**
      * Create default profile if no profiles exist
      * This is useful for first-time users or after app install
+     * Uses provided userName if available
      */
-    suspend fun ensureDefaultProfile(): String {
+    suspend fun ensureDefaultProfile(userName: String? = null): String {
         val count = getProfileCount()
         if (count == 0) {
+            val profileName = userName ?: "Varsayılan Profil"
+            android.util.Log.d("ProfileRepository", "🆕 Creating default profile with name: $profileName")
             return createProfile(
-                name = "Varsayılan Profil",
+                name = profileName,
                 avatarIcon = "👤",
                 color = "#6200EE",
                 setAsActive = true

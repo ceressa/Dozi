@@ -13,6 +13,7 @@ import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.profile.ProfileManager
 import com.bardino.dozi.notifications.NotificationHelper
 import com.bardino.dozi.core.data.repository.MedicineRepository as FirebaseMedicineRepository
+import com.bardino.dozi.core.data.repository.UserRepository
 import com.google.android.libraries.places.api.Places
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -30,6 +31,9 @@ class DoziApplication : Application() {
     @Inject
     lateinit var firebaseMedicineRepository: FirebaseMedicineRepository
 
+    @Inject
+    lateinit var userRepository: UserRepository
+
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     @OptIn(ExperimentalFoundationApi::class)
@@ -43,9 +47,9 @@ class DoziApplication : Application() {
         // 💊 Uygulama açıldığında ilaç veritabanını belleğe yükle
         MedicineRepository.initialize(this)
 
-        // 👥 Default profil oluştur (eğer yoksa)
+        // 👥 Default profil oluştur (eğer yoksa) - kullanıcının adını kullan
         applicationScope.launch {
-            val defaultProfileId = profileManager.ensureDefaultProfile()
+            val defaultProfileId = profileManager.ensureDefaultProfile(userRepository)
 
             // 🔧 MIGRATION: Eski medicines'lere profileId ekle (bir kere çalışır)
             val prefs = getSharedPreferences("dozi_migrations", MODE_PRIVATE)
