@@ -11,6 +11,8 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import kotlinx.coroutines.flow.flatMapLatest
+import kotlinx.coroutines.flow.flowOf
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -54,38 +56,35 @@ class MedicineRepository @Inject constructor(
 
     /**
      * Get medicines with real-time updates for active profile
+     * 🔥 BUG FIX: Now properly reacts to profile changes
      */
-    fun getMedicinesFlow(): Flow<List<Medicine>> = callbackFlow {
-        val collection = getMedicinesCollection()
-        if (collection == null) {
-            trySend(emptyList())
-            close()
-            return@callbackFlow
-        }
-
-        // Get active profile ID
-        val activeProfileId = try {
-            profileManager.getActiveProfileId()
-        } catch (e: Exception) {
-            ""
-        }
-
-        val listener = collection
-            .whereEqualTo("profileId", activeProfileId)
-            .orderBy("createdAt", Query.Direction.DESCENDING)
-            .addSnapshotListener { snapshot, error ->
-                if (error != null) {
-                    trySend(emptyList())
-                    return@addSnapshotListener
-                }
-                val medicines = snapshot?.documents?.mapNotNull {
-                    it.toObject(Medicine::class.java)
-                } ?: emptyList()
-                trySend(medicines)
+    fun getMedicinesFlow(): Flow<List<Medicine>> = profileManager.getActiveProfile()
+        .flatMapLatest { activeProfile ->
+            val collection = getMedicinesCollection()
+            if (collection == null || activeProfile == null) {
+                return@flatMapLatest flowOf(emptyList())
             }
 
-        awaitClose { listener.remove() }
-    }
+            callbackFlow {
+                val listener = collection
+                    .whereEqualTo("profileId", activeProfile.id)
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            android.util.Log.e("MedicineRepository", "Error listening to medicines: ${error.message}")
+                            trySend(emptyList())
+                            return@addSnapshotListener
+                        }
+                        val medicines = snapshot?.documents?.mapNotNull {
+                            it.toObject(Medicine::class.java)
+                        } ?: emptyList()
+                        android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: ${activeProfile.name} (${activeProfile.id})")
+                        trySend(medicines)
+                    }
+
+                awaitClose { listener.remove() }
+            }
+        }
 
     /**
      * Get medicines for today's schedule
@@ -340,6 +339,44 @@ class MedicineRepository @Inject constructor(
             6 -> "Cumartesi"
             7 -> "Pazar"
             else -> ""
+        }
+    }
+
+    /**
+     * 🔧 MIGRATION: Assign default profileId to medicines that don't have one
+     * This should be called once after multi-profile feature is added
+     *
+     * @param defaultProfileId The default profile ID to assign (usually from ProfileManager.ensureDefaultProfile())
+     * @return Number of medicines migrated
+     */
+    suspend fun migrateOldMedicines(defaultProfileId: String): Int {
+        val collection = getMedicinesCollection() ?: return 0
+        var migratedCount = 0
+
+        return try {
+            // Get all medicines without filtering by profileId
+            val snapshot = collection.get().await()
+
+            snapshot.documents.forEach { doc ->
+                val medicine = doc.toObject(Medicine::class.java)
+
+                // If medicine has no profileId or empty profileId, assign default
+                if (medicine != null && medicine.profileId.isEmpty()) {
+                    val updatedMedicine = medicine.copy(
+                        profileId = defaultProfileId,
+                        updatedAt = System.currentTimeMillis()
+                    )
+                    collection.document(doc.id).set(updatedMedicine).await()
+                    migratedCount++
+                    android.util.Log.d("MedicineRepository", "✅ Migrated medicine: ${medicine.name} -> profile: $defaultProfileId")
+                }
+            }
+
+            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines migrated")
+            migratedCount
+        } catch (e: Exception) {
+            android.util.Log.e("MedicineRepository", "❌ Migration failed: ${e.message}")
+            0
         }
     }
 }

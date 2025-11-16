@@ -24,6 +24,17 @@ import com.bardino.dozi.core.data.local.entity.ProfileEntity
 import com.bardino.dozi.core.ui.viewmodel.ProfileViewModel
 
 /**
+ * Helper function to get display name for profile
+ * Shows "Aile Üyesi" instead of "Varsayılan Profil" for better UX
+ */
+private fun getProfileDisplayName(profile: ProfileEntity): String {
+    return when (profile.name) {
+        "Varsayılan Profil", "default-profile" -> "Aile Üyesi"
+        else -> profile.name
+    }
+}
+
+/**
  * Profile Management Screen
  * Allows users to create, edit, switch, and delete profiles
  */
@@ -282,7 +293,7 @@ fun ProfileCard(
             // Profile info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = profile.name,
+                    text = getProfileDisplayName(profile),
                     fontWeight = FontWeight.Bold,
                     fontSize = 18.sp
                 )

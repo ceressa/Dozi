@@ -12,6 +12,7 @@ import com.bardino.dozi.core.common.Constants.REMINDER_CHANNEL_ID
 import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.profile.ProfileManager
 import com.bardino.dozi.notifications.NotificationHelper
+import com.bardino.dozi.core.data.repository.MedicineRepository as FirebaseMedicineRepository
 import com.google.android.libraries.places.api.Places
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
@@ -25,6 +26,9 @@ class DoziApplication : Application() {
 
     @Inject
     lateinit var profileManager: ProfileManager
+
+    @Inject
+    lateinit var firebaseMedicineRepository: FirebaseMedicineRepository
 
     private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
@@ -41,7 +45,20 @@ class DoziApplication : Application() {
 
         // 👥 Default profil oluştur (eğer yoksa)
         applicationScope.launch {
-            profileManager.ensureDefaultProfile()
+            val defaultProfileId = profileManager.ensureDefaultProfile()
+
+            // 🔧 MIGRATION: Eski medicines'lere profileId ekle (bir kere çalışır)
+            val prefs = getSharedPreferences("dozi_migrations", MODE_PRIVATE)
+            val migrationDone = prefs.getBoolean("medicines_profileId_migration_v1", false)
+
+            if (!migrationDone) {
+                android.util.Log.d("DoziApplication", "🔧 Starting medicines profileId migration...")
+                val migratedCount = firebaseMedicineRepository.migrateOldMedicines(defaultProfileId)
+                if (migratedCount >= 0) {
+                    prefs.edit().putBoolean("medicines_profileId_migration_v1", true).apply()
+                    android.util.Log.d("DoziApplication", "✅ Medicines migration completed: $migratedCount medicines")
+                }
+            }
         }
 
         // 🔔 Bildirim kanallarını oluştur

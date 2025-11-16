@@ -24,6 +24,17 @@ import androidx.compose.ui.unit.sp
 import com.bardino.dozi.core.data.local.entity.ProfileEntity
 
 /**
+ * Helper function to get display name for profile
+ * Shows "Aile Üyesi" instead of "Varsayılan Profil" for better UX
+ */
+private fun getProfileDisplayName(profile: ProfileEntity): String {
+    return when (profile.name) {
+        "Varsayılan Profil", "default-profile" -> "Aile Üyesi"
+        else -> profile.name
+    }
+}
+
+/**
  * Dialog for creating a new profile
  */
 @Composable
@@ -221,7 +232,7 @@ fun DeleteProfileDialog(
         },
         title = { Text("Profili Sil?") },
         text = {
-            Text("\"${profile.name}\" profilini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve profildeki tüm ilaçlar silinecektir.")
+            Text("\"${getProfileDisplayName(profile)}\" profilini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve profildeki tüm ilaçlar silinecektir.")
         },
         confirmButton = {
             TextButton(

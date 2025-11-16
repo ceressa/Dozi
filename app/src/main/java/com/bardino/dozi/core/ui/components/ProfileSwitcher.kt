@@ -24,6 +24,17 @@ import com.bardino.dozi.core.data.local.entity.ProfileEntity
 import com.bardino.dozi.core.ui.viewmodel.ProfileViewModel
 
 /**
+ * Helper function to get display name for profile
+ * Shows "Aile Üyesi" instead of "Varsayılan Profil" for better UX
+ */
+private fun getProfileDisplayName(profile: ProfileEntity): String {
+    return when (profile.name) {
+        "Varsayılan Profil", "default-profile" -> "Aile Üyesi"
+        else -> profile.name
+    }
+}
+
+/**
  * Quick profile switcher component for Home screen
  * Shows active profile as a chip and allows switching profiles via bottom sheet
  */
@@ -68,7 +79,7 @@ fun ProfileSwitcher(
 
                 // Profile name
                 Text(
-                    text = activeProfile.name,
+                    text = getProfileDisplayName(activeProfile),
                     fontWeight = FontWeight.Medium,
                     fontSize = 14.sp
                 )
@@ -216,7 +227,7 @@ fun ProfileItem(
             // Profile info
             Column(modifier = Modifier.weight(1f)) {
                 Text(
-                    text = profile.name,
+                    text = getProfileDisplayName(profile),
                     fontWeight = FontWeight.Bold,
                     fontSize = 16.sp
                 )
