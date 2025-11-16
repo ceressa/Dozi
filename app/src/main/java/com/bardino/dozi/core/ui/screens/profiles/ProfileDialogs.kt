@@ -346,3 +346,98 @@ fun ColorPicker(
         }
     }
 }
+
+/**
+ * Dialog for setting/changing PIN code
+ */
+@Composable
+fun SetPinDialog(
+    onDismiss: () -> Unit,
+    onConfirm: (pin: String) -> Unit
+) {
+    var pin by remember { mutableStateOf("") }
+    var confirmPin by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(Icons.Default.Lock, contentDescription = null)
+        },
+        title = { Text("PIN Kodu Belirle") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "Bu profil için 4 haneli bir PIN kodu belirleyin",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = {
+                        if (it.length <= 4 && it.all { char -> char.isDigit() }) {
+                            pin = it
+                            error = null
+                        }
+                    },
+                    label = { Text("PIN Kodu") },
+                    placeholder = { Text("4 haneli") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = error != null
+                )
+
+                OutlinedTextField(
+                    value = confirmPin,
+                    onValueChange = {
+                        if (it.length <= 4 && it.all { char -> char.isDigit() }) {
+                            confirmPin = it
+                            error = null
+                        }
+                    },
+                    label = { Text("PIN Tekrar") },
+                    placeholder = { Text("4 haneli") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = error != null
+                )
+
+                error?.let {
+                    Text(
+                        it,
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    when {
+                        pin.length != 4 -> error = "PIN 4 haneli olmalıdır"
+                        confirmPin.length != 4 -> error = "PIN tekrarı 4 haneli olmalıdır"
+                        pin != confirmPin -> error = "PIN kodları eşleşmiyor"
+                        else -> {
+                            onConfirm(pin)
+                        }
+                    }
+                },
+                enabled = pin.length == 4 && confirmPin.length == 4
+            ) {
+                Text("Kaydet")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("İptal")
+            }
+        }
+    )
+}

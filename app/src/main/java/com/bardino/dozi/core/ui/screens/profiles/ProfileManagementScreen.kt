@@ -49,6 +49,7 @@ fun ProfileManagementScreen(
     var showCreateDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf<ProfileEntity?>(null) }
     var showDeleteDialog by remember { mutableStateOf<ProfileEntity?>(null) }
+    var showPinDialog by remember { mutableStateOf<ProfileEntity?>(null) }
 
     Scaffold(
         topBar = {
@@ -227,6 +228,25 @@ fun ProfileManagementScreen(
                     viewModel.updateProfileAvatar(profile.id, avatar)
                     viewModel.updateProfileColor(profile.id, color)
                     showEditDialog = null
+                },
+                onSetPin = {
+                    showEditDialog = null
+                    showPinDialog = profile
+                },
+                onRemovePin = {
+                    viewModel.removeProfilePin(profile.id)
+                    showEditDialog = null
+                }
+            )
+        }
+
+        // PIN dialog
+        showPinDialog?.let { profile ->
+            SetPinDialog(
+                onDismiss = { showPinDialog = null },
+                onConfirm = { pin ->
+                    viewModel.setProfilePin(profile.id, pin)
+                    showPinDialog = null
                 }
             )
         }
@@ -292,16 +312,36 @@ fun ProfileCard(
 
             // Profile info
             Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = getProfileDisplayName(profile),
-                    fontWeight = FontWeight.Bold,
-                    fontSize = 18.sp
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = getProfileDisplayName(profile),
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
+                    )
+                    // PIN indicator
+                    if (profile.pinCode != null) {
+                        Icon(
+                            Icons.Default.Lock,
+                            contentDescription = "PIN korumalı",
+                            modifier = Modifier.size(16.dp),
+                            tint = MaterialTheme.colorScheme.primary
+                        )
+                    }
+                }
                 if (isActive) {
                     Text(
                         text = "Aktif",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.primary
+                    )
+                } else if (profile.pinCode != null) {
+                    Text(
+                        text = "PIN korumalı",
+                        fontSize = 12.sp,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
