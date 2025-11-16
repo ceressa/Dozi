@@ -53,7 +53,7 @@ fun ProfileManagementScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profil Yönetimi") },
+                title = { Text("Aile Üyesi Yönetimi") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Geri")
@@ -71,7 +71,7 @@ fun ProfileManagementScreen(
                     onClick = { showCreateDialog = true },
                     containerColor = MaterialTheme.colorScheme.primary
                 ) {
-                    Icon(Icons.Default.Add, "Yeni Profil")
+                    Icon(Icons.Default.Add, "Yeni Aile Üyesi")
                 }
             } else {
                 FloatingActionButton(
@@ -299,7 +299,7 @@ fun ProfileCard(
                 )
                 if (isActive) {
                     Text(
-                        text = "Aktif Profil",
+                        text = "Aktif",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.primary
                     )

@@ -49,7 +49,7 @@ fun CreateProfileDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Yeni Profil Oluştur") },
+        title = { Text("Yeni Aile Üyesi Ekle") },
         text = {
             Column(
                 modifier = Modifier
@@ -119,7 +119,7 @@ fun EditProfileDialog(
 
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("Profili Düzenle") },
+        title = { Text("Aile Üyesini Düzenle") },
         text = {
             Column(
                 modifier = Modifier
@@ -230,9 +230,9 @@ fun DeleteProfileDialog(
                 tint = MaterialTheme.colorScheme.error
             )
         },
-        title = { Text("Profili Sil?") },
+        title = { Text("Aile Üyesini Sil?") },
         text = {
-            Text("\"${getProfileDisplayName(profile)}\" profilini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve profildeki tüm ilaçlar silinecektir.")
+            Text("\"${getProfileDisplayName(profile)}\" aile üyesini silmek istediğinizden emin misiniz? Bu işlem geri alınamaz ve bu aile üyesinin tüm ilaçları silinecektir.")
         },
         confirmButton = {
             TextButton(

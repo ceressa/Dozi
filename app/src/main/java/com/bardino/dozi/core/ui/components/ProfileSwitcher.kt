@@ -144,19 +144,19 @@ fun ProfileSwitcherBottomSheet(
             ) {
                 Column {
                     Text(
-                        "Profil Seç",
+                        "Aile Üyesi Seç",
                         style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                     Text(
-                        "${profiles.size} profil",
+                        "${profiles.size} aile üyesi",
                         style = MaterialTheme.typography.bodySmall,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
 
                 IconButton(onClick = onManageProfiles) {
-                    Icon(Icons.Default.Settings, "Profil yönetimi")
+                    Icon(Icons.Default.Settings, "Aile üyesi yönetimi")
                 }
             }
 
@@ -233,7 +233,7 @@ fun ProfileItem(
                 )
                 if (isActive) {
                     Text(
-                        "Aktif profil",
+                        "Aktif",
                         fontSize = 12.sp,
                         color = MaterialTheme.colorScheme.primary
                     )

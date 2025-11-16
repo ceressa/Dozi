@@ -70,15 +70,15 @@ fun ProfileSettingsSection(
         // Profile Management button
         SettingsMenuItem(
             icon = Icons.Default.ManageAccounts,
-            title = "Profil Yönetimi",
-            subtitle = "${uiState.profiles.size} profil",
+            title = "Aile Üyesi Yönetimi",
+            subtitle = "${uiState.profiles.size} aile üyesi",
             onClick = onNavigateToProfileManagement
         )
 
         // Profile Dashboard button
         SettingsMenuItem(
             icon = Icons.Default.BarChart,
-            title = "Profil İstatistikleri",
+            title = "Aile Üyesi İstatistikleri",
             subtitle = "Detaylı istatistikleri görüntüle",
             onClick = onNavigateToProfileDashboard
         )
