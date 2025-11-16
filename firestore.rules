@@ -259,6 +259,26 @@ service cloud.firestore {
         // 🗑️ SİLME: Kullanıcı kendi hatırlatıcısını silebilir
         allow delete: if isAuthenticated() && isOwner(userId);
       }
+
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 👥 PROFİLLER SUBCOLLECTION (users/{userId}/profiles)
+      // ═══════════════════════════════════════════════════════════════════════
+      // Aile üyesi profilleri - her kullanıcının birden fazla profili olabilir
+      // Premium özellik: 1 profil ücretsiz, 2+ profil premium gerektirir
+      match /profiles/{profileId} {
+        // 📖 OKUMA: Kullanıcı kendi profillerini okuyabilir
+        allow read: if isAuthenticated() && isOwner(userId);
+
+        // ✏️ OLUŞTURMA: Kullanıcı kendi profilini ekleyebilir
+        allow create: if isAuthenticated() && isOwner(userId);
+
+        // 🔄 GÜNCELLEME: Kullanıcı kendi profilini güncelleyebilir
+        allow update: if isAuthenticated() && isOwner(userId);
+
+        // 🗑️ SİLME: Kullanıcı kendi profilini silebilir
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
     }
 
 
