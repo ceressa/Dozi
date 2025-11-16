@@ -30,6 +30,7 @@ sealed class Screen(val route: String) {
     }
     object Profile : Screen("profile")
     object ProfileManagement : Screen("profile_management")  // 🆕 Multi-user profile management
+    object ProfileDashboard : Screen("profile_dashboard")    // 🆕 Profile statistics dashboard
     object Premium : Screen("premium")
     object Locations : Screen("locations")
     object Settings : Screen("settings")

@@ -16,6 +16,7 @@ data class ProfileEntity(
     val name: String,                   // Profile name (e.g., "Anne", "Baba", "Çocuk")
     val avatarIcon: String,             // Emoji or icon identifier
     val color: String,                  // Hex color code for UI personalization
+    val pinCode: String? = null,        // 🆕 4-digit PIN code for protection (hashed)
     val createdAt: Long,                // Epoch millis
     val updatedAt: Long,                // Epoch millis
     val isActive: Boolean = false       // Currently active profile

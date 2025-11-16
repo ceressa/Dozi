@@ -210,14 +210,60 @@ class ProfileManager @Inject constructor(
 
     /**
      * Switch to a different profile
+     * @param profileId Profile ID to switch to
+     * @param pinCode PIN code if profile is protected (hashed)
      */
-    suspend fun switchToProfile(profileId: String): Result<Unit> {
+    suspend fun switchToProfile(profileId: String, pinCode: String? = null): Result<Unit> {
         return try {
+            // Check if profile requires PIN
+            val profile = profileRepository.getProfileById(profileId)
+            if (profile?.pinCode != null && pinCode != profile.pinCode) {
+                return Result.failure(PinRequiredException("PIN kodu gerekli"))
+            }
+
             profileRepository.switchToProfile(profileId)
             Result.success(Unit)
         } catch (e: Exception) {
             Result.failure(e)
         }
+    }
+
+    /**
+     * Set PIN for a profile
+     */
+    suspend fun setProfilePin(profileId: String, pinCode: String): Result<Unit> {
+        return try {
+            val profile = getProfileById(profileId) ?: return Result.failure(
+                IllegalArgumentException("Profil bulunamadı")
+            )
+            profileRepository.updateProfile(profile.copy(pinCode = pinCode))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Remove PIN from a profile
+     */
+    suspend fun removeProfilePin(profileId: String): Result<Unit> {
+        return try {
+            val profile = getProfileById(profileId) ?: return Result.failure(
+                IllegalArgumentException("Profil bulunamadı")
+            )
+            profileRepository.updateProfile(profile.copy(pinCode = null))
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Check if profile has PIN
+     */
+    suspend fun hasPin(profileId: String): Boolean {
+        val profile = getProfileById(profileId)
+        return profile?.pinCode != null
     }
 
     /**
@@ -240,3 +286,8 @@ class ProfileManager @Inject constructor(
  * Exception thrown when a premium feature is required
  */
 class PremiumRequiredException(message: String) : Exception(message)
+
+/**
+ * Exception thrown when PIN is required
+ */
+class PinRequiredException(message: String) : Exception(message)

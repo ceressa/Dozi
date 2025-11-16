@@ -96,7 +96,9 @@ fun CreateProfileDialog(
 fun EditProfileDialog(
     profile: ProfileEntity,
     onDismiss: () -> Unit,
-    onConfirm: (name: String, avatar: String, color: String) -> Unit
+    onConfirm: (name: String, avatar: String, color: String) -> Unit,
+    onSetPin: (() -> Unit)? = null,
+    onRemovePin: (() -> Unit)? = null
 ) {
     var name by remember { mutableStateOf(profile.name) }
     var selectedAvatar by remember { mutableStateOf(profile.avatarIcon) }
@@ -134,6 +136,47 @@ fun EditProfileDialog(
                     selectedColor = selectedColor,
                     onColorSelected = { selectedColor = it }
                 )
+
+                // PIN management
+                if (onSetPin != null || onRemovePin != null) {
+                    Divider(modifier = Modifier.padding(vertical = 8.dp))
+                    Text("Güvenlik", fontWeight = FontWeight.Bold)
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        if (onSetPin != null && profile.pinCode == null) {
+                            OutlinedButton(
+                                onClick = onSetPin,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    Icons.Default.Lock,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text("PIN Ekle")
+                            }
+                        }
+
+                        if (onRemovePin != null && profile.pinCode != null) {
+                            OutlinedButton(
+                                onClick = onRemovePin,
+                                modifier = Modifier.weight(1f)
+                            ) {
+                                Icon(
+                                    Icons.Default.LockOpen,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text("PIN Kaldır")
+                            }
+                        }
+                    }
+                }
             }
         },
         confirmButton = {

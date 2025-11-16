@@ -19,7 +19,7 @@ import com.bardino.dozi.core.data.local.entity.SyncQueueEntity
         SyncQueueEntity::class,
         ProfileEntity::class
     ],
-    version = 2,
+    version = 3,
     exportSchema = false
 )
 abstract class DoziDatabase : RoomDatabase() {
@@ -72,6 +72,16 @@ abstract class DoziDatabase : RoomDatabase() {
             }
         }
 
+        // Migration from version 2 to 3: Add PIN code support
+        val MIGRATION_2_3 = object : Migration(2, 3) {
+            override fun migrate(database: SupportSQLiteDatabase) {
+                // Add pinCode column to profiles table
+                database.execSQL(
+                    "ALTER TABLE profiles ADD COLUMN pinCode TEXT DEFAULT NULL"
+                )
+            }
+        }
+
         fun getDatabase(context: Context): DoziDatabase {
             return INSTANCE ?: synchronized(this) {
                 val instance = Room.databaseBuilder(
@@ -79,7 +89,7 @@ abstract class DoziDatabase : RoomDatabase() {
                     DoziDatabase::class.java,
                     "dozi_database"
                 )
-                    .addMigrations(MIGRATION_1_2)
+                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
                     .fallbackToDestructiveMigration() // ⚠️ Only as fallback
                     .build()
                 INSTANCE = instance

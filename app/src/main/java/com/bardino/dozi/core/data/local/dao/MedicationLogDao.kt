@@ -28,6 +28,9 @@ interface MedicationLogDao {
     @Query("SELECT * FROM medication_logs WHERE userId = :userId ORDER BY scheduledTime DESC")
     suspend fun getAllByUser(userId: String): List<MedicationLogEntity>
 
+    @Query("SELECT * FROM medication_logs ORDER BY scheduledTime DESC")
+    suspend fun getAllLogsList(): List<MedicationLogEntity>
+
     @Query("SELECT * FROM medication_logs WHERE userId = :userId AND scheduledTime >= :startTime AND scheduledTime < :endTime ORDER BY scheduledTime ASC")
     suspend fun getByDateRange(userId: String, startTime: Long, endTime: Long): List<MedicationLogEntity>
 
