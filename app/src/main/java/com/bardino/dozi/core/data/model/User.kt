@@ -1,5 +1,7 @@
 package com.bardino.dozi.core.data.model
 
+import com.google.firebase.firestore.PropertyName
+
 data class User(
     val uid: String = "",
     val name: String = "",
@@ -15,13 +17,22 @@ data class User(
     val onboardingCompleted: Boolean = false,
 
     // 🌟 Premium (Dozi Ekstra) bilgileri
+    @get:PropertyName("isPremium")
+    @set:PropertyName("isPremium")
     val isPremium: Boolean = false,              // Premium aktif mi?
+
+    @get:PropertyName("isTrial")
+    @set:PropertyName("isTrial")
     val isTrial: Boolean = false,                // Deneme sürümü mü?
+
     val premiumExpiryDate: Long = 0L,            // Premium bitiş tarihi (timestamp)
     val premiumStartDate: Long = 0L,             // Premium başlangıç tarihi
 
     // 🚫 Ban sistemi
+    @get:PropertyName("isBanned")
+    @set:PropertyName("isBanned")
     val isBanned: Boolean = false,               // Kullanıcı banlandı mı?
+
     val banReason: String? = null,               // Ban nedeni
 
     // 🤝 Badi sistem için
