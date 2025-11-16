@@ -314,8 +314,6 @@ private fun BadiInfoCard(user: User) {
 
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
 
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-
                         fontSize = 14.sp
                     )
                 }
@@ -376,8 +374,6 @@ private fun RoleSelectionCard(
 
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
 
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-
                 fontSize = 13.sp
             )
 
@@ -428,8 +424,6 @@ private fun RoleOption(
                 style = MaterialTheme.typography.bodySmall,
 
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-
-                color = MaterialTheme.colorScheme.onSurfaceVariant
 
                 fontSize = 12.sp
             )
@@ -490,8 +484,7 @@ private fun PermissionCard(
                     style = MaterialTheme.typography.bodyLarge,
                     fontWeight = FontWeight.SemiBold,
 
-                    color = MaterialTheme.colorScheme.onSurface
-                 color = MaterialTheme.colorScheme.onSurface
+                    color = MaterialTheme.colorScheme.onSurface,
                   
                     fontSize = 15.sp
                 )
@@ -509,8 +502,6 @@ private fun PermissionCard(
                 style = MaterialTheme.typography.bodySmall,
 
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
-
-                color = MaterialTheme.colorScheme.onSurfaceVariant
 
                 fontSize = 12.sp
             )

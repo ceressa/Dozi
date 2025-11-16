@@ -129,8 +129,6 @@ fun NotificationSoundSettingsScreen(
 
                     color = MaterialTheme.colorScheme.onSurface,
 
-                    color = MaterialTheme.colorScheme.onSurface
-
                     modifier = Modifier.padding(vertical = 8.dp)
                 )
             }
@@ -194,8 +192,6 @@ fun NotificationSoundSettingsScreen(
                                 style = MaterialTheme.typography.bodyMedium,
 
                                 color = MaterialTheme.colorScheme.onSurface,
-
-                                color = MaterialTheme.colorScheme.onSurface
 
                                 modifier = Modifier.weight(1f)
                             )

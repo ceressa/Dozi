@@ -117,8 +117,6 @@ fun AboutScreen(
 
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
 
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-
                         textAlign = TextAlign.Justify
                     )
                 }
@@ -142,8 +140,6 @@ fun AboutScreen(
                         fontWeight = FontWeight.Bold,
 
                         color = MaterialTheme.colorScheme.onSurface,
-
-                        color = MaterialTheme.colorScheme.onSurface
 
                         modifier = Modifier.padding(bottom = 8.dp)
                     )

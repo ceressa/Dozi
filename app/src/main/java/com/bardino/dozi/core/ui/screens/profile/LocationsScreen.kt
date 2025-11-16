@@ -401,7 +401,6 @@ private fun EmptyLocationsState(
 
             color = MaterialTheme.colorScheme.onSurface,
 
-            color = MaterialTheme.colorScheme.onSurface
 
             textAlign = TextAlign.Center
         )
@@ -413,8 +412,6 @@ private fun EmptyLocationsState(
             style = MaterialTheme.typography.bodyLarge,
 
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-
-            color = MaterialTheme.colorScheme.onSurfaceVariant
 
             textAlign = TextAlign.Center
         )
@@ -494,8 +491,6 @@ private fun LocationCard(
 
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
 
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-
                         maxLines = 1
                     )
                 }
@@ -506,7 +501,6 @@ private fun LocationCard(
 
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
 
-                    color = MaterialTheme.colorScheme.onSurfaceVariantcopy(alpha = 0.7f)
 
                 )
             }

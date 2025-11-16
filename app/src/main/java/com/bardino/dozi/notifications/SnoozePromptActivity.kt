@@ -9,7 +9,6 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.bardino.dozi.MainActivity
 import com.bardino.dozi.core.data.model.User
-import com.bardino.dozi.notifications.NotificationHelper
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch

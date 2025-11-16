@@ -115,8 +115,6 @@ fun AnalyticsDashboardScreen(
                     fontWeight = FontWeight.Bold,
 
                     color = MaterialTheme.colorScheme.onSurface,
-
-                    color = MaterialTheme.colorScheme.onSurface
                   
                     modifier = Modifier.padding(top = 16.dp)
                 )

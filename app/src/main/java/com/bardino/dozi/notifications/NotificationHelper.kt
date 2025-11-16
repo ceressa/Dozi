@@ -7,7 +7,7 @@ import android.content.Intent
 import android.graphics.BitmapFactory
 import android.graphics.Color
 import android.os.Build
-import android.widget.RemoteViews
+import android.util.Log
 import androidx.annotation.RequiresPermission
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
@@ -184,17 +184,19 @@ object NotificationHelper {
         val alarmMgr = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
         val triggerAt = System.currentTimeMillis() + minutes * 60_000L
 
+        val intent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = "ACTION_SNOOZE_TRIGGER"
+            putExtra(EXTRA_MEDICINE, medicineName)
+            putExtra(EXTRA_MEDICINE_ID, medicineId)
+            putExtra(EXTRA_DOSAGE, dosage)
+            putExtra(EXTRA_TIME, time)
+            putExtra(EXTRA_SCHEDULED_TIME, scheduledTime)
+        }
+
         val pi = PendingIntent.getBroadcast(
             context,
-            NOTIF_ID + 100, // Farklı ID kullan
-            Intent(context, NotificationActionReceiver::class.java).apply {
-                action = "ACTION_SNOOZE_TRIGGER"
-                putExtra(EXTRA_MEDICINE, medicineName)
-                putExtra(EXTRA_MEDICINE_ID, medicineId)
-                putExtra(EXTRA_DOSAGE, dosage)
-                putExtra(EXTRA_TIME, time)
-                putExtra(EXTRA_SCHEDULED_TIME, scheduledTime)
-            },
+            NOTIF_ID + 100 + minutes,  // aynı snoozeları ayır (kritik)
+            intent,
             PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
         )
 
@@ -203,7 +205,10 @@ object NotificationHelper {
         } else {
             alarmMgr.setExact(AlarmManager.RTC_WAKEUP, triggerAt, pi)
         }
+
+        Log.d("SNOOZE", "⏳ Snooze scheduled for $minutes min → $medicineName ($triggerAt)")
     }
+
 
     private fun getCurrentTime(): String {
         return SimpleDateFormat("HH:mm", Locale.getDefault()).format(Date())

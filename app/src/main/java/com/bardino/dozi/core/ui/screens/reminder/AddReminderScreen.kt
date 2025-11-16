@@ -36,6 +36,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
@@ -506,8 +507,6 @@ private fun StepProgressIndicator(currentStep: Int, totalSteps: Int) {
 
             color = MaterialTheme.colorScheme.onSurfaceVariant,
 
-            color = MaterialTheme.colorScheme.onSurfaceVariant
-
             modifier = Modifier.align(Alignment.End)
         )
     }
@@ -749,8 +748,6 @@ private fun MultipleMedicinesStep(
 
                             label = { Text("Adet Girin", color = MaterialTheme.colorScheme.onSurfaceVariant) },
 
-                            label = { Text("Adet Girin", color = MaterialTheme.colorScheme.onSurfaceVariant },
-
                             placeholder = { Text("Örn: 1.5, 4, vb.") },
                             leadingIcon = { Icon(Icons.Default.Edit, null, tint = DoziTurquoise) },
                             modifier = Modifier.fillMaxWidth(),
@@ -775,8 +772,6 @@ private fun MultipleMedicinesStep(
                         fontWeight = FontWeight.Bold,
 
                         color = MaterialTheme.colorScheme.onSurface,
-
-                        color = MaterialTheme.colorScheme.onSurface
 
                         modifier = Modifier.padding(top = 8.dp)
                     )
@@ -1103,8 +1098,6 @@ private fun MedicineBottomSheet(
                             medicine,
 
                             color = MaterialTheme.colorScheme.onSurface,
-
-                            color = MaterialTheme.colorScheme.onSurface
 
                             style = MaterialTheme.typography.bodyLarge
                         )
@@ -1951,8 +1944,6 @@ private fun SummaryRow(
 
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
 
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-
                 fontWeight = FontWeight.Medium
             )
         }
@@ -2058,8 +2049,6 @@ private fun ReminderSuccessDialog(
                     style = MaterialTheme.typography.bodyLarge,
 
                     color = MaterialTheme.colorScheme.onSurface,
-
-                    color = MaterialTheme.colorScheme.onSurface
 
                     textAlign = TextAlign.Center
                 )

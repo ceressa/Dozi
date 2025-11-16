@@ -181,8 +181,6 @@ fun PremiumScreen(
 
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
 
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -306,7 +304,6 @@ private fun PricingOption(
 
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
 
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
 
                     modifier = Modifier.padding(start = 4.dp)
                 )
