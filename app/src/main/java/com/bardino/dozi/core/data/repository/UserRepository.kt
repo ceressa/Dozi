@@ -65,6 +65,29 @@ class UserRepository(
     }
 
     /**
+     * 📱 DeviceId ile kullanıcı bul
+     * Uygulama silinip tekrar yüklendiğinde deviceId ile kullanıcıyı tanımak için
+     */
+    suspend fun getUserByDeviceId(deviceId: String): User? {
+        return try {
+            val snapshot = db.collection("users")
+                .whereEqualTo("deviceId", deviceId)
+                .limit(1)
+                .get()
+                .await()
+
+            if (snapshot.documents.isNotEmpty()) {
+                snapshot.documents.first().toObject(User::class.java)
+            } else {
+                null
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "❌ Error finding user by deviceId: ${e.message}")
+            null
+        }
+    }
+
+    /**
      * 🎁 Onboarding tamamlandıktan sonra 1 haftalık ücretsiz trial başlat
      */
     suspend fun activateTrialIfOnboarding() {

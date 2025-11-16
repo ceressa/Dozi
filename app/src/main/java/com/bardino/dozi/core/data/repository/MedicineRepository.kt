@@ -404,10 +404,15 @@ class MedicineRepository @Inject constructor(
     }
 
     /**
-     * 🔧 MIGRATION: Assign default profileId to medicines that don't have one
+     * 🔧 MIGRATION: Fix ownerProfileId for all medicines
      * This should be called once after multi-profile feature is added
      *
-     * @param defaultProfileId The default profile ID to assign (usually from ProfileManager.ensureDefaultProfile())
+     * Migration strategy:
+     * 1. ownerProfileId null/empty -> Leave as null (default profile) ✅
+     * 2. ownerProfileId is invalid (profile doesn't exist) -> Set to null (default profile)
+     * 3. ownerProfileId is valid -> Keep as is
+     *
+     * @param defaultProfileId The default profile ID (not used, kept for compatibility)
      * @return Number of medicines migrated
      */
     suspend fun migrateOldMedicines(defaultProfileId: String): Int {
@@ -415,21 +420,44 @@ class MedicineRepository @Inject constructor(
         var migratedCount = 0
 
         return try {
+            // Get all profiles
+            val allProfiles = profileManager.getAllProfiles().firstOrNull() ?: emptyList()
+            val validProfileIds = allProfiles.map { it.id }.toSet()
+
+            android.util.Log.d("MedicineRepository", "🔧 Migration: Found ${validProfileIds.size} valid profiles")
+
             // Get all medicines
             val snapshot = collection.get().await()
 
             snapshot.documents.forEach { doc ->
                 val medicine = doc.toObject(Medicine::class.java)
 
-                // Migration strategy: Set ownerProfileId = null for default profile medicines
-                // This ensures backwards compatibility
-                if (medicine != null && medicine.ownerProfileId == null) {
-                    // Medicine already migrated or is for default profile, no action needed
-                    android.util.Log.d("MedicineRepository", "Medicine ${medicine.name} already has correct ownerProfileId (null = default profile)")
+                if (medicine != null) {
+                    val currentOwnerProfileId = medicine.ownerProfileId
+
+                    when {
+                        // Case 1: ownerProfileId is null/empty -> Already correct for default profile
+                        currentOwnerProfileId.isNullOrEmpty() -> {
+                            android.util.Log.d("MedicineRepository", "✅ Medicine '${medicine.name}' already has correct ownerProfileId (null = default)")
+                        }
+
+                        // Case 2: ownerProfileId is invalid (profile doesn't exist anymore)
+                        !validProfileIds.contains(currentOwnerProfileId) -> {
+                            android.util.Log.w("MedicineRepository", "⚠️ Medicine '${medicine.name}' has invalid ownerProfileId '$currentOwnerProfileId', setting to null")
+                            // Update to null (assign to default profile)
+                            collection.document(medicine.id).update("ownerProfileId", null).await()
+                            migratedCount++
+                        }
+
+                        // Case 3: ownerProfileId is valid -> Keep as is
+                        else -> {
+                            android.util.Log.d("MedicineRepository", "✅ Medicine '${medicine.name}' has valid ownerProfileId '$currentOwnerProfileId'")
+                        }
+                    }
                 }
             }
 
-            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines checked")
+            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines migrated")
             migratedCount
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Migration failed: ${e.message}")
