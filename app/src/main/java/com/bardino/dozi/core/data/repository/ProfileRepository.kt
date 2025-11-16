@@ -98,10 +98,16 @@ class ProfileRepository @Inject constructor(
      * Update profile
      */
     suspend fun updateProfile(profile: ProfileEntity) {
+        android.util.Log.d("ProfileRepository", "📝 Updating profile: ${profile.name} (${profile.id})")
         val updatedProfile = profile.copy(
             updatedAt = System.currentTimeMillis()
         )
         profileDao.updateProfile(updatedProfile)
+        android.util.Log.d("ProfileRepository", "✅ Profile DAO update completed - Room should trigger Flow")
+
+        // Debug: Verify update
+        val verifyProfile = profileDao.getProfileById(profile.id)
+        android.util.Log.d("ProfileRepository", "🔍 Verification: name=${verifyProfile?.name}, avatar=${verifyProfile?.avatarIcon}, color=${verifyProfile?.color}")
     }
 
     /**
