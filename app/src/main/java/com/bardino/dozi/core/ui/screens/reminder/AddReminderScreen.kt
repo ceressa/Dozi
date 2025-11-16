@@ -1,10 +1,13 @@
 package com.bardino.dozi.core.ui.screens.reminder
 
+import android.Manifest
 import android.app.DatePickerDialog
 import android.app.TimePickerDialog
 import android.content.Context
 import android.os.Build
 import android.widget.Toast
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
@@ -78,6 +81,24 @@ fun AddReminderScreen(
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
     var selectedPlace by remember { mutableStateOf<String?>(null) }
+
+    // 🔔 Bildirim izni kontrolü ve isteme
+    var showPermissionDialog by remember { mutableStateOf(false) }
+    val notificationPermissionLauncher = rememberLauncherForActivityResult(
+        contract = ActivityResultContracts.RequestPermission()
+    ) { isGranted ->
+        if (isGranted) {
+            android.util.Log.d("AddReminder", "✅ Bildirim izni verildi")
+            Toast.makeText(context, "Bildirim izni verildi ✅", Toast.LENGTH_SHORT).show()
+        } else {
+            android.util.Log.w("AddReminder", "⚠️ Bildirim izni reddedildi")
+            Toast.makeText(
+                context,
+                "⚠️ Bildirim izni olmadan hatırlatmalar çalışmayacak",
+                Toast.LENGTH_LONG
+            ).show()
+        }
+    }
 
     // Edit mode kontrolü veya medicineId ile direkt ilaç seçimi
     val isEditMode = medicineId != null
@@ -350,6 +371,15 @@ fun AddReminderScreen(
                             2 -> step++
                             3 -> step++
                             4 -> {
+                                // 🔔 Bildirim izni kontrolü (Android 13+)
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                                    if (!com.bardino.dozi.notifications.PermissionHandler.hasNotificationPermission(context)) {
+                                        // İzin yok, dialog göster
+                                        showPermissionDialog = true
+                                        return@NavigationButtons
+                                    }
+                                }
+
                                 // Tüm ilaçları kaydet
                                 saveMedicinesToFirestore(
                                     context = context,
@@ -399,6 +429,30 @@ fun AddReminderScreen(
             onFinish = {
                 showSuccess = false
                 onNavigateBack()
+            }
+        )
+    }
+
+    // 🔔 Bildirim izni dialog'u
+    if (showPermissionDialog) {
+        NotificationPermissionDialog(
+            onRequestPermission = {
+                showPermissionDialog = false
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                    notificationPermissionLauncher.launch(Manifest.permission.POST_NOTIFICATIONS)
+                }
+            },
+            onOpenSettings = {
+                showPermissionDialog = false
+                com.bardino.dozi.notifications.PermissionHandler.openAppSettings(context)
+            },
+            onDismiss = {
+                showPermissionDialog = false
+                Toast.makeText(
+                    context,
+                    "⚠️ Bildirim izni olmadan hatırlatmalar çalışmayacak",
+                    Toast.LENGTH_LONG
+                ).show()
             }
         )
     }
@@ -2035,6 +2089,102 @@ private fun ReminderSuccessDialog(
                         colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
                     ) {
                         Text("Kapat", fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+// BİLDİRİM İZNİ DİYALOĞU
+@Composable
+private fun NotificationPermissionDialog(
+    onRequestPermission: () -> Unit,
+    onOpenSettings: () -> Unit,
+    onDismiss: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = MaterialTheme.shapes.extraLarge,
+            tonalElevation = 8.dp,
+            color = Color.White
+        ) {
+            Column(
+                modifier = Modifier.padding(28.dp).fillMaxWidth(),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // İkon
+                Surface(
+                    modifier = Modifier.size(100.dp),
+                    shape = CircleShape,
+                    color = WarningOrange.copy(alpha = 0.15f)
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Icon(
+                            Icons.Default.Notifications,
+                            contentDescription = null,
+                            tint = WarningOrange,
+                            modifier = Modifier.size(60.dp)
+                        )
+                    }
+                }
+
+                // Başlık
+                Text(
+                    text = "Bildirim İzni Gerekli",
+                    style = MaterialTheme.typography.headlineMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = WarningOrange
+                )
+
+                // Açıklama
+                Text(
+                    text = "İlaç hatırlatmalarının çalışabilmesi için bildirim iznine ihtiyaç var.",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface,
+                    textAlign = TextAlign.Center
+                )
+
+                // Butonlar
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    // İzin ver butonu
+                    Button(
+                        onClick = onRequestPermission,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Icon(Icons.Default.NotificationsActive, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("İzin Ver", fontWeight = FontWeight.Bold)
+                    }
+
+                    // Ayarlara git butonu (izin zaten reddedildiyse)
+                    OutlinedButton(
+                        onClick = onOpenSettings,
+                        modifier = Modifier.fillMaxWidth().height(56.dp),
+                        border = BorderStroke(2.dp, DoziTurquoise),
+                        shape = MaterialTheme.shapes.medium,
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = DoziTurquoise)
+                    ) {
+                        Icon(Icons.Default.Settings, contentDescription = null)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Ayarlara Git", fontWeight = FontWeight.Bold)
+                    }
+
+                    // İptal butonu
+                    TextButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.fillMaxWidth()
+                    ) {
+                        Text(
+                            "Şimdi Değil",
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
                     }
                 }
             }
