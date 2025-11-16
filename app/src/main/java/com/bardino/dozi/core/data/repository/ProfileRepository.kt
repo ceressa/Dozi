@@ -196,10 +196,12 @@ class ProfileRepository @Inject constructor(
      * Create default profile if no profiles exist
      * This is useful for first-time users or after app install
      * Uses provided userName if available
+     * ✅ Also updates default profile name if userName is available
      */
     suspend fun ensureDefaultProfile(userName: String? = null): String {
         val count = getProfileCount()
         if (count == 0) {
+            // No profiles - create default profile
             val profileName = userName ?: "Varsayılan Profil"
             android.util.Log.d("ProfileRepository", "🆕 Creating default profile with name: $profileName")
             return createProfile(
@@ -209,7 +211,7 @@ class ProfileRepository @Inject constructor(
                 setAsActive = true
             )
         } else {
-            // Ensure there's an active profile
+            // Profiles exist - ensure there's an active profile
             val activeProfile = getActiveProfileDirect()
             if (activeProfile == null) {
                 val firstProfile = getAllProfilesList().firstOrNull()
@@ -218,7 +220,28 @@ class ProfileRepository @Inject constructor(
                     return it.id
                 }
             }
-            return activeProfile?.id ?: ""
+
+            // ✅ Update default profile name if userName is available and different
+            val allProfiles = getAllProfilesList()
+            if (allProfiles.size == 1 && !userName.isNullOrBlank()) {
+                // Only 1 profile = default profile
+                val defaultProfile = allProfiles.first()
+                if (defaultProfile.name == "Varsayılan Profil" || defaultProfile.name == "default-profile") {
+                    // Update profile name to user's actual name
+                    android.util.Log.d("ProfileRepository", "📝 Updating default profile name from '${defaultProfile.name}' to '$userName'")
+                    updateProfileName(defaultProfile.id, userName)
+                }
+            } else if (allProfiles.size > 1 && !userName.isNullOrBlank()) {
+                // Multiple profiles - find the first created one (default)
+                val firstProfile = allProfiles.minByOrNull { it.createdAt }
+                if (firstProfile != null &&
+                    (firstProfile.name == "Varsayılan Profil" || firstProfile.name == "default-profile")) {
+                    android.util.Log.d("ProfileRepository", "📝 Updating default profile name from '${firstProfile.name}' to '$userName'")
+                    updateProfileName(firstProfile.id, userName)
+                }
+            }
+
+            return activeProfile?.id ?: allProfiles.firstOrNull()?.id ?: ""
         }
     }
 

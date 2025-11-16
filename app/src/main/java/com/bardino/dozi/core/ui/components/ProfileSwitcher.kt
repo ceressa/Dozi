@@ -50,10 +50,11 @@ fun ProfileSwitcher(
     val uiState by viewModel.uiState.collectAsState()
     val activeProfile = uiState.activeProfile
     val userName = uiState.userName
+    val profiles = uiState.profiles
     var showBottomSheet by remember { mutableStateOf(false) }
 
-    // Active profile chip
-    if (activeProfile != null) {
+    // ✅ Active profile chip - SADECE birden fazla profil varsa göster
+    if (activeProfile != null && profiles.size > 1) {
         Card(
             modifier = modifier.clickable { showBottomSheet = true },
             colors = CardDefaults.cardColors(

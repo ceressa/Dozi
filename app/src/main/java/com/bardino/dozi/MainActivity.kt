@@ -190,26 +190,24 @@ class MainActivity : ComponentActivity() {
                     handleDeepLink(intent, navController!!)
                 }
 
-                // Başlangıç ekranını belirle - Firestore'dan onboarding durumunu kontrol et
+                // Başlangıç ekranını belirle - DeviceId ve Firestore kontrolü
                 var startDestination by androidx.compose.runtime.remember {
                     androidx.compose.runtime.mutableStateOf<String?>(null)
                 }
 
                 androidx.compose.runtime.LaunchedEffect(Unit) {
                     val currentUser = FirebaseAuth.getInstance().currentUser
+
                     startDestination = if (currentUser != null) {
-                        // Kullanıcı login, Firestore'dan onboarding durumunu kontrol et
+                        // ✅ Kullanıcı zaten login, Firestore'dan onboarding durumunu kontrol et
                         try {
                             val userData = userRepository.getUserData()
                             if (userData?.onboardingCompleted == true) {
-                                // Firestore'da onboarding tamamlanmış, Home'a git
                                 Screen.Home.route
                             } else {
-                                // Firestore'da onboarding tamamlanmamış, Onboarding'e git
                                 Screen.OnboardingWelcome.route
                             }
                         } catch (e: Exception) {
-                            // Hata olursa local SharedPreferences kontrolü yap
                             if (OnboardingPreferences.isFirstTime(this@MainActivity)) {
                                 Screen.OnboardingWelcome.route
                             } else {
@@ -217,11 +215,28 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     } else {
-                        // Kullanıcı login değil, SharedPreferences kontrolü yap
-                        if (OnboardingPreferences.isFirstTime(this@MainActivity)) {
+                        // 📱 Kullanıcı login değil - DeviceId ile tanıma sistemi
+                        val deviceId = Settings.Secure.getString(
+                            contentResolver,
+                            Settings.Secure.ANDROID_ID
+                        )
+
+                        // Firestore'da bu deviceId'ye sahip kullanıcı var mı?
+                        val userWithDevice = userRepository.getUserByDeviceId(deviceId)
+
+                        if (userWithDevice != null && userWithDevice.onboardingCompleted) {
+                            // ✅ DeviceId tanındı ve onboarding tamamlanmış
+                            // Kullanıcıyı direkt login ekranına götür
+                            Log.d("MainActivity", "📱 DeviceId tanındı: ${userWithDevice.email}, direkt login ekranına yönlendiriliyor")
+                            Screen.Login.route
+                        } else if (userWithDevice != null && !userWithDevice.onboardingCompleted) {
+                            // DeviceId tanındı ama onboarding tamamlanmamış
+                            Log.d("MainActivity", "📱 DeviceId tanındı ama onboarding tamamlanmamış, onboarding'e yönlendiriliyor")
                             Screen.OnboardingWelcome.route
                         } else {
-                            Screen.Home.route
+                            // DeviceId tanınmadı - İlk kez kullanıyor
+                            Log.d("MainActivity", "📱 DeviceId tanınmadı, onboarding'e yönlendiriliyor")
+                            Screen.OnboardingWelcome.route
                         }
                     }
                 }
