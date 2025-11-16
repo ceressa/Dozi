@@ -404,13 +404,4 @@ class ProfileViewModel @Inject constructor(
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
-
-    /**
-     * Ensure default profile exists
-     */
-    fun ensureDefaultProfile() {
-        viewModelScope.launch {
-            profileManager.ensureDefaultProfile()
-        }
     }
-}

@@ -2,6 +2,7 @@ package com.bardino.dozi.core.profile
 
 import com.bardino.dozi.core.data.local.entity.ProfileEntity
 import com.bardino.dozi.core.data.repository.ProfileRepository
+import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.premium.PremiumManager
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.firstOrNull
@@ -17,7 +18,8 @@ import javax.inject.Singleton
 @Singleton
 class ProfileManager @Inject constructor(
     private val profileRepository: ProfileRepository,
-    private val premiumManager: PremiumManager
+    private val premiumManager: PremiumManager,
+    private val userRepository: UserRepository
 ) {
 
     companion object {

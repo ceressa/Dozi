@@ -267,8 +267,12 @@ fun NavGraph(
             // 🔐 Login Ekranı
             composable(Screen.Login.route) {
                 LoginScreen(
-                    onGoogleSignInClick = onGoogleSignInClick,
-                    onNavigateToHome = {
+                    onLoginSuccess = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    },
+                    onSkip = {
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
