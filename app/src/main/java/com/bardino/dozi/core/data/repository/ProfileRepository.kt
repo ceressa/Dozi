@@ -2,18 +2,23 @@ package com.bardino.dozi.core.data.repository
 
 import com.bardino.dozi.core.data.local.dao.ProfileDao
 import com.bardino.dozi.core.data.local.entity.ProfileEntity
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.tasks.await
 import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 
 /**
  * Repository for managing user profiles
- * Handles CRUD operations for local profiles
+ * Handles CRUD operations for local profiles and syncs with Firestore
  */
 @Singleton
 class ProfileRepository @Inject constructor(
-    private val profileDao: ProfileDao
+    private val profileDao: ProfileDao,
+    private val auth: FirebaseAuth,
+    private val firestore: FirebaseFirestore
 ) {
 
     /**
@@ -90,7 +95,14 @@ class ProfileRepository @Inject constructor(
             profileDao.deactivateAllProfiles()
         }
 
+        // Save to local database
         profileDao.insertProfile(profile)
+
+        // Save to Firestore
+        saveProfileToFirestore(profile)
+
+        android.util.Log.d("ProfileRepository", "✅ Profile created and saved to both Room and Firestore: $name ($profileId)")
+
         return profileId
     }
 
@@ -102,7 +114,13 @@ class ProfileRepository @Inject constructor(
         val updatedProfile = profile.copy(
             updatedAt = System.currentTimeMillis()
         )
+
+        // Update in local database
         profileDao.updateProfile(updatedProfile)
+
+        // Update in Firestore
+        saveProfileToFirestore(updatedProfile)
+
         android.util.Log.d("ProfileRepository", "✅ Profile DAO update completed - Room should trigger Flow")
 
         // Debug: Verify update
@@ -157,7 +175,13 @@ class ProfileRepository @Inject constructor(
      * Note: Should check if it's the last profile before deleting
      */
     suspend fun deleteProfile(profileId: String) {
+        // Delete from local database
         profileDao.deleteProfileById(profileId)
+
+        // Delete from Firestore
+        deleteProfileFromFirestore(profileId)
+
+        android.util.Log.d("ProfileRepository", "✅ Profile deleted from both Room and Firestore: $profileId")
     }
 
     /**
@@ -195,6 +219,105 @@ class ProfileRepository @Inject constructor(
                 }
             }
             return activeProfile?.id ?: ""
+        }
+    }
+
+    // ==================== Firestore Sync Functions ====================
+
+    /**
+     * Save profile to Firestore
+     */
+    private suspend fun saveProfileToFirestore(profile: ProfileEntity) {
+        try {
+            val userId = auth.currentUser?.uid ?: return
+            val profileData = hashMapOf(
+                "id" to profile.id,
+                "name" to profile.name,
+                "avatarIcon" to profile.avatarIcon,
+                "color" to profile.color,
+                "pinCode" to profile.pinCode,
+                "createdAt" to profile.createdAt,
+                "updatedAt" to profile.updatedAt,
+                "isActive" to profile.isActive
+            )
+
+            firestore.collection("users")
+                .document(userId)
+                .collection("profiles")
+                .document(profile.id)
+                .set(profileData)
+                .await()
+
+            android.util.Log.d("ProfileRepository", "📤 Profile saved to Firestore: ${profile.name} (${profile.id})")
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileRepository", "❌ Failed to save profile to Firestore: ${e.message}", e)
+            // Don't throw - we want local operations to succeed even if Firestore fails
+        }
+    }
+
+    /**
+     * Delete profile from Firestore
+     */
+    private suspend fun deleteProfileFromFirestore(profileId: String) {
+        try {
+            val userId = auth.currentUser?.uid ?: return
+
+            firestore.collection("users")
+                .document(userId)
+                .collection("profiles")
+                .document(profileId)
+                .delete()
+                .await()
+
+            android.util.Log.d("ProfileRepository", "📤 Profile deleted from Firestore: $profileId")
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileRepository", "❌ Failed to delete profile from Firestore: ${e.message}", e)
+            // Don't throw - we want local operations to succeed even if Firestore fails
+        }
+    }
+
+    /**
+     * Load profiles from Firestore and sync to local database
+     * Call this on app startup to sync profiles
+     */
+    suspend fun syncProfilesFromFirestore() {
+        try {
+            val userId = auth.currentUser?.uid ?: return
+
+            val snapshot = firestore.collection("users")
+                .document(userId)
+                .collection("profiles")
+                .get()
+                .await()
+
+            val firestoreProfiles = snapshot.documents.mapNotNull { doc ->
+                try {
+                    ProfileEntity(
+                        id = doc.getString("id") ?: return@mapNotNull null,
+                        name = doc.getString("name") ?: return@mapNotNull null,
+                        avatarIcon = doc.getString("avatarIcon") ?: "👤",
+                        color = doc.getString("color") ?: "#6200EE",
+                        pinCode = doc.getString("pinCode"),
+                        createdAt = doc.getLong("createdAt") ?: System.currentTimeMillis(),
+                        updatedAt = doc.getLong("updatedAt") ?: System.currentTimeMillis(),
+                        isActive = doc.getBoolean("isActive") ?: false
+                    )
+                } catch (e: Exception) {
+                    android.util.Log.e("ProfileRepository", "❌ Failed to parse profile from Firestore: ${e.message}")
+                    null
+                }
+            }
+
+            // Sync to local database
+            if (firestoreProfiles.isNotEmpty()) {
+                firestoreProfiles.forEach { profile ->
+                    profileDao.insertProfile(profile)
+                }
+                android.util.Log.d("ProfileRepository", "📥 Synced ${firestoreProfiles.size} profiles from Firestore")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("ProfileRepository", "❌ Failed to sync profiles from Firestore: ${e.message}", e)
+            // Don't throw - app should work offline
         }
     }
 }
