@@ -37,52 +37,19 @@ class MedicineRepository @Inject constructor(
     }
 
     /**
-     * Check if given profile is the default/main profile
-     * Logic:
-     * - If user has only 1 profile, it's the default
-     * - If user has multiple profiles, the first created profile (oldest) is default
-     */
-    private suspend fun isDefaultProfile(profileId: String): Boolean {
-        val profileCount = profileManager.getProfileCount()
-
-        // If only 1 profile exists, it's the default
-        if (profileCount == 1) {
-            return true
-        }
-
-        // If multiple profiles, check if this is the first created one
-        val allProfiles = profileManager.getAllProfiles().firstOrNull()
-        val firstProfile = allProfiles?.minByOrNull { it.createdAt }
-        return firstProfile?.id == profileId
-    }
-
-    /**
-     * Get all medicines for current user and active profile
-     * If active profile is default, returns medicines with ownerProfileId = null
-     * Otherwise, returns medicines with ownerProfileId = activeProfileId
+     * Get all medicines for current user
+     * ✅ All profiles see all medicines (shared across family members)
      */
     suspend fun getAllMedicines(): List<Medicine> {
         val collection = getMedicinesCollection() ?: return emptyList()
-        val activeProfileId = profileManager.getActiveProfileId()
-        val isDefault = isDefaultProfile(activeProfileId)
 
         return try {
-            // Get all medicines and filter client-side for now
-            // TODO: Optimize with composite query when needed
             val snapshot = collection
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
 
-            snapshot.documents.mapNotNull { it.toObject(Medicine::class.java) }.filter { medicine ->
-                if (isDefault) {
-                    // Default profile sees medicines with null or empty ownerProfileId
-                    medicine.ownerProfileId.isNullOrEmpty()
-                } else {
-                    // Other profiles see only their own medicines
-                    medicine.ownerProfileId == activeProfileId
-                }
-            }
+            snapshot.documents.mapNotNull { it.toObject(Medicine::class.java) }
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Error getting medicines: ${e.message}")
             emptyList()
@@ -90,60 +57,36 @@ class MedicineRepository @Inject constructor(
     }
 
     /**
-     * Get medicines with real-time updates for active profile
-     * 🔥 BUG FIX: Now properly reacts to profile changes and filters by ownerProfileId
+     * Get medicines with real-time updates
+     * ✅ All profiles see all medicines (shared across family members)
      */
-    fun getMedicinesFlow(): Flow<List<Medicine>> = profileManager.getAllProfiles()
-        .flatMapLatest { allProfiles ->
-            profileManager.getActiveProfile().flatMapLatest { activeProfile ->
-                val collection = getMedicinesCollection()
-                if (collection == null || activeProfile == null) {
-                    return@flatMapLatest flowOf(emptyList())
-                }
-
-                // Determine if this is the default profile
-                val isDefault = if (allProfiles.size == 1) {
-                    // Only 1 profile = default
-                    true
-                } else {
-                    // Multiple profiles = check if this is the first created one
-                    val firstProfile = allProfiles.minByOrNull { it.createdAt }
-                    firstProfile?.id == activeProfile.id
-                }
-
-                callbackFlow {
-                    val listener = collection
-                        // Get all medicines, filter client-side
-                        .addSnapshotListener { snapshot, error ->
-                            if (error != null) {
-                                android.util.Log.e("MedicineRepository", "Error listening to medicines: ${error.message}")
-                                trySend(emptyList())
-                                return@addSnapshotListener
-                            }
-
-                            var medicines = snapshot?.documents?.mapNotNull {
-                                it.toObject(Medicine::class.java)
-                            }?.filter { medicine ->
-                                if (isDefault) {
-                                    // Default profile sees medicines with null or empty ownerProfileId
-                                    medicine.ownerProfileId.isNullOrEmpty()
-                                } else {
-                                    // Other profiles see only their own medicines
-                                    medicine.ownerProfileId == activeProfile.id
-                                }
-                            } ?: emptyList()
-
-                            // Client-side sorting
-                            medicines = medicines.sortedByDescending { it.createdAt }
-
-                            android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: ${activeProfile.name} (${activeProfile.id}), isDefault: $isDefault")
-                            trySend(medicines)
-                        }
-
-                    awaitClose { listener.remove() }
-                }
-            }
+    fun getMedicinesFlow(): Flow<List<Medicine>> {
+        val collection = getMedicinesCollection()
+        if (collection == null) {
+            return flowOf(emptyList())
         }
+
+        return callbackFlow {
+            val listener = collection
+                .orderBy("createdAt", Query.Direction.DESCENDING)
+                .addSnapshotListener { snapshot, error ->
+                    if (error != null) {
+                        android.util.Log.e("MedicineRepository", "Error listening to medicines: ${error.message}")
+                        trySend(emptyList())
+                        return@addSnapshotListener
+                    }
+
+                    val medicines = snapshot?.documents?.mapNotNull {
+                        it.toObject(Medicine::class.java)
+                    } ?: emptyList()
+
+                    android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines (shared across all profiles)")
+                    trySend(medicines)
+                }
+
+            awaitClose { listener.remove() }
+        }
+    }
 
     /**
      * Get medicines for today's schedule
@@ -263,25 +206,23 @@ class MedicineRepository @Inject constructor(
     }
 
     /**
-     * Add a new medicine for active profile
-     * Sets ownerProfileId to null if default profile, or activeProfileId if family member profile
+     * Add a new medicine
+     * ✅ Medicines are shared across all profiles (ownerProfileId = null)
      */
     suspend fun addMedicine(medicine: Medicine): Medicine? {
         val collection = getMedicinesCollection() ?: return null
         return try {
             val user = auth.currentUser ?: return null
-            val activeProfileId = profileManager.getActiveProfileId()
-            val isDefault = isDefaultProfile(activeProfileId)
 
             val medicineWithUser = medicine.copy(
                 userId = user.uid,
-                ownerProfileId = if (isDefault) null else activeProfileId,
+                ownerProfileId = null, // ✅ Shared across all profiles
                 id = if (medicine.id.isEmpty()) collection.document().id else medicine.id,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
             collection.document(medicineWithUser.id).set(medicineWithUser).await()
-            android.util.Log.d("MedicineRepository", "✅ Medicine added with ID: ${medicineWithUser.id} for profile: $activeProfileId (ownerProfileId: ${medicineWithUser.ownerProfileId})")
+            android.util.Log.d("MedicineRepository", "✅ Medicine added (shared): ${medicineWithUser.id}")
             medicineWithUser
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Error adding medicine", e)
@@ -420,12 +361,6 @@ class MedicineRepository @Inject constructor(
         var migratedCount = 0
 
         return try {
-            // Get all profiles
-            val allProfiles = profileManager.getAllProfiles().firstOrNull() ?: emptyList()
-            val validProfileIds = allProfiles.map { it.id }.toSet()
-
-            android.util.Log.d("MedicineRepository", "🔧 Migration: Found ${validProfileIds.size} valid profiles")
-
             // Get all medicines
             val snapshot = collection.get().await()
 
@@ -435,29 +370,18 @@ class MedicineRepository @Inject constructor(
                 if (medicine != null) {
                     val currentOwnerProfileId = medicine.ownerProfileId
 
-                    when {
-                        // Case 1: ownerProfileId is null/empty -> Already correct for default profile
-                        currentOwnerProfileId.isNullOrEmpty() -> {
-                            android.util.Log.d("MedicineRepository", "✅ Medicine '${medicine.name}' already has correct ownerProfileId (null = default)")
-                        }
-
-                        // Case 2: ownerProfileId is invalid (profile doesn't exist anymore)
-                        !validProfileIds.contains(currentOwnerProfileId) -> {
-                            android.util.Log.w("MedicineRepository", "⚠️ Medicine '${medicine.name}' has invalid ownerProfileId '$currentOwnerProfileId', setting to null")
-                            // Update to null (assign to default profile)
-                            collection.document(medicine.id).update("ownerProfileId", null).await()
-                            migratedCount++
-                        }
-
-                        // Case 3: ownerProfileId is valid -> Keep as is
-                        else -> {
-                            android.util.Log.d("MedicineRepository", "✅ Medicine '${medicine.name}' has valid ownerProfileId '$currentOwnerProfileId'")
-                        }
+                    // ✅ Set all ownerProfileId to null (medicines are now shared across all profiles)
+                    if (!currentOwnerProfileId.isNullOrEmpty()) {
+                        android.util.Log.d("MedicineRepository", "🔄 Migrating '${medicine.name}' ownerProfileId '$currentOwnerProfileId' -> null (shared)")
+                        collection.document(medicine.id).update("ownerProfileId", null).await()
+                        migratedCount++
+                    } else {
+                        android.util.Log.d("MedicineRepository", "✅ Medicine '${medicine.name}' already shared (ownerProfileId = null)")
                     }
                 }
             }
 
-            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines migrated")
+            android.util.Log.d("MedicineRepository", "✅ Migration complete: $migratedCount medicines migrated to shared")
             migratedCount
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Migration failed: ${e.message}")

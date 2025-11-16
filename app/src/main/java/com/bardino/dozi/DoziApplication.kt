@@ -52,16 +52,16 @@ class DoziApplication : Application() {
         applicationScope.launch {
             val defaultProfileId = profileManager.ensureDefaultProfile(userRepository)
 
-            // 🔧 MIGRATION: Fix ownerProfileId for all medicines (runs once)
+            // 🔧 MIGRATION: Make all medicines shared (set ownerProfileId to null)
             val prefs = getSharedPreferences("dozi_migrations", MODE_PRIVATE)
-            val migrationDone = prefs.getBoolean("medicines_profileId_migration_v2", false)
+            val migrationDone = prefs.getBoolean("medicines_shared_migration_v3", false)
 
             if (!migrationDone) {
-                android.util.Log.d("DoziApplication", "🔧 Starting medicines ownerProfileId migration v2...")
+                android.util.Log.d("DoziApplication", "🔧 Starting medicines shared migration v3...")
                 val migratedCount = firebaseMedicineRepository.migrateOldMedicines(defaultProfileId)
                 if (migratedCount >= 0) {
-                    prefs.edit().putBoolean("medicines_profileId_migration_v2", true).apply()
-                    android.util.Log.d("DoziApplication", "✅ Medicines migration v2 completed: $migratedCount medicines migrated")
+                    prefs.edit().putBoolean("medicines_shared_migration_v3", true).apply()
+                    android.util.Log.d("DoziApplication", "✅ Medicines shared migration v3 completed: $migratedCount medicines migrated")
                 }
             }
         }
