@@ -20,6 +20,7 @@ import com.bardino.dozi.core.ui.screens.medicine.MedicineEditScreen
 import com.bardino.dozi.core.ui.screens.medicine.MedicineListScreen
 import com.bardino.dozi.core.ui.screens.medicine.MedicineLookupScreen
 import com.bardino.dozi.core.ui.screens.premium.PremiumScreen
+import com.bardino.dozi.core.ui.screens.login.LoginScreen
 import com.bardino.dozi.core.ui.screens.profile.LocationsScreen
 import com.bardino.dozi.core.ui.screens.profile.ProfileScreen
 import com.bardino.dozi.core.ui.screens.reminder.AddReminderScreen
@@ -260,6 +261,18 @@ fun NavGraph(
                 MedicineLookupScreen(
                     navController = navController,
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // 🔐 Login Ekranı
+            composable(Screen.Login.route) {
+                LoginScreen(
+                    onGoogleSignInClick = onGoogleSignInClick,
+                    onNavigateToHome = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Login.route) { inclusive = true }
+                        }
+                    }
                 )
             }
 
