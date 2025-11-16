@@ -33,6 +33,7 @@ import com.bardino.dozi.core.ui.screens.badi.AddBadiScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiPermissionsScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
+import com.bardino.dozi.core.ui.screens.profiles.ProfileManagementScreen
 import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
 import com.bardino.dozi.onboarding.screens.OnboardingMedicineScreen
 import com.bardino.dozi.onboarding.screens.OnboardingNameScreen
@@ -224,6 +225,13 @@ fun NavGraph(
                 )
             }
 
+            // 👥 Profil Yönetimi (Multi-user profiles)
+            composable(Screen.ProfileManagement.route) {
+                ProfileManagementScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToPremium = { navController.navigate(Screen.Premium.route) }
+                )
+            }
 
             // 🌟 Premium Sayfası
             composable(Screen.Premium.route) {

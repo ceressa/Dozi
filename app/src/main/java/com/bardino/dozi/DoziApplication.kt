@@ -10,12 +10,23 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import com.bardino.dozi.core.common.Constants.BUDDY_CHANNEL_ID
 import com.bardino.dozi.core.common.Constants.REMINDER_CHANNEL_ID
 import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.profile.ProfileManager
 import com.bardino.dozi.notifications.NotificationHelper
 import com.google.android.libraries.places.api.Places
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.SupervisorJob
+import kotlinx.coroutines.launch
+import javax.inject.Inject
 
 @HiltAndroidApp
 class DoziApplication : Application() {
+
+    @Inject
+    lateinit var profileManager: ProfileManager
+
+    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate() {
@@ -27,6 +38,11 @@ class DoziApplication : Application() {
 
         // 💊 Uygulama açıldığında ilaç veritabanını belleğe yükle
         MedicineRepository.initialize(this)
+
+        // 👥 Default profil oluştur (eğer yoksa)
+        applicationScope.launch {
+            profileManager.ensureDefaultProfile()
+        }
 
         // 🔔 Bildirim kanallarını oluştur
         createNotificationChannels()

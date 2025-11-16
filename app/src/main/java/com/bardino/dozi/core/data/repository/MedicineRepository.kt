@@ -3,6 +3,7 @@ package com.bardino.dozi.core.data.repository
 import android.os.Build
 import androidx.annotation.RequiresApi
 import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.profile.ProfileManager
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -10,12 +11,18 @@ import kotlinx.coroutines.tasks.await
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.callbackFlow
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * Repository for managing Medicine data in Firestore
  * All medicines are stored under: /users/{userId}/medicines/{medicineId}
+ * Now supports multi-user profiles: medicines are filtered by active profileId
  */
-class MedicineRepository {
+@Singleton
+class MedicineRepository @Inject constructor(
+    private val profileManager: ProfileManager
+) {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
@@ -27,12 +34,15 @@ class MedicineRepository {
     }
 
     /**
-     * Get all medicines for current user
+     * Get all medicines for current user and active profile
      */
     suspend fun getAllMedicines(): List<Medicine> {
         val collection = getMedicinesCollection() ?: return emptyList()
+        val activeProfileId = profileManager.getActiveProfileId()
+
         return try {
             val snapshot = collection
+                .whereEqualTo("profileId", activeProfileId)
                 .orderBy("createdAt", Query.Direction.DESCENDING)
                 .get()
                 .await()
@@ -43,7 +53,7 @@ class MedicineRepository {
     }
 
     /**
-     * Get medicines with real-time updates
+     * Get medicines with real-time updates for active profile
      */
     fun getMedicinesFlow(): Flow<List<Medicine>> = callbackFlow {
         val collection = getMedicinesCollection()
@@ -53,7 +63,15 @@ class MedicineRepository {
             return@callbackFlow
         }
 
+        // Get active profile ID
+        val activeProfileId = try {
+            profileManager.getActiveProfileId()
+        } catch (e: Exception) {
+            ""
+        }
+
         val listener = collection
+            .whereEqualTo("profileId", activeProfileId)
             .orderBy("createdAt", Query.Direction.DESCENDING)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
@@ -186,20 +204,23 @@ class MedicineRepository {
     }
 
     /**
-     * Add a new medicine
+     * Add a new medicine for active profile
      */
     suspend fun addMedicine(medicine: Medicine): Medicine? {
         val collection = getMedicinesCollection() ?: return null
         return try {
             val user = auth.currentUser ?: return null
+            val activeProfileId = profileManager.getActiveProfileId()
+
             val medicineWithUser = medicine.copy(
                 userId = user.uid,
+                profileId = activeProfileId,
                 id = if (medicine.id.isEmpty()) collection.document().id else medicine.id,
                 createdAt = System.currentTimeMillis(),
                 updatedAt = System.currentTimeMillis()
             )
             collection.document(medicineWithUser.id).set(medicineWithUser).await()
-            android.util.Log.d("MedicineRepository", "✅ Medicine added with ID: ${medicineWithUser.id}")
+            android.util.Log.d("MedicineRepository", "✅ Medicine added with ID: ${medicineWithUser.id} for profile: $activeProfileId")
             medicineWithUser
         } catch (e: Exception) {
             android.util.Log.e("MedicineRepository", "❌ Error adding medicine", e)

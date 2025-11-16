@@ -13,6 +13,7 @@ data class MedicationLogEntity(
     @PrimaryKey
     val id: String,
     val userId: String,
+    val profileId: String,              // 🆕 Profile ID for multi-user support
     val medicineId: String,
     val medicineName: String,
     val dosage: String,
