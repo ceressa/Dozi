@@ -60,6 +60,12 @@ data class MedicineEntry(
     var unit: String = "hap"
 )
 
+// Time entry data class - Her saat için not tutulabilir
+data class TimeEntry(
+    val time: String,           // "08:00"
+    val note: String = ""       // "Tok karnına", "Aç karnına", vs.
+)
+
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -90,8 +96,7 @@ fun AddReminderScreen(
     // State'ler
     var step by remember { mutableStateOf(1) }
     var medicines by remember { mutableStateOf(listOf(MedicineEntry(id = 0))) }
-    var hour by remember { mutableStateOf(8) }
-    var minute by remember { mutableStateOf(0) }
+    var selectedTimes by remember { mutableStateOf<List<TimeEntry>>(listOf(TimeEntry("08:00"))) }
     var frequency by remember { mutableStateOf("Her gün") }
     var xValue by remember { mutableStateOf(2) }
     var selectedDates by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -153,11 +158,11 @@ fun AddReminderScreen(
                         customDosage = medicine.dosage
                     ))
 
-                    // İlk saati al
-                    if (medicine.times.isNotEmpty()) {
-                        val firstTime = medicine.times.first().split(":")
-                        hour = firstTime.getOrNull(0)?.toIntOrNull() ?: 8
-                        minute = firstTime.getOrNull(1)?.toIntOrNull() ?: 0
+                    // Saatleri yükle
+                    selectedTimes = if (medicine.times.isNotEmpty()) {
+                        medicine.times.map { TimeEntry(it) }
+                    } else {
+                        listOf(TimeEntry("08:00"))
                     }
 
                     frequency = medicine.frequency
@@ -308,16 +313,14 @@ fun AddReminderScreen(
                         )
 
                         3 -> TimeStep(
-                            hour = hour,
-                            minute = minute,
-                            onTimeChange = { h, m -> hour = h; minute = m },
+                            selectedTimes = selectedTimes,
+                            onTimesChange = { selectedTimes = it },
                             context = context
                         )
 
                         4 -> SummaryStep(
                             medicines = medicines,
-                            hour = hour,
-                            minute = minute,
+                            selectedTimes = selectedTimes,
                             frequency = frequency,
                             xValue = xValue,
                             selectedDates = selectedDates
@@ -351,8 +354,7 @@ fun AddReminderScreen(
                                 saveMedicinesToFirestore(
                                     context = context,
                                     medicines = medicines,
-                                    hour = hour,
-                                    minute = minute,
+                                    selectedTimes = selectedTimes,
                                     frequency = frequency,
                                     xValue = xValue,
                                     selectedDates = selectedDates,
@@ -392,8 +394,7 @@ fun AddReminderScreen(
                 frequency = "Her gün"
                 selectedDates = emptyList()
                 startDate = System.currentTimeMillis()
-                hour = 8
-                minute = 0
+                selectedTimes = listOf(TimeEntry("08:00"))
             },
             onFinish = {
                 showSuccess = false
@@ -1355,222 +1356,338 @@ private fun showStartDatePicker(context: Context, currentStartDate: Long, onDate
     picker.show()
 }
 
-// ADIM 3 - SAAT (Önceki adım 2'ydi, şimdi adım 3)
+// ADIM 3 - SAAT (Önceki adım 2'ydi, şimdi adım 3) - ÇOK SAAT DESTEĞİ
 @Composable
 private fun TimeStep(
-    hour: Int,
-    minute: Int,
-    onTimeChange: (Int, Int) -> Unit,
+    selectedTimes: List<TimeEntry>,
+    onTimesChange: (List<TimeEntry>) -> Unit,
     context: Context
 ) {
-    // 🔕 DND ayarlarını çek
-    var dndEnabled by remember { mutableStateOf(false) }
-    var dndStartHour by remember { mutableStateOf(22) }
-    var dndStartMinute by remember { mutableStateOf(0) }
-    var dndEndHour by remember { mutableStateOf(8) }
-    var dndEndMinute by remember { mutableStateOf(0) }
-    var showDndWarning by remember { mutableStateOf(false) }
-    var pendingHour by remember { mutableStateOf(0) }
-    var pendingMinute by remember { mutableStateOf(0) }
-
-    // User DND ayarlarını yükle
-    LaunchedEffect(Unit) {
-        try {
-            val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
-            val user = userRepository.getUserData()
-            if (user != null) {
-                dndEnabled = user.dndEnabled
-                dndStartHour = user.dndStartHour
-                dndStartMinute = user.dndStartMinute
-                dndEndHour = user.dndEndHour
-                dndEndMinute = user.dndEndMinute
-            }
-        } catch (e: Exception) {
-            android.util.Log.e("AddReminder", "Error loading DND settings", e)
-        }
-    }
-
-    // DND saati içinde mi kontrol et
-    fun isInDndPeriod(h: Int, m: Int): Boolean {
-        if (!dndEnabled) return false
-
-        val timeInMinutes = h * 60 + m
-        val dndStartInMinutes = dndStartHour * 60 + dndStartMinute
-        val dndEndInMinutes = dndEndHour * 60 + dndEndMinute
-
-        return if (dndStartInMinutes <= dndEndInMinutes) {
-            // Normal durum: 22:00 - 08:00
-            timeInMinutes >= dndStartInMinutes && timeInMinutes < dndEndInMinutes
-        } else {
-            // Gece yarısını geçen durum: 22:00 - 02:00
-            timeInMinutes >= dndStartInMinutes || timeInMinutes < dndEndInMinutes
-        }
-    }
-
-    val isCurrentTimeInDnd = isInDndPeriod(hour, minute)
-
-    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-        Card(
-            onClick = {
-                TimePickerDialog(context, { _, h, m ->
-                    // Seçilen saat DND içinde mi kontrol et
-                    if (isInDndPeriod(h, m)) {
-                        // DND uyarısı göster
-                        pendingHour = h
-                        pendingMinute = m
-                        showDndWarning = true
-                    } else {
-                        // DND dışında, direkt uygula
-                        onTimeChange(h, m)
-                    }
-                }, hour, minute, true).show()
-            },
-            colors = CardDefaults.cardColors(containerColor = Color.Transparent),
-            shape = MaterialTheme.shapes.large
-        ) {
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .background(
-                        brush = Brush.verticalGradient(
-                            if (isCurrentTimeInDnd) {
-                                // 🔴 DND saati - kırmızı
-                                listOf(ErrorRed, ErrorRed.copy(alpha = 0.8f))
-                            } else {
-                                // Normal - mavi
-                                listOf(DoziBlue, DoziBlue.copy(alpha = 0.8f))
-                            }
-                        ),
-                        shape = MaterialTheme.shapes.large
-                    )
-                    .padding(vertical = 40.dp),
-                contentAlignment = Alignment.Center
-            ) {
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Icon(
-                        if (isCurrentTimeInDnd) Icons.Default.DoNotDisturb else Icons.Default.Schedule,
-                        contentDescription = null,
-                        tint = Color.White,
-                        modifier = Modifier.size(32.dp)
-                    )
-                    Text(
-                        text = "%02d:%02d".format(hour, minute),
-                        style = MaterialTheme.typography.displayLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                    Text(
-                        text = if (isCurrentTimeInDnd) "⚠️ DND saatinde" else "Dokunarak değiştir",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = Color.White.copy(alpha = 0.9f)
-                    )
-                }
-            }
-        }
-
-        // 🔕 DND bilgilendirmesi
-        if (dndEnabled) {
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = if (isCurrentTimeInDnd) ErrorRed.copy(alpha = 0.1f) else DoziPurple.copy(alpha = 0.1f)
-                ),
-                shape = MaterialTheme.shapes.medium
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.DoNotDisturb,
-                        contentDescription = null,
-                        tint = if (isCurrentTimeInDnd) ErrorRed else DoziPurple,
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Column {
-                        Text(
-                            text = "🔕 Rahatsız Etme Modu Aktif",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = if (isCurrentTimeInDnd) ErrorRed else DoziPurple
-                        )
-                        Text(
-                            text = "DND: %02d:%02d - %02d:%02d".format(dndStartHour, dndStartMinute, dndEndHour, dndEndMinute),
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
-            }
-        }
-    }
-
-    // 🔴 DND Uyarı Dialog'u
-    if (showDndWarning) {
-        AlertDialog(
-            onDismissRequest = { showDndWarning = false },
-            icon = {
-                Icon(
-                    Icons.Default.DoNotDisturb,
-                    contentDescription = null,
-                    tint = ErrorRed,
-                    modifier = Modifier.size(48.dp)
-                )
-            },
-            title = {
-                Text(
-                    text = "⚠️ Rahatsız Etme Saati",
-                    fontWeight = FontWeight.Bold
-                )
-            },
-            text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                    Text(
-                        text = "Seçtiğiniz saat (%02d:%02d) Rahatsız Etme Modu saatleri içinde (%02d:%02d - %02d:%02d).".format(
-                            pendingHour, pendingMinute,
-                            dndStartHour, dndStartMinute,
-                            dndEndHour, dndEndMinute
-                        ),
-                        style = MaterialTheme.typography.bodyMedium
-                    )
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text(
-                        text = "Bu saatte bildirimler sessiz gösterilecek. Devam etmek istiyor musunuz?",
-                        style = MaterialTheme.typography.bodyMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = ErrorRed
-                    )
-                }
-            },
-            confirmButton = {
-                Button(
-                    onClick = {
-                        onTimeChange(pendingHour, pendingMinute)
-                        showDndWarning = false
-                    },
-                    colors = ButtonDefaults.buttonColors(containerColor = ErrorRed)
-                ) {
-                    Text("Devam Et")
-                }
-            },
-            dismissButton = {
-                TextButton(onClick = { showDndWarning = false }) {
-                    Text("İptal")
-                }
-            }
+    Column(
+        modifier = Modifier.fillMaxWidth(),
+        verticalArrangement = Arrangement.spacedBy(16.dp)
+    ) {
+        // Preset saatler
+        Text(
+            text = "⚡ Hızlı Seçim",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = DoziTurquoise
         )
+
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            PresetTimeChip(
+                label = "Sabah",
+                time = "08:00",
+                icon = "🌅",
+                modifier = Modifier.weight(1f)
+            ) {
+                if (!selectedTimes.any { it.time == "08:00" }) {
+                    onTimesChange(selectedTimes + TimeEntry("08:00"))
+                }
+            }
+
+            PresetTimeChip(
+                label = "Öğle",
+                time = "12:00",
+                icon = "☀️",
+                modifier = Modifier.weight(1f)
+            ) {
+                if (!selectedTimes.any { it.time == "12:00" }) {
+                    onTimesChange(selectedTimes + TimeEntry("12:00"))
+                }
+            }
+
+            PresetTimeChip(
+                label = "Akşam",
+                time = "20:00",
+                icon = "🌙",
+                modifier = Modifier.weight(1f)
+            ) {
+                if (!selectedTimes.any { it.time == "20:00" }) {
+                    onTimesChange(selectedTimes + TimeEntry("20:00"))
+                }
+            }
+        }
+
+        Spacer(Modifier.height(8.dp))
+
+        // Seçili saatler listesi
+        Text(
+            text = "⏰ Seçili Saatler (${selectedTimes.size})",
+            style = MaterialTheme.typography.titleMedium,
+            fontWeight = FontWeight.Bold,
+            color = DoziTurquoise
+        )
+
+        selectedTimes.forEachIndexed { index, timeEntry ->
+            TimeEntryCard(
+                timeEntry = timeEntry,
+                onRemove = {
+                    if (selectedTimes.size > 1) {
+                        onTimesChange(selectedTimes.filterIndexed { i, _ -> i != index })
+                    }
+                },
+                onEdit = { newTime ->
+                    val updatedList = selectedTimes.toMutableList()
+                    updatedList[index] = timeEntry.copy(time = newTime)
+                    onTimesChange(updatedList)
+                },
+                onNoteChange = { newNote ->
+                    val updatedList = selectedTimes.toMutableList()
+                    updatedList[index] = timeEntry.copy(note = newNote)
+                    onTimesChange(updatedList)
+                },
+                context = context,
+                canRemove = selectedTimes.size > 1
+            )
+        }
+
+        // + Saat Ekle butonu
+        OutlinedButton(
+            onClick = {
+                // Yeni saat ekle dialog
+                TimePickerDialog(context, { _, h, m ->
+                    val newTime = "%02d:%02d".format(h, m)
+                    if (!selectedTimes.any { it.time == newTime }) {
+                        onTimesChange(selectedTimes + TimeEntry(newTime))
+                    }
+                }, 8, 0, true).show()
+            },
+            modifier = Modifier.fillMaxWidth().height(56.dp),
+            border = BorderStroke(2.dp, DoziTurquoise),
+            colors = ButtonDefaults.outlinedButtonColors(contentColor = DoziTurquoise),
+            shape = MaterialTheme.shapes.medium
+        ) {
+            Icon(Icons.Default.Add, contentDescription = null)
+            Spacer(Modifier.width(8.dp))
+            Text("Saat Ekle", fontWeight = FontWeight.Bold)
+        }
     }
 }
 
+@Composable
+private fun PresetTimeChip(
+    label: String,
+    time: String,
+    icon: String,
+    modifier: Modifier = Modifier,
+    onClick: () -> Unit
+) {
+    OutlinedButton(
+        onClick = onClick,
+        modifier = modifier.height(72.dp),
+        border = BorderStroke(2.dp, DoziTurquoise),
+        colors = ButtonDefaults.outlinedButtonColors(contentColor = DoziTurquoise),
+        shape = MaterialTheme.shapes.medium
+    ) {
+        Column(
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(4.dp)
+        ) {
+            Text(
+                text = icon,
+                style = MaterialTheme.typography.titleLarge
+            )
+            Text(
+                text = label,
+                style = MaterialTheme.typography.labelMedium,
+                fontWeight = FontWeight.Bold
+            )
+            Text(
+                text = time,
+                style = MaterialTheme.typography.labelSmall,
+                color = MaterialTheme.colorScheme.onSurfaceVariant
+            )
+        }
+    }
+}
+
+@Composable
+private fun TimeEntryCard(
+    timeEntry: TimeEntry,
+    onRemove: () -> Unit,
+    onEdit: (String) -> Unit,
+    onNoteChange: (String) -> Unit,
+    context: Context,
+    canRemove: Boolean
+) {
+    var showNoteInput by remember { mutableStateOf(false) }
+    var noteText by remember { mutableStateOf(timeEntry.note) }
+
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        shape = MaterialTheme.shapes.medium,
+        border = BorderStroke(2.dp, DoziTurquoise.copy(alpha = 0.3f))
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Saat gösterimi
+                Surface(
+                    color = DoziTurquoise.copy(alpha = 0.1f),
+                    shape = MaterialTheme.shapes.small,
+                    modifier = Modifier.clickable {
+                        val (hour, minute) = timeEntry.time.split(":").map { it.toInt() }
+                        TimePickerDialog(context, { _, h, m ->
+                            onEdit("%02d:%02d".format(h, m))
+                        }, hour, minute, true).show()
+                    }
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.Schedule,
+                            contentDescription = null,
+                            tint = DoziTurquoise,
+                            modifier = Modifier.size(24.dp)
+                        )
+                        Text(
+                            text = timeEntry.time,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = DoziTurquoise
+                        )
+                    }
+                }
+
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    // Not ekle/düzenle butonu
+                    IconButton(
+                        onClick = { showNoteInput = !showNoteInput }
+                    ) {
+                        Icon(
+                            if (timeEntry.note.isNotEmpty()) Icons.Default.Edit else Icons.Default.Note,
+                            contentDescription = "Not",
+                            tint = if (timeEntry.note.isNotEmpty()) DoziCoral else MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+                    }
+
+                    // Kaldır butonu
+                    if (canRemove) {
+                        IconButton(onClick = onRemove) {
+                            Icon(
+                                Icons.Default.Close,
+                                contentDescription = "Kaldır",
+                                tint = ErrorRed
+                            )
+                        }
+                    }
+                }
+            }
+
+            // Not gösterimi
+            if (timeEntry.note.isNotEmpty() && !showNoteInput) {
+                Surface(
+                    color = DoziCoral.copy(alpha = 0.1f),
+                    shape = MaterialTheme.shapes.small
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Info,
+                            contentDescription = null,
+                            tint = DoziCoral,
+                            modifier = Modifier.size(16.dp)
+                        )
+                        Text(
+                            text = timeEntry.note,
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface
+                        )
+                    }
+                }
+            }
+
+            // Not input
+            AnimatedVisibility(
+                visible = showNoteInput,
+                enter = fadeIn() + expandVertically(),
+                exit = fadeOut() + shrinkVertically()
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    // Hızlı seçenekler
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        listOf("Tok karnına", "Aç karnına", "Yemekle birlikte", "Yemekten önce", "Yemekten sonra").forEach { note ->
+                            AssistChip(
+                                onClick = {
+                                    noteText = note
+                                    onNoteChange(note)
+                                    showNoteInput = false
+                                },
+                                label = { Text(note, style = MaterialTheme.typography.labelSmall) },
+                                colors = AssistChipDefaults.assistChipColors(
+                                    containerColor = DoziCoral.copy(alpha = 0.1f),
+                                    labelColor = DoziCoral
+                                )
+                            )
+                        }
+                    }
+
+                    OutlinedTextField(
+                        value = noteText,
+                        onValueChange = { noteText = it },
+                        label = { Text("Özel Not") },
+                        placeholder = { Text("Örn: Tok karnına, Aç karnına, vb.") },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = DoziCoral,
+                            focusedLabelColor = DoziCoral,
+                            cursorColor = DoziCoral
+                        ),
+                        trailingIcon = {
+                            Row {
+                                if (noteText.isNotEmpty()) {
+                                    IconButton(onClick = {
+                                        noteText = ""
+                                        onNoteChange("")
+                                    }) {
+                                        Icon(Icons.Default.Clear, "Temizle", tint = MaterialTheme.colorScheme.onSurfaceVariant)
+                                    }
+                                }
+                                IconButton(onClick = {
+                                    onNoteChange(noteText)
+                                    showNoteInput = false
+                                }) {
+                                    Icon(Icons.Default.Check, "Kaydet", tint = DoziCoral)
+                                }
+                            }
+                        }
+                    )
+                }
+            }
+        }
+    }
+}
 // ADIM 4 - ÖZET
 @Composable
 private fun SummaryStep(
     medicines: List<MedicineEntry>,
-    hour: Int,
-    minute: Int,
+    selectedTimes: List<TimeEntry>,
     frequency: String,
     xValue: Int,
     selectedDates: List<String>
@@ -1652,12 +1769,60 @@ private fun SummaryStep(
                     },
                     DoziTurquoise
                 )
-                SummaryRow(
-                    Icons.Default.Schedule,
-                    "Saat",
-                    "%02d:%02d".format(hour, minute),
-                    WarningOrange
+                // Saatler
+                Text(
+                    text = "⏰ Saatler (${selectedTimes.size})",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = WarningOrange,
+                    modifier = Modifier.padding(top = 8.dp)
                 )
+
+                selectedTimes.forEach { timeEntry ->
+                    Surface(
+                        color = WarningOrange.copy(alpha = 0.1f),
+                        shape = MaterialTheme.shapes.small
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Row(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                    verticalAlignment = Alignment.CenterVertically
+                                ) {
+                                    Icon(
+                                        Icons.Default.Schedule,
+                                        contentDescription = null,
+                                        tint = WarningOrange,
+                                        modifier = Modifier.size(20.dp)
+                                    )
+                                    Text(
+                                        text = timeEntry.time,
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.Bold,
+                                        color = WarningOrange
+                                    )
+                                }
+                            }
+
+                            if (timeEntry.note.isNotEmpty()) {
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    text = timeEntry.note,
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                    }
+                }
             }
         }
 
@@ -1855,8 +2020,7 @@ private fun ReminderSuccessDialog(
 private fun saveMedicinesToFirestore(
     context: Context,
     medicines: List<MedicineEntry>,
-    hour: Int,
-    minute: Int,
+    selectedTimes: List<TimeEntry>,
     frequency: String,
     xValue: Int,
     selectedDates: List<String>,
@@ -1867,15 +2031,15 @@ private fun saveMedicinesToFirestore(
     // Onboarding'deyse LOCAL'e kaydet (Firebase yerine)
     if (OnboardingPreferences.isInOnboarding(context)) {
         android.util.Log.d("AddReminder", "✅ Onboarding mode: Saving to local storage")
-        saveRemindersToLocal(context, medicines, hour, minute, frequency, xValue, selectedDates, startDate)
+        saveRemindersToLocal(context, medicines, selectedTimes, frequency, xValue, selectedDates, startDate)
         onSuccess()
         return
     }
 
     val medicineRepository = FirestoreMedicineRepository()
 
-    // Zamanları hesapla
-    val times = listOf("%02d:%02d".format(hour, minute))
+    // Zamanları listele
+    val times = selectedTimes.map { it.time }
 
     // Günleri hesapla - "İstediğim tarihlerde" için tarihleri kullan
     val days = if (frequency == "İstediğim tarihlerde") {
@@ -1921,7 +2085,7 @@ private fun saveMedicinesToFirestore(
                 endDate = null,
                 stockCount = 0,
                 boxSize = 0,
-                notes = if (frequency == "Her X günde bir") "Her $xValue günde bir" else "",
+                notes = buildNotesFromTimes(selectedTimes, frequency, xValue),
                 reminderEnabled = true,
                 icon = "💊"
             )
@@ -1946,12 +2110,27 @@ private fun saveMedicinesToFirestore(
     }
 }
 
+// Helper: Saatlerden ve notlardan birleşik not oluştur
+private fun buildNotesFromTimes(selectedTimes: List<TimeEntry>, frequency: String, xValue: Int): String {
+    val timeNotes = selectedTimes.filter { it.note.isNotEmpty() }
+        .joinToString(" | ") { "${it.time}: ${it.note}" }
+
+    val frequencyNote = if (frequency == "Her X günde bir") "Her $xValue günde bir" else ""
+
+    return if (timeNotes.isNotEmpty() && frequencyNote.isNotEmpty()) {
+        "$frequencyNote | $timeNotes"
+    } else if (timeNotes.isNotEmpty()) {
+        timeNotes
+    } else {
+        frequencyNote
+    }
+}
+
 // LOCAL KAYDETME - Onboarding sırasında kullanılır
 private fun saveRemindersToLocal(
     context: Context,
     medicines: List<MedicineEntry>,
-    hour: Int,
-    minute: Int,
+    selectedTimes: List<TimeEntry>,
     frequency: String,
     xValue: Int,
     selectedDates: List<String>,
@@ -1979,8 +2158,14 @@ private fun saveRemindersToLocal(
             put("name", medicineEntry.name)
             put("dosage", dosage)
             put("unit", medicineEntry.unit)
-            put("hour", hour)
-            put("minute", minute)
+            put("times", org.json.JSONArray(selectedTimes.map { it.time }))
+            put("timeNotes", org.json.JSONObject().apply {
+                selectedTimes.forEach { timeEntry ->
+                    if (timeEntry.note.isNotEmpty()) {
+                        put(timeEntry.time, timeEntry.note)
+                    }
+                }
+            })
             put("frequency", frequency)
             put("xValue", xValue)
             put("selectedDates", org.json.JSONArray(selectedDates))
@@ -1989,7 +2174,7 @@ private fun saveRemindersToLocal(
         }
 
         remindersArray.put(reminderJson)
-        android.util.Log.d("AddReminder", "💾 Saved to local: ${medicineEntry.name} at $hour:$minute")
+        android.util.Log.d("AddReminder", "💾 Saved to local: ${medicineEntry.name} - ${selectedTimes.size} saat")
     }
 
     // Kaydet
