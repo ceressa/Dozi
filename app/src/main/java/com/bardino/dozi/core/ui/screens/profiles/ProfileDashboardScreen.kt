@@ -48,7 +48,7 @@ fun ProfileDashboardScreen(
     Scaffold(
         topBar = {
             TopAppBar(
-                title = { Text("Profil İstatistikleri") },
+                title = { Text("Aile Üyesi İstatistikleri") },
                 navigationIcon = {
                     IconButton(onClick = onNavigateBack) {
                         Icon(Icons.Default.ArrowBack, "Geri")
@@ -161,7 +161,7 @@ fun OverviewCard(
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
                 StatItem(
-                    label = "Profil",
+                    label = "Aile Üyesi",
                     value = "${profiles.size}",
                     icon = Icons.Default.Person
                 )

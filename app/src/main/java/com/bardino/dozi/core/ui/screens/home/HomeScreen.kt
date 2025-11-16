@@ -661,18 +661,13 @@ fun HorizontalCalendar(
     val listState = rememberLazyListState(initialFirstVisibleItemIndex = todayIndex)
     val coroutineScope = rememberCoroutineScope()
 
-    // 🔹 Medicines listesini Firebase'den al
+    // 🔹 Medicines listesini Firebase'den al (Real-time Flow ile)
     val app = context.applicationContext as com.bardino.dozi.DoziApplication
     val medicineRepository = remember { MedicineRepository(app.profileManager) }
-    var allMedicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
 
-    LaunchedEffect(Unit) {
-        try {
-            allMedicines = medicineRepository.getAllMedicines()
-        } catch (e: Exception) {
-            // Hata durumunda boş liste
-        }
-    }
+    // 🔥 BUG FIX: getMedicinesFlow() ile profil değişikliklerini dinle
+    val allMedicines by medicineRepository.getMedicinesFlow()
+        .collectAsState(initial = emptyList())
 
     // 🔹 Gerçek statü verisi - SharedPreferences'tan hesapla
     val dayStatuses = remember(allMedicines) {
