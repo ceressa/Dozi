@@ -108,24 +108,42 @@ class ProfileRepository @Inject constructor(
      * Update profile name
      */
     suspend fun updateProfileName(profileId: String, name: String) {
-        val profile = getProfileById(profileId) ?: return
+        val profile = getProfileById(profileId)
+        if (profile == null) {
+            android.util.Log.e("ProfileRepository", "❌ updateProfileName: Profile not found: $profileId")
+            return
+        }
+        android.util.Log.d("ProfileRepository", "🔄 Updating profile name: ${profile.name} -> $name (id: $profileId)")
         updateProfile(profile.copy(name = name))
+        android.util.Log.d("ProfileRepository", "✅ Profile name updated in database")
     }
 
     /**
      * Update profile avatar
      */
     suspend fun updateProfileAvatar(profileId: String, avatarIcon: String) {
-        val profile = getProfileById(profileId) ?: return
+        val profile = getProfileById(profileId)
+        if (profile == null) {
+            android.util.Log.e("ProfileRepository", "❌ updateProfileAvatar: Profile not found: $profileId")
+            return
+        }
+        android.util.Log.d("ProfileRepository", "🔄 Updating profile avatar: ${profile.avatarIcon} -> $avatarIcon (id: $profileId)")
         updateProfile(profile.copy(avatarIcon = avatarIcon))
+        android.util.Log.d("ProfileRepository", "✅ Profile avatar updated in database")
     }
 
     /**
      * Update profile color
      */
     suspend fun updateProfileColor(profileId: String, color: String) {
-        val profile = getProfileById(profileId) ?: return
+        val profile = getProfileById(profileId)
+        if (profile == null) {
+            android.util.Log.e("ProfileRepository", "❌ updateProfileColor: Profile not found: $profileId")
+            return
+        }
+        android.util.Log.d("ProfileRepository", "🔄 Updating profile color: ${profile.color} -> $color (id: $profileId)")
         updateProfile(profile.copy(color = color))
+        android.util.Log.d("ProfileRepository", "✅ Profile color updated in database")
     }
 
     /**
