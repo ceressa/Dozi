@@ -165,12 +165,15 @@ class ProfileRepository @Inject constructor(
     /**
      * Create default profile if no profiles exist
      * This is useful for first-time users or after app install
+     * Uses provided userName if available
      */
-    suspend fun ensureDefaultProfile(): String {
+    suspend fun ensureDefaultProfile(userName: String? = null): String {
         val count = getProfileCount()
         if (count == 0) {
+            val profileName = userName ?: "Varsayılan Profil"
+            android.util.Log.d("ProfileRepository", "🆕 Creating default profile with name: $profileName")
             return createProfile(
-                name = "Varsayılan Profil",
+                name = profileName,
                 avatarIcon = "👤",
                 color = "#6200EE",
                 setAsActive = true
