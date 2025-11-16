@@ -62,10 +62,76 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.time.Instant
 import java.time.LocalDate
 import java.time.LocalTime
+import java.time.ZoneId
 import java.time.format.TextStyle
+import java.time.temporal.ChronoUnit
 import java.util.*
+
+// Helper function: Belirli bir tarihte ilacın gösterilip gösterilmeyeceğini kontrol eder
+fun shouldMedicineShowOnDate(medicine: Medicine, date: LocalDate): Boolean {
+    // startDate kontrolü
+    val startLocalDate = Instant.ofEpochMilli(medicine.startDate)
+        .atZone(ZoneId.systemDefault())
+        .toLocalDate()
+
+    if (date.isBefore(startLocalDate)) {
+        return false // Başlangıç tarihinden önce gösterme
+    }
+
+    // endDate kontrolü
+    if (medicine.endDate != null) {
+        val endLocalDate = Instant.ofEpochMilli(medicine.endDate!!)
+            .atZone(ZoneId.systemDefault())
+            .toLocalDate()
+        if (date.isAfter(endLocalDate)) {
+            return false // Bitiş tarihinden sonra gösterme
+        }
+    }
+
+    when (medicine.frequency) {
+        "Her gün" -> return true
+
+        "Gün aşırı" -> {
+            // Başlangıç gününden itibaren gün aşırı: gün 0 (al), gün 1 (alma), gün 2 (al), ...
+            val daysSinceStart = ChronoUnit.DAYS.between(startLocalDate, date)
+            return daysSinceStart % 2 == 0L
+        }
+
+        "Haftada bir" -> {
+            // Başlangıç tarihinin haftanın günü ile aynı günlerde al
+            return startLocalDate.dayOfWeek == date.dayOfWeek
+        }
+
+        "15 günde bir" -> {
+            // Her 15 günde bir: gün 0, 15, 30, 45, ...
+            val daysSinceStart = ChronoUnit.DAYS.between(startLocalDate, date)
+            return daysSinceStart % 15 == 0L
+        }
+
+        "Ayda bir" -> {
+            // Her 30 günde bir: gün 0, 30, 60, 90, ...
+            val daysSinceStart = ChronoUnit.DAYS.between(startLocalDate, date)
+            return daysSinceStart % 30 == 0L
+        }
+
+        "Her X günde bir" -> {
+            // Her X günde bir: gün 0, X, 2X, 3X, ...
+            val daysSinceStart = ChronoUnit.DAYS.between(startLocalDate, date)
+            return daysSinceStart % medicine.frequencyValue.toLong() == 0L
+        }
+
+        "İstediğim tarihlerde" -> {
+            // Kullanıcının seçtiği özel tarihlerde
+            val dateString = "%02d/%02d/%d".format(date.dayOfMonth, date.monthValue, date.year)
+            return medicine.days.contains(dateString)
+        }
+
+        else -> return false
+    }
+}
 
 // Helper function: Get medicine status for a specific date with percentage-based logic
 fun getMedicineStatusForDate(context: Context, date: LocalDate, medicines: List<Medicine>): MedicineStatus {
@@ -78,6 +144,11 @@ fun getMedicineStatusForDate(context: Context, date: LocalDate, medicines: List<
     var upcomingCount = 0
 
     medicines.forEach { medicine ->
+        // ✅ Sadece bu tarihte gösterilmesi gereken ilaçları kontrol et
+        if (!shouldMedicineShowOnDate(medicine, date)) {
+            return@forEach
+        }
+
         medicine.times.forEach { time ->
             totalDoses++
             val key = "dose_${medicine.id}_${dateString}_$time"
@@ -123,6 +194,11 @@ fun getMedicineRecordsForDate(context: Context, date: LocalDate, medicines: List
     val records = mutableListOf<MedicineRecord>()
 
     medicines.forEach { medicine ->
+        // ✅ Sadece bu tarihte gösterilmesi gereken ilaçları kontrol et
+        if (!shouldMedicineShowOnDate(medicine, date)) {
+            return@forEach
+        }
+
         medicine.times.forEach { time ->
             val key = "dose_${medicine.id}_${dateString}_$time"
             val statusValue = prefs.getString(key, null)

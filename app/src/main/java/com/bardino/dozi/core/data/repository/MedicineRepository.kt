@@ -96,9 +96,10 @@ class MedicineRepository {
                 }
 
                 "Haftada bir" -> {
-                    // Başlangıçtan bugüne kaç hafta geçti?
-                    val daysSinceStart = getDaysBetween(medicine.startDate, today)
-                    (daysSinceStart % 7).toInt() == 0 // Her 7 günde bir
+                    // Başlangıç tarihinin haftanın günü ile aynı günlerde al
+                    val startCal = java.util.Calendar.getInstance().apply { timeInMillis = medicine.startDate }
+                    val todayCal = java.util.Calendar.getInstance().apply { timeInMillis = today }
+                    startCal.get(java.util.Calendar.DAY_OF_WEEK) == todayCal.get(java.util.Calendar.DAY_OF_WEEK)
                 }
 
                 "15 günde bir" -> {
