@@ -270,6 +270,86 @@ fun SettingsScreen(
                         }
                     }
                 }
+
+                // 🧪 Test / Geliştirici Ayarları
+                SettingsSection(title = "🧪 Test Alanı") {
+                    // Aile Paketi Test Butonu
+                    OutlinedButton(
+                        onClick = {
+                            com.bardino.dozi.core.utils.FamilyPlanTestHelper.createTestFamilyPlan(context) { invitationCode ->
+                                Toast.makeText(
+                                    context,
+                                    "✅ Aile paketi aktif!\n🎟️ Davet kodu: $invitationCode",
+                                    Toast.LENGTH_LONG
+                                ).show()
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = DoziTurquoise.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Icon(Icons.Default.GroupAdd, contentDescription = null, tint = DoziTurquoise)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Aile Paketi Oluştur (Test)")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Aile Paketi Bilgi Butonu
+                    OutlinedButton(
+                        onClick = {
+                            com.bardino.dozi.core.utils.FamilyPlanTestHelper.showFamilyPlanInfo(context)
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            containerColor = DoziBlue.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Icon(Icons.Default.Info, contentDescription = null, tint = DoziBlue)
+                        Spacer(Modifier.width(8.dp))
+                        Text("Aile Paketi Bilgisi")
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    // Davet Kodu ile Katıl
+                    var invitationCode by remember { mutableStateOf("") }
+                    OutlinedTextField(
+                        value = invitationCode,
+                        onValueChange = { invitationCode = it.uppercase() },
+                        label = { Text("Davet Kodu") },
+                        leadingIcon = {
+                            Icon(Icons.Default.VpnKey, contentDescription = null, tint = DoziTurquoise)
+                        },
+                        trailingIcon = {
+                            if (invitationCode.length == 6) {
+                                IconButton(
+                                    onClick = {
+                                        com.bardino.dozi.core.utils.FamilyPlanTestHelper.joinWithCode(context, invitationCode)
+                                        invitationCode = ""
+                                    }
+                                ) {
+                                    Icon(Icons.Default.Check, contentDescription = "Katıl", tint = DoziTurquoise)
+                                }
+                            }
+                        },
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = DoziTurquoise,
+                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f)
+                        ),
+                        placeholder = { Text("ABC123") }
+                    )
+
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        text = "6 haneli davet kodunu girerek aile paketine katılabilirsiniz",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        modifier = Modifier.padding(horizontal = 4.dp)
+                    )
+                }
             }
         }
     }
