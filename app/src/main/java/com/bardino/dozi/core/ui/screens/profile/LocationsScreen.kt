@@ -40,6 +40,8 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.bardino.dozi.R
+import com.bardino.dozi.core.data.LocationPreferences
+import com.bardino.dozi.core.data.SavedLocation
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.geofence.GeofenceReceiver
 import com.bardino.dozi.navigation.Screen
@@ -57,15 +59,6 @@ import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.Card
 
-
-private data class SavedPlace(
-    val id: String = System.currentTimeMillis().toString(),
-    val name: String,
-    val lat: Double,
-    val lng: Double,
-    val address: String = ""
-)
-
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun LocationsScreen(onNavigateBack: () -> Unit) {
@@ -73,8 +66,8 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
 
-    var places by remember { mutableStateOf(listOf<SavedPlace>()) }
-    var toDelete by remember { mutableStateOf<SavedPlace?>(null) }
+    var places by remember { mutableStateOf(LocationPreferences.getLocations(context)) }
+    var toDelete by remember { mutableStateOf<SavedLocation?>(null) }
     var showMapPicker by remember { mutableStateOf(false) }
     var isVisible by remember { mutableStateOf(false) }
     val markerState = remember { MarkerState() }
@@ -300,7 +293,8 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
             confirmButton = {
                 Button(
                     onClick = {
-                        places = places.filterNot { it.id == deleting.id }
+                        LocationPreferences.removeLocation(context, deleting.id)
+                        places = LocationPreferences.getLocations(context)
                         toDelete = null
                         scope.launch {
                             snackbarHostState.showSnackbar("${deleting.name} silindi")
@@ -342,13 +336,15 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
                 }
 
                 // 🔹 Yeni konumu kaydet
-                val newPlace = SavedPlace(
+                val newPlace = SavedLocation(
+                    id = System.currentTimeMillis().toString(),
                     name = pickedName.trim(),
                     lat = pickedLatLng.latitude,
                     lng = pickedLatLng.longitude,
                     address = address
                 )
-                places = places + newPlace
+                LocationPreferences.addLocation(context, newPlace)
+                places = LocationPreferences.getLocations(context)
 
                 // 🔹 Jeofence kur
                 addGeofence(context, newPlace.name, newPlace.lat, newPlace.lng)
@@ -441,7 +437,7 @@ private fun EmptyLocationsState(
 
 @Composable
 private fun LocationCard(
-    place: SavedPlace,
+    place: SavedLocation,
     onDelete: () -> Unit
 ) {
     Card(
