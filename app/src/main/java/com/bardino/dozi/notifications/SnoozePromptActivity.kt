@@ -126,12 +126,15 @@ class SnoozePromptActivity : ComponentActivity() {
             // 💡 "Zamanı Değiştir" butonu ekle (eğer öneri varsa)
             if (newTime != null && timeSuggestion != null) {
                 builder.setNeutralButton("Zamanı Değiştir") { dialog, _ ->
-                    // TODO: İlacın hatırlatma zamanını değiştirmek için ayarlar ekranına yönlendir
-                    Toast.makeText(
-                        this@SnoozePromptActivity,
-                        "Bu özellik yakında eklenecek! Şimdilik hatırlatmayı erteleyebilirsiniz.",
-                        Toast.LENGTH_SHORT
-                    ).show()
+                    // İlacın hatırlatma zamanını değiştirmek için EditReminder ekranına yönlendir
+                    val editIntent = Intent(this@SnoozePromptActivity, MainActivity::class.java).apply {
+                        addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK)
+                        putExtra("navigate_to", "edit_reminder")
+                        putExtra("medicine_id", medicineId)
+                    }
+                    startActivity(editIntent)
+                    dialog.dismiss()
+                    finish()
                 }
             }
 

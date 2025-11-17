@@ -34,6 +34,7 @@ import com.bardino.dozi.core.ui.screens.badi.AddBadiScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiPermissionsScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
+import com.bardino.dozi.core.ui.screens.family.FamilyManagementScreen
 import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
 import com.bardino.dozi.onboarding.screens.OnboardingMedicineScreen
 import com.bardino.dozi.onboarding.screens.OnboardingNameScreen
@@ -212,6 +213,7 @@ fun NavGraph(
                 ProfileScreen(
                     onNavigateToLocations = { navController.navigate(Screen.Locations.route) },
                     onNavigateToPremium = { navController.navigate(Screen.Premium.route) },
+                    onNavigateToFamilyManagement = { navController.navigate(Screen.FamilyManagement.route) },
                     onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                     onNavigateToNotifications = { navController.navigate(Screen.NotificationSettings.route) },
                     onNavigateToAbout = { navController.navigate(Screen.About.route) },
@@ -232,6 +234,13 @@ fun NavGraph(
                     onPurchase = { planType ->
                         // burada satın alma işlemini veya yönlendirmeyi yapabilirsin
                     }
+                )
+            }
+
+            // 👨‍👩‍👧‍👦 Aile Yönetimi
+            composable(Screen.FamilyManagement.route) {
+                FamilyManagementScreen(
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 

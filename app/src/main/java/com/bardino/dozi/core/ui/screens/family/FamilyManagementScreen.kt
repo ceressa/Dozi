@@ -30,22 +30,24 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.bardino.dozi.R
+import com.bardino.dozi.core.data.model.FamilyPlan
+import com.bardino.dozi.core.data.repository.FamilyPlanRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
+import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
-import java.util.*
 
-// Aile üyesi data class
+// Aile üyesi data class (UI için)
 data class FamilyMember(
-    val id: String = UUID.randomUUID().toString(),
+    val uid: String,
     val name: String,
     val email: String,
-    val role: MemberRole = MemberRole.MEMBER,
+    val role: MemberRole,
     val joinedDate: Long = System.currentTimeMillis()
 )
 
 enum class MemberRole {
-    ADMIN,
+    ORGANIZER,
     MEMBER
 }
 
@@ -56,31 +58,72 @@ fun FamilyManagementScreen(
 ) {
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
+    val familyPlanRepository = remember { FamilyPlanRepository() }
+    val auth = remember { FirebaseAuth.getInstance() }
 
     // State'ler
-    var inviteCode by remember { mutableStateOf("") }
+    var familyPlan by remember { mutableStateOf<FamilyPlan?>(null) }
     var members by remember { mutableStateOf<List<FamilyMember>>(emptyList()) }
-    var isLoading by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
     var showRemoveDialog by remember { mutableStateOf<FamilyMember?>(null) }
     var isVisible by remember { mutableStateOf(false) }
+    var errorMessage by remember { mutableStateOf<String?>(null) }
 
-    // Animasyon için
+    // Verileri yükle
     LaunchedEffect(Unit) {
-        isVisible = true
-        // Mock data - gerçek implementasyonda Firestore'dan çekilecek
-        inviteCode = generateInviteCode()
-        members = listOf(
-            FamilyMember(
-                name = "Sen (Admin)",
-                email = "user@example.com",
-                role = MemberRole.ADMIN
-            ),
-            FamilyMember(
-                name = "Ahmet Yılmaz",
-                email = "ahmet@example.com",
-                role = MemberRole.MEMBER
-            )
-        )
+        scope.launch {
+            isLoading = true
+            try {
+                // Kullanıcının aile planını getir
+                val result = familyPlanRepository.getUserFamilyPlan()
+                result.onSuccess { plan ->
+                    familyPlan = plan
+
+                    // Aile üyelerini getir
+                    plan?.let {
+                        val membersResult = familyPlanRepository.getFamilyMembers(it.id)
+                        membersResult.onSuccess { memberList ->
+                            // Organizer'ı da ekle
+                            val allMembers = mutableListOf<FamilyMember>()
+
+                            // Organizer
+                            allMembers.add(
+                                FamilyMember(
+                                    uid = it.organizerId,
+                                    name = it.organizerName,
+                                    email = it.organizerEmail,
+                                    role = MemberRole.ORGANIZER
+                                )
+                            )
+
+                            // Diğer üyeler
+                            memberList.forEach { memberData ->
+                                allMembers.add(
+                                    FamilyMember(
+                                        uid = memberData["uid"] as String,
+                                        name = memberData["name"] as String,
+                                        email = memberData["email"] as String,
+                                        role = MemberRole.MEMBER,
+                                        joinedDate = memberData["joinedAt"] as? Long ?: 0L
+                                    )
+                                )
+                            }
+
+                            members = allMembers
+                        }.onFailure { e ->
+                            errorMessage = "Üyeler yüklenemedi: ${e.message}"
+                        }
+                    }
+                }.onFailure { e ->
+                    errorMessage = "Aile planı yüklenemedi: ${e.message}"
+                }
+            } catch (e: Exception) {
+                errorMessage = "Bir hata oluştu: ${e.message}"
+            } finally {
+                isLoading = false
+                isVisible = true
+            }
+        }
     }
 
     Scaffold(
@@ -93,72 +136,164 @@ fun FamilyManagementScreen(
         },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        LazyColumn(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding),
-            contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp)
-        ) {
-            // 🎨 Hero Bölümü
-            item {
-                AnimatedVisibility(
-                    visible = isVisible,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { -50 })
+        if (isLoading) {
+            // Loading state
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    HeroSection()
-                }
-            }
-
-            // 🔑 Davet Kodu Bölümü
-            item {
-                AnimatedVisibility(
-                    visible = isVisible,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { 50 })
-                ) {
-                    InviteCodeCard(
-                        inviteCode = inviteCode,
-                        onCopy = {
-                            copyToClipboard(context, inviteCode)
-                            Toast.makeText(context, "Davet kodu kopyalandı!", Toast.LENGTH_SHORT).show()
-                        },
-                        onRefresh = {
-                            inviteCode = generateInviteCode()
-                            Toast.makeText(context, "Yeni davet kodu oluşturuldu!", Toast.LENGTH_SHORT).show()
-                        }
+                    CircularProgressIndicator(color = DoziTurquoise)
+                    Text(
+                        text = "Yükleniyor...",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             }
-
-            // 👥 Üye Listesi
-            item {
-                Text(
-                    text = "Aile Üyeleri (${members.size})",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            items(members, key = { it.id }) { member ->
-                AnimatedVisibility(
-                    visible = isVisible,
-                    enter = fadeIn() + slideInVertically(initialOffsetY = { 100 })
+        } else if (errorMessage != null) {
+            // Error state
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
-                    MemberCard(
-                        member = member,
-                        onRemove = {
-                            if (member.role != MemberRole.ADMIN) {
-                                showRemoveDialog = member
+                    Icon(
+                        imageVector = Icons.Default.ErrorOutline,
+                        contentDescription = null,
+                        tint = ErrorRed,
+                        modifier = Modifier.size(64.dp)
+                    )
+                    Text(
+                        text = errorMessage ?: "Bir hata oluştu",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                    Button(
+                        onClick = { onNavigateBack() },
+                        colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise)
+                    ) {
+                        Text("Geri Dön")
+                    }
+                }
+            }
+        } else if (familyPlan == null) {
+            // No family plan
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .padding(24.dp),
+                contentAlignment = Alignment.Center
+            ) {
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    Image(
+                        painter = painterResource(R.drawable.dozi_noted),
+                        contentDescription = null,
+                        modifier = Modifier.size(120.dp)
+                    )
+                    Text(
+                        text = "Aile Planınız Yok",
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                    Text(
+                        text = "Aile paketi satın alarak aile üyelerinizle birlikte Dozi'yi kullanabilirsiniz.",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        textAlign = TextAlign.Center
+                    )
+                }
+            }
+        } else {
+            // Main content
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentPadding = PaddingValues(horizontal = 24.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // 🎨 Hero Bölümü
+                item {
+                    AnimatedVisibility(
+                        visible = isVisible,
+                        enter = fadeIn() + slideInVertically(initialOffsetY = { -50 })
+                    ) {
+                        HeroSection()
+                    }
+                }
+
+                // 🔑 Davet Kodu Bölümü (Sadece organizer için)
+                val currentUserId = auth.currentUser?.uid
+                val isOrganizer = currentUserId == familyPlan?.organizerId
+
+                if (isOrganizer) {
+                    item {
+                        AnimatedVisibility(
+                            visible = isVisible,
+                            enter = fadeIn() + slideInVertically(initialOffsetY = { 50 })
+                        ) {
+                            InviteCodeCard(
+                                inviteCode = familyPlan?.invitationCode ?: "",
+                                onCopy = {
+                                    copyToClipboard(context, familyPlan?.invitationCode ?: "")
+                                    Toast.makeText(context, "Davet kodu kopyalandı!", Toast.LENGTH_SHORT).show()
+                                },
+                                availableSlots = familyPlan?.getAvailableSlots() ?: 0
+                            )
+                        }
+                    }
+                }
+
+                // 👥 Üye Listesi
+                item {
+                    Text(
+                        text = "Aile Üyeleri (${members.size}/${(familyPlan?.maxMembers ?: 0) + 1})",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                items(members, key = { it.uid }) { member ->
+                    AnimatedVisibility(
+                        visible = isVisible,
+                        enter = fadeIn() + slideInVertically(initialOffsetY = { 100 })
+                    ) {
+                        MemberCard(
+                            member = member,
+                            currentUserId = currentUserId,
+                            isOrganizer = isOrganizer,
+                            onRemove = {
+                                if (isOrganizer && member.role != MemberRole.ORGANIZER) {
+                                    showRemoveDialog = member
+                                }
                             }
-                        }
-                    )
+                        )
+                    }
                 }
-            }
 
-            // Alt boşluk
-            item {
-                Spacer(Modifier.height(40.dp))
+                // Alt boşluk
+                item {
+                    Spacer(Modifier.height(40.dp))
+                }
             }
         }
     }
@@ -168,9 +303,16 @@ fun FamilyManagementScreen(
         RemoveMemberDialog(
             memberName = member.name,
             onConfirm = {
-                members = members.filter { it.id != member.id }
-                Toast.makeText(context, "${member.name} aileden çıkarıldı", Toast.LENGTH_SHORT).show()
-                showRemoveDialog = null
+                scope.launch {
+                    val result = familyPlanRepository.removeFamilyMember(member.uid)
+                    result.onSuccess {
+                        members = members.filter { it.uid != member.uid }
+                        Toast.makeText(context, "${member.name} aileden çıkarıldı", Toast.LENGTH_SHORT).show()
+                    }.onFailure { e ->
+                        Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+                    }
+                    showRemoveDialog = null
+                }
             },
             onDismiss = { showRemoveDialog = null }
         )
@@ -232,7 +374,7 @@ private fun HeroSection() {
 private fun InviteCodeCard(
     inviteCode: String,
     onCopy: () -> Unit,
-    onRefresh: () -> Unit
+    availableSlots: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -267,14 +409,16 @@ private fun InviteCodeCard(
                     )
                 }
 
-                IconButton(
-                    onClick = onRefresh,
-                    modifier = Modifier.size(36.dp)
+                Surface(
+                    color = if (availableSlots > 0) DoziTurquoise.copy(alpha = 0.2f) else ErrorRed.copy(alpha = 0.2f),
+                    shape = RoundedCornerShape(8.dp)
                 ) {
-                    Icon(
-                        Icons.Default.Refresh,
-                        contentDescription = "Yenile",
-                        tint = DoziTurquoise
+                    Text(
+                        text = "$availableSlots yer kaldı",
+                        style = MaterialTheme.typography.labelSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (availableSlots > 0) DoziTurquoise else ErrorRed,
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
                     )
                 }
             }
@@ -297,7 +441,7 @@ private fun InviteCodeCard(
                         style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
                         color = DoziTurquoise,
-                        letterSpacing = 4.dp.value.sp
+                        letterSpacing = 4.sp
                     )
                     IconButton(onClick = onCopy) {
                         Icon(
@@ -323,23 +467,28 @@ private fun InviteCodeCard(
 @Composable
 private fun MemberCard(
     member: FamilyMember,
+    currentUserId: String?,
+    isOrganizer: Boolean,
     onRemove: () -> Unit
 ) {
+    val isCurrentUser = member.uid == currentUserId
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
-            containerColor = if (member.role == MemberRole.ADMIN)
-                DoziTurquoise.copy(alpha = 0.08f)
-            else
-                Color.White
+            containerColor = when {
+                member.role == MemberRole.ORGANIZER -> DoziTurquoise.copy(alpha = 0.08f)
+                isCurrentUser -> DoziCoral.copy(alpha = 0.05f)
+                else -> Color.White
+            }
         ),
         shape = RoundedCornerShape(16.dp),
         border = BorderStroke(
             width = 1.dp,
-            color = if (member.role == MemberRole.ADMIN)
-                DoziTurquoise.copy(alpha = 0.3f)
-            else
-                Gray200
+            color = when {
+                member.role == MemberRole.ORGANIZER -> DoziTurquoise.copy(alpha = 0.3f)
+                else -> Gray200
+            }
         )
     ) {
         Row(
@@ -358,20 +507,17 @@ private fun MemberCard(
                 Surface(
                     modifier = Modifier.size(56.dp),
                     shape = CircleShape,
-                    color = if (member.role == MemberRole.ADMIN)
+                    color = if (member.role == MemberRole.ORGANIZER)
                         DoziTurquoise.copy(alpha = 0.2f)
                     else
                         DoziCoral.copy(alpha = 0.2f)
                 ) {
                     Box(contentAlignment = Alignment.Center) {
-                        Icon(
-                            Icons.Default.Person,
-                            contentDescription = null,
-                            tint = if (member.role == MemberRole.ADMIN)
-                                DoziTurquoise
-                            else
-                                DoziCoral,
-                            modifier = Modifier.size(32.dp)
+                        Text(
+                            text = member.name.firstOrNull()?.uppercase() ?: "?",
+                            style = MaterialTheme.typography.titleLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = if (member.role == MemberRole.ORGANIZER) DoziTurquoise else DoziCoral
                         )
                     }
                 }
@@ -384,18 +530,18 @@ private fun MemberCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Text(
-                            text = member.name,
+                            text = if (isCurrentUser) "${member.name} (Sen)" else member.name,
                             style = MaterialTheme.typography.titleMedium,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        if (member.role == MemberRole.ADMIN) {
+                        if (member.role == MemberRole.ORGANIZER) {
                             Surface(
                                 color = DoziTurquoise,
                                 shape = RoundedCornerShape(6.dp)
                             ) {
                                 Text(
-                                    text = "Admin",
+                                    text = "Yönetici",
                                     style = MaterialTheme.typography.labelSmall,
                                     color = Color.White,
                                     modifier = Modifier.padding(horizontal = 8.dp, vertical = 2.dp)
@@ -411,8 +557,8 @@ private fun MemberCard(
                 }
             }
 
-            // Çıkar butonu (sadece admin olmayanlarda)
-            if (member.role != MemberRole.ADMIN) {
+            // Çıkar butonu (sadece organizer ve üyeler için)
+            if (isOrganizer && member.role != MemberRole.ORGANIZER && !isCurrentUser) {
                 IconButton(
                     onClick = onRemove,
                     modifier = Modifier.size(40.dp)
@@ -530,13 +676,6 @@ private fun RemoveMemberDialog(
 }
 
 // Utility fonksiyonlar
-private fun generateInviteCode(): String {
-    val chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789"
-    return (1..6)
-        .map { chars.random() }
-        .joinToString("")
-}
-
 private fun copyToClipboard(context: Context, text: String) {
     val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
     val clip = ClipData.newPlainText("Davet Kodu", text)
