@@ -34,8 +34,6 @@ import com.bardino.dozi.core.ui.screens.badi.AddBadiScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiPermissionsScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
-import com.bardino.dozi.core.ui.screens.profiles.ProfileManagementScreen
-import com.bardino.dozi.core.ui.screens.profiles.ProfileDashboardScreen
 import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
 import com.bardino.dozi.onboarding.screens.OnboardingMedicineScreen
 import com.bardino.dozi.onboarding.screens.OnboardingNameScreen
@@ -107,8 +105,7 @@ fun NavGraph(
                     contentPadding = padding,
                     onNavigateToMedicines = { navController.navigate(Screen.MedicineList.route) },
                     onNavigateToReminders = { navController.navigate(Screen.ReminderList.route) },
-                    onNavigateToProfile = { navController.navigate(Screen.Profile.route) },
-                    onNavigateToProfileManagement = { navController.navigate(Screen.ProfileManagement.route) }
+                    onNavigateToProfile = { navController.navigate(Screen.Profile.route) }
                 )
             }
 
@@ -228,24 +225,6 @@ fun NavGraph(
                 )
             }
 
-            // 👥 Profil Yönetimi (Multi-user profiles)
-            composable(Screen.ProfileManagement.route) {
-                ProfileManagementScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToPremium = { navController.navigate(Screen.Premium.route) }
-                )
-            }
-
-            // 📊 Profil Dashboard (Statistics)
-            composable(Screen.ProfileDashboard.route) {
-                ProfileDashboardScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToProfile = { profileId ->
-                        navController.navigate(Screen.ProfileManagement.route)
-                    }
-                )
-            }
-
             // 🌟 Premium Sayfası
             composable(Screen.Premium.route) {
                 PremiumScreen(
@@ -359,9 +338,7 @@ fun NavGraph(
             // ⚙️ Ayarlar
             composable(Screen.Settings.route) {
                 SettingsScreen(
-                    onNavigateBack = { navController.popBackStack() },
-                    onNavigateToProfileManagement = { navController.navigate(Screen.ProfileManagement.route) },
-                    onNavigateToProfileDashboard = { navController.navigate(Screen.ProfileDashboard.route) }
+                    onNavigateBack = { navController.popBackStack() }
                 )
             }
 

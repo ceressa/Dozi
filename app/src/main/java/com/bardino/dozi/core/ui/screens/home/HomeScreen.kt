@@ -238,8 +238,7 @@ fun HomeScreen(
     contentPadding: PaddingValues = PaddingValues(),
     onNavigateToMedicines: () -> Unit,
     onNavigateToReminders: () -> Unit,
-    onNavigateToProfile: () -> Unit,
-    onNavigateToProfileManagement: () -> Unit = {}
+    onNavigateToProfile: () -> Unit
 ) {
     val context = LocalContext.current
 

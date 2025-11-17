@@ -74,18 +74,17 @@ class HomeViewModel @Inject constructor(
     }
 
     /**
-     * 🔥 Profile-specific medicines Flow
-     * Each profile sees ONLY their own reminders in the home calendar
-     * Automatically reloads when profile switches
+     * 🔥 Medicines Flow
+     * Automatically reloads when medicines change
      */
     private fun observeMedicinesFlow() {
         viewModelScope.launch {
-            medicineRepository.getMedicinesForActiveProfileFlow()
+            medicineRepository.getMedicinesFlow()
                 .catch { error ->
                     android.util.Log.e(TAG, "❌ Error observing medicines: ${error.message}")
                 }
                 .collect { medicines ->
-                    android.util.Log.d(TAG, "🔄 Medicines updated: ${medicines.size} medicines for active profile")
+                    android.util.Log.d(TAG, "🔄 Medicines updated: ${medicines.size} medicines")
                     updateMedicinesState(medicines)
                 }
         }
