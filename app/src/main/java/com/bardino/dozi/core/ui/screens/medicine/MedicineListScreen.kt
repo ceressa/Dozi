@@ -249,7 +249,8 @@ fun MedicineListScreen(
                                         medicine = medicine,
                                         onClick = { onNavigateToDetail(medicine.id) },
                                         onEdit = { onNavigateToDetail(medicine.id) },
-                                        onDelete = { showDeleteConfirm = true }
+                                        onDelete = { showDeleteConfirm = true },
+                                        onAddReminder = { onNavigateToAddReminder?.invoke(medicine.id) }
                                     )
                                 }
                             )
@@ -296,7 +297,8 @@ fun ModernMedicineCard(
     medicine: Medicine,
     onClick: () -> Unit,
     onEdit: () -> Unit = {},
-    onDelete: () -> Unit = {}
+    onDelete: () -> Unit = {},
+    onAddReminder: () -> Unit = {}
 ) {
     var expanded by remember { mutableStateOf(false) }
     val rotationAngle by animateFloatAsState(
@@ -553,18 +555,49 @@ fun ModernMedicineCard(
                             }
                         }
                     } else {
-                        // Hatırlatma yoksa bilgilendirme göster
-                        val reminderMessage = when {
-                            !medicine.reminderEnabled && medicine.times.isEmpty() -> "Hatırlatmalar devre dışı"
-                            medicine.reminderEnabled && medicine.times.isEmpty() -> "Henüz hatırlatma eklenmemiş"
-                            else -> "Hatırlatma bilgisi senkronize ediliyor"
+                        // Hatırlatma yoksa bilgilendirme göster ve ekle butonu ekle
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            val reminderMessage = when {
+                                !medicine.reminderEnabled && medicine.times.isEmpty() -> "Hatırlatmalar devre dışı"
+                                medicine.reminderEnabled && medicine.times.isEmpty() -> "Henüz hatırlatma eklenmemiş"
+                                else -> "Hatırlatma bilgisi senkronize ediliyor"
+                            }
+                            Text(
+                                text = reminderMessage,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Gray600,
+                                fontWeight = FontWeight.Medium
+                            )
+
+                            // Hatırlatma Ekle butonu
+                            Button(
+                                onClick = onAddReminder,
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .height(44.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = DoziCoral
+                                ),
+                                shape = RoundedCornerShape(12.dp),
+                                elevation = ButtonDefaults.buttonElevation(
+                                    defaultElevation = 2.dp
+                                )
+                            ) {
+                                Icon(
+                                    Icons.Default.Add,
+                                    contentDescription = null,
+                                    modifier = Modifier.size(18.dp)
+                                )
+                                Spacer(Modifier.width(8.dp))
+                                Text(
+                                    text = "Hatırlatma Ekle",
+                                    fontWeight = FontWeight.Bold,
+                                    style = MaterialTheme.typography.labelLarge
+                                )
+                            }
                         }
-                        Text(
-                            text = reminderMessage,
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = Gray600,
-                            fontWeight = FontWeight.Medium
-                        )
                     }
                 }
             }

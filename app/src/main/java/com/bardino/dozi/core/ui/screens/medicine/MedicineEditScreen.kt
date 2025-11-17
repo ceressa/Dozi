@@ -337,21 +337,17 @@ fun MedicineEditScreen(
                             }
 
                             // Onboarding state kontrolü
-                            val isInOnboarding = OnboardingPreferences.isInOnboarding(context) &&
-                                OnboardingPreferences.getOnboardingStep(context) == "medicine"
-
-                            if (isInOnboarding) {
+                            if (OnboardingPreferences.isInOnboarding(context) &&
+                                OnboardingPreferences.getOnboardingStep(context) == "medicine") {
                                 OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
-                                // Onboarding sırasında direkt geri dön, hatırlatma dialog'u gösterme
-                                onNavigateBack()
+                            }
+
+                            // Yeni ilaç eklendiyse hatırlatma dialog'unu göster
+                            if (medicineId == "new" && onNavigateToReminder != null) {
+                                savedMedicineId = newId
+                                showReminderDialog = true
                             } else {
-                                // Yeni ilaç eklendiyse hatırlatma dialog'unu göster (normal akış)
-                                if (medicineId == "new" && onNavigateToReminder != null) {
-                                    savedMedicineId = newId
-                                    showReminderDialog = true
-                                } else {
-                                    onNavigateBack()
-                                }
+                                onNavigateBack()
                             }
                         }
                     },
