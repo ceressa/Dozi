@@ -986,6 +986,10 @@ private fun CurrentMedicineCard(
     val context = LocalContext.current
     var remainingSeconds by remember { mutableStateOf(0) }
 
+    // ✅ Bugün bu ilacın kaç dozu olduğunu göster
+    val todayDosesForThisMedicine = medicine.times.size
+    val currentDoseIndex = medicine.times.indexOf(time) + 1
+
     // ⏰ Zaman kontrolü
     val currentTime = LocalTime.now()
     val (hour, minute) = time.split(":").map { it.toInt() }
@@ -1108,11 +1112,29 @@ private fun CurrentMedicineCard(
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            Text(
-                "📦 ${medicine.dosage}",
-                style = MaterialTheme.typography.titleSmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "📦 ${medicine.dosage}",
+                    style = MaterialTheme.typography.titleSmall,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+                // ✅ Bugün kaç doz olduğunu göster
+                Surface(
+                    color = DoziTurquoise.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Text(
+                        "$currentDoseIndex/$todayDosesForThisMedicine. doz",
+                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = DoziTurquoise
+                    )
+                }
+            }
 
             HorizontalDivider(color = VeryLightGray, thickness = 1.dp)
 
@@ -1183,12 +1205,29 @@ private fun CurrentMedicineCard(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
 private fun EmptyMedicineCard(
     currentMedicineStatus: MedicineStatus,
     nextMedicine: Pair<Medicine, String>?,
     isLoggedIn: Boolean
 ) {
+    // ✅ Bugün kalan ilaç sayısını hesapla
+    val context = LocalContext.current
+    val today = getCurrentDateString()
+    val medicineRepository = remember { MedicineRepository() }
+    val allMedicines by medicineRepository.getMedicinesFlow()
+        .collectAsState(initial = emptyList())
+    val todayDate = LocalDate.now()
+    val todaysMedicines = allMedicines.filter { shouldMedicineShowOnDate(it, todayDate) }
+    val totalDosesToday = todaysMedicines.sumOf { it.times.size }
+    val takenDosesToday = todaysMedicines.sumOf { medicine ->
+        medicine.times.count { time ->
+            getMedicineStatus(context, medicine.id, today, time) == "taken"
+        }
+    }
+    val remainingDoses = totalDosesToday - takenDosesToday
+
     Card(
         modifier = Modifier
             .fillMaxWidth()
@@ -1226,7 +1265,7 @@ private fun EmptyMedicineCard(
                 textAlign = TextAlign.Center
             )
 
-            // Sıradaki hatırlatmayı göster veya login teşvik mesajı
+            // ✅ Kalan doz bilgisi göster (eğer varsa)
             if (!isLoggedIn) {
                 Text(
                     "Login olursan ilaçlarını beraber takip edebiliriz! 💊",
@@ -1241,6 +1280,32 @@ private fun EmptyMedicineCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
+            } else if (remainingDoses > 0 && currentMedicineStatus != MedicineStatus.TAKEN) {
+                // Kalan doz varsa göster
+                Surface(
+                    color = DoziTurquoise.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            "Bugün $remainingDoses doz daha var",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = DoziTurquoise
+                        )
+                        if (nextMedicine != null) {
+                            Text(
+                                "Sıradaki: ${nextMedicine.first.name} • ${nextMedicine.second}",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             } else if (nextMedicine != null && currentMedicineStatus != MedicineStatus.TAKEN && currentMedicineStatus != MedicineStatus.SKIPPED) {
                 Spacer(Modifier.height(8.dp))
                 Surface(
@@ -2072,17 +2137,44 @@ private fun StreakAndDailySummaryCard(
     onNavigateToStats: () -> Unit
 ) {
     val today = getCurrentDateString()
-    val takenCount = medicines.count { medicine ->
-        medicine.times.any { time ->
+
+    // ✅ Doz bazlı hesaplama: Her bir ilacın her bir saatini ayrı ayrı say
+    val takenCount = medicines.sumOf { medicine ->
+        medicine.times.count { time ->
             getMedicineStatus(context, medicine.id, today, time) == "taken"
         }
     }
     val totalDoses = medicines.sumOf { it.times.size }
     val progress = if (totalDoses > 0) takenCount.toFloat() / totalDoses else 0f
 
-    // Streak bilgisi (SharedPreferences'tan basit okuma)
+    // ✅ Streak bilgisi - Bugün %100 başarılıysa streak'i artır
     val prefs = context.getSharedPreferences("dozi_streak", Context.MODE_PRIVATE)
-    val currentStreak = prefs.getInt("current_streak", 0)
+    var currentStreak by remember { mutableStateOf(prefs.getInt("current_streak", 0)) }
+
+    // ✅ Bugünün streak'ini güncelle (sadece bir kez, gün değiştiğinde)
+    LaunchedEffect(today, takenCount, totalDoses) {
+        val lastStreakDate = prefs.getString("last_streak_date", "")
+
+        // Bugün için streak güncellemesi yapıldı mı?
+        if (lastStreakDate != today && totalDoses > 0) {
+            // Bugün %100 başarılıysa streak'i artır
+            if (takenCount == totalDoses) {
+                val newStreak = currentStreak + 1
+                prefs.edit()
+                    .putInt("current_streak", newStreak)
+                    .putString("last_streak_date", today)
+                    .apply()
+                currentStreak = newStreak
+            } else if (takenCount < totalDoses && !LocalTime.now().isBefore(LocalTime.of(23, 0))) {
+                // Gün sonunda %100 değilse streak sıfırla (sadece saat 23:00'dan sonra)
+                prefs.edit()
+                    .putInt("current_streak", 0)
+                    .putString("last_streak_date", today)
+                    .apply()
+                currentStreak = 0
+            }
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -2131,7 +2223,7 @@ private fun StreakAndDailySummaryCard(
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                     Text(
-                        "$takenCount/$totalDoses ilaç",
+                        "$takenCount/$totalDoses doz",
                         style = MaterialTheme.typography.bodyMedium,
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onSurface
