@@ -7,9 +7,10 @@ sealed class Screen(val route: String) {
     // Onboarding
     object OnboardingWelcome : Screen("onboarding/welcome")
     object OnboardingIntro : Screen("onboarding/intro")
-    object OnboardingMedicine : Screen("onboarding/medicine")
+    object OnboardingMedicineReminder : Screen("onboarding/medicine_reminder")
+    object OnboardingMedicine : Screen("onboarding/medicine") // Deprecated - kept for backward compatibility
     object OnboardingName : Screen("onboarding/name")
-    object OnboardingReminder : Screen("onboarding/reminder")
+    object OnboardingReminder : Screen("onboarding/reminder") // Deprecated - kept for backward compatibility
     object OnboardingHomeTour : Screen("onboarding/home_tour")
     object OnboardingPremium : Screen("onboarding/premium")
 

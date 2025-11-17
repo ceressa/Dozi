@@ -33,7 +33,7 @@ fun OnboardingNameScreen(
 
         // Adım göstergesi
         Text(
-            text = "Adım 2/4",
+            text = "Adım 2/3",
             style = MaterialTheme.typography.labelLarge,
             color = DoziTurquoise,
             fontWeight = FontWeight.Bold
