@@ -113,6 +113,52 @@ class MedicineRepository @Inject constructor(
     }
 
     /**
+     * Get medicines for active profile with real-time updates
+     * Automatically switches to new profile's medicines when profile changes
+     * ✅ Profile-specific reminders (each profile sees only their own)
+     */
+    fun getMedicinesForActiveProfileFlow(): Flow<List<Medicine>> {
+        return profileManager.getActiveProfile().flatMapLatest { activeProfile ->
+            val profileId = activeProfile?.id
+            if (profileId == null) {
+                android.util.Log.w("MedicineRepository", "⚠️ No active profile, returning empty list")
+                return@flatMapLatest flowOf(emptyList())
+            }
+
+            val collection = getMedicinesCollection()
+            if (collection == null) {
+                return@flatMapLatest flowOf(emptyList())
+            }
+
+            callbackFlow {
+                android.util.Log.d("MedicineRepository", "🔄 Listening to medicines for profile: $profileId")
+                val listener = collection
+                    .whereEqualTo("ownerProfileId", profileId)
+                    .orderBy("createdAt", Query.Direction.DESCENDING)
+                    .addSnapshotListener { snapshot, error ->
+                        if (error != null) {
+                            android.util.Log.e("MedicineRepository", "❌ Error listening to profile medicines: ${error.message}")
+                            trySend(emptyList())
+                            return@addSnapshotListener
+                        }
+
+                        val medicines = snapshot?.documents?.mapNotNull {
+                            it.toObject(Medicine::class.java)
+                        } ?: emptyList()
+
+                        android.util.Log.d("MedicineRepository", "✅ Loaded ${medicines.size} medicines for profile: $profileId")
+                        trySend(medicines)
+                    }
+
+                awaitClose {
+                    android.util.Log.d("MedicineRepository", "🚫 Stopped listening to medicines for profile: $profileId")
+                    listener.remove()
+                }
+            }
+        }
+    }
+
+    /**
      * Get medicines for today's schedule
      */
     @RequiresApi(Build.VERSION_CODES.O)

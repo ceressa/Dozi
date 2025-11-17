@@ -394,6 +394,74 @@ fun ModernMedicineCard(
                         }
                     )
                 }
+
+                // Hatırlatma bilgileri (varsa)
+                if (medicine.reminderEnabled && medicine.times.isNotEmpty()) {
+                    HorizontalDivider(
+                        modifier = Modifier.padding(vertical = 8.dp),
+                        color = Gray200
+                    )
+
+                    Column(
+                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Notifications,
+                                contentDescription = null,
+                                tint = DoziCoral,
+                                modifier = Modifier.size(18.dp)
+                            )
+                            Text(
+                                text = "Hatırlatmalar",
+                                style = MaterialTheme.typography.labelLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = Gray700
+                            )
+                        }
+
+                        // Hatırlatma saatleri
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.Schedule,
+                                contentDescription = null,
+                                tint = DoziTurquoise,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = medicine.times.joinToString(", "),
+                                style = MaterialTheme.typography.bodyMedium,
+                                fontWeight = FontWeight.Medium,
+                                color = Gray900
+                            )
+                        }
+
+                        // Sıklık bilgisi
+                        Row(
+                            horizontalArrangement = Arrangement.spacedBy(8.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                Icons.Default.CalendarToday,
+                                contentDescription = null,
+                                tint = DoziTurquoise,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Text(
+                                text = medicine.frequency,
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = Gray700
+                            )
+                        }
+                    }
+                }
             }
         }
     }
