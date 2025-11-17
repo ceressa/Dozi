@@ -64,9 +64,9 @@ fun OnboardingMedicineReminderScreen(
 
         // Adım göstergesi
         Text(
-            text = "Adım 1/3",
+            text = "Adım 2/3",
             style = MaterialTheme.typography.labelLarge,
-            color = DoziBlue,
+            color = DoziPurple,
             fontWeight = FontWeight.Bold
         )
 
@@ -126,22 +126,22 @@ private fun InitialPhaseContent(
             ) {
                 // Başlık
                 Text(
-                    text = "İlaç Ekle & Hatırlatma Kur 💊⏰",
-                    style = MaterialTheme.typography.headlineSmall,
+                    text = "İlaç & Hatırlatma 💊",
+                    style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
-                    color = DoziBlue,
+                    color = DoziPurple,
                     textAlign = TextAlign.Center
                 )
 
-                Spacer(Modifier.height(12.dp))
+                Spacer(Modifier.height(8.dp))
 
                 // Ana açıklama
                 Text(
-                    text = "Hadi başlayalım! İlk olarak ilaçlarını nasıl ekleyebileceğini göstereyim:",
-                    style = MaterialTheme.typography.bodyMedium,
+                    text = "İlaç ekle, hatırlatma kur. Hepsi bu kadar basit!",
+                    style = MaterialTheme.typography.bodyLarge,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
-                    lineHeight = 20.sp
+                    fontWeight = FontWeight.Medium
                 )
 
                 Spacer(Modifier.height(16.dp))
@@ -177,26 +177,26 @@ private fun InitialPhaseContent(
                 // Bilgilendirme
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = DoziBlue.copy(alpha = 0.08f)
+                        containerColor = DoziPurple.copy(alpha = 0.1f)
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
                     Row(
-                        modifier = Modifier.padding(12.dp),
+                        modifier = Modifier.padding(14.dp),
                         verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                        horizontalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Icon(
-                            Icons.Default.Lightbulb,
+                            Icons.Default.CheckCircle,
                             contentDescription = null,
-                            tint = DoziBlue,
-                            modifier = Modifier.size(20.dp)
+                            tint = DoziPurple,
+                            modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = "İlaç ekledikten sonra hatırlatma kurmanı sağlayacağım!",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = DoziBlue,
-                            fontWeight = FontWeight.Medium
+                            text = "İlaç ekle, hatırlatma popup'ı gelir. Hızlıca kur!",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = DoziPurple,
+                            fontWeight = FontWeight.Bold
                         )
                     }
                 }
@@ -210,39 +210,42 @@ private fun InitialPhaseContent(
             onClick = onTryMedicine,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(60.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = DoziBlue
+                containerColor = DoziPurple
             ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 4.dp,
+                pressedElevation = 8.dp
+            )
         ) {
-            Icon(Icons.Default.Add, "Ekle")
+            Icon(Icons.Default.Add, "Ekle", modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(8.dp))
             Text(
                 text = "İlaç Ekle & Başla!",
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
             )
         }
 
         Spacer(Modifier.height(12.dp))
 
         // Devam butonu
-        OutlinedButton(
+        TextButton(
             onClick = onNext,
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
-            shape = RoundedCornerShape(16.dp),
-            colors = ButtonDefaults.outlinedButtonColors(
-                contentColor = DoziBlue
-            )
+                .height(50.dp)
         ) {
             Text(
                 text = "Şimdilik Atla",
-                fontWeight = FontWeight.Bold
+                fontWeight = FontWeight.Medium,
+                color = TextSecondary,
+                fontSize = 16.sp
             )
-            Spacer(Modifier.width(8.dp))
-            Icon(Icons.Default.ArrowForward, "İleri")
+            Spacer(Modifier.width(4.dp))
+            Icon(Icons.Default.ArrowForward, "İleri", tint = TextSecondary)
         }
     }
 }

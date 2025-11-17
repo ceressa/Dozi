@@ -33,9 +33,9 @@ fun OnboardingNameScreen(
 
         // Adım göstergesi
         Text(
-            text = "Adım 2/3",
+            text = "Adım 1/3",
             style = MaterialTheme.typography.labelLarge,
-            color = DoziTurquoise,
+            color = DoziBlue,
             fontWeight = FontWeight.Bold
         )
 
@@ -91,14 +91,15 @@ fun OnboardingNameScreen(
             modifier = Modifier.fillMaxWidth(),
             shape = RoundedCornerShape(16.dp),
             colors = OutlinedTextFieldDefaults.colors(
-                focusedBorderColor = DoziTurquoiseDark,
-                focusedLabelColor = DoziTurquoise
+                focusedBorderColor = DoziBlue,
+                focusedLabelColor = DoziBlue,
+                cursorColor = DoziBlue
             )
         )
 
         Spacer(Modifier.weight(1f))
 
-        // Devam butonu
+        // Kaydet butonu - Daha belirgin
         Button(
             onClick = {
                 if (name.isBlank()) {
@@ -109,16 +110,21 @@ fun OnboardingNameScreen(
             },
             modifier = Modifier
                 .fillMaxWidth()
-                .height(56.dp),
+                .height(60.dp),
             colors = ButtonDefaults.buttonColors(
-                containerColor = DoziCoralLight
+                containerColor = DoziCoral
             ),
-            shape = RoundedCornerShape(16.dp)
+            shape = RoundedCornerShape(16.dp),
+            elevation = ButtonDefaults.buttonElevation(
+                defaultElevation = 4.dp,
+                pressedElevation = 8.dp
+            )
         ) {
             Text(
-                text = "Devam",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold
+                text = "Kaydet ve Devam Et",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                fontSize = 18.sp
             )
         }
     }
