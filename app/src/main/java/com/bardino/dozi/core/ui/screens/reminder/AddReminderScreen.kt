@@ -2297,6 +2297,9 @@ private fun saveMedicinesToFirestore(
                     // 🔥 FIX: startDate'i güncelle
                     medicineRepository.updateMedicineField(existingMedicine.id, "startDate", startDate)
 
+                    // 🔥 FIX: reminderEnabled'ı true yap (hatırlatma eklendi)
+                    medicineRepository.updateMedicineField(existingMedicine.id, "reminderEnabled", true)
+
                     // Notes'u birleştir
                     val newNotes = buildNotesFromTimes(selectedTimes, frequency, xValue)
                     val mergedNotes = if (existingMedicine.notes.isNotEmpty() && newNotes.isNotEmpty()) {
