@@ -103,6 +103,15 @@ class MainActivity : ComponentActivity() {
                                         userRepository.createUserIfNotExists()
                                         Log.d("GOOGLE_AUTH", "Kullanıcı Firestore'a kaydedildi/güncellendi")
 
+                                        // ✅ Onboarding tamamlandıysa kullanıcı belgesini güncelle
+                                        if (!OnboardingPreferences.isFirstTime(this@MainActivity)) {
+                                            userRepository.updateUserField("onboardingCompleted", true)
+                                            Log.d(
+                                                "GOOGLE_AUTH",
+                                                "Onboarding durumu Firestore'da tamamlandı olarak işaretlendi"
+                                            )
+                                        }
+
                                         // 📱 Device ID'yi kaydet
                                         val deviceId = Settings.Secure.getString(
                                             contentResolver,

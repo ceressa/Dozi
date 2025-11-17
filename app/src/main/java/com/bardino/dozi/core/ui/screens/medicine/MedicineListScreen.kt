@@ -400,14 +400,16 @@ fun ModernMedicineCard(
                     color = Gray200
                 )
 
+                val hasReminderTimes = medicine.times.any { it.isNotBlank() }
+
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .background(
                             brush = Brush.horizontalGradient(
                                 listOf(
-                                    if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziCoral.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
-                                    if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f)
+                                    if (hasReminderTimes) DoziCoral.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
+                                    if (hasReminderTimes) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f)
                                 )
                             ),
                             shape = RoundedCornerShape(12.dp)
@@ -420,15 +422,15 @@ fun ModernMedicineCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Surface(
-                            color = if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziCoral.copy(alpha = 0.2f) else Gray400.copy(alpha = 0.2f),
+                            color = if (hasReminderTimes) DoziCoral.copy(alpha = 0.2f) else Gray400.copy(alpha = 0.2f),
                             shape = CircleShape,
                             modifier = Modifier.size(28.dp)
                         ) {
                             Box(contentAlignment = Alignment.Center) {
                                 Icon(
-                                    if (medicine.reminderEnabled && medicine.times.isNotEmpty()) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                                    if (hasReminderTimes) Icons.Default.Notifications else Icons.Default.NotificationsOff,
                                     contentDescription = null,
-                                    tint = if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziCoral else Gray400,
+                                    tint = if (hasReminderTimes) DoziCoral else Gray400,
                                     modifier = Modifier.size(16.dp)
                                 )
                             }
@@ -437,11 +439,11 @@ fun ModernMedicineCard(
                             text = "Hatırlatmalar",
                             style = MaterialTheme.typography.titleSmall,
                             fontWeight = FontWeight.Bold,
-                            color = if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziCoral else Gray600
+                            color = if (hasReminderTimes) DoziCoral else Gray600
                         )
                     }
 
-                    if (medicine.reminderEnabled && medicine.times.isNotEmpty()) {
+                    if (hasReminderTimes) {
                         // Hatırlatma saatleri - chip formatında
                         Column(
                             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -516,11 +518,44 @@ fun ModernMedicineCard(
                                 fontWeight = FontWeight.Medium,
                                 color = Gray900
                             )
+
+                            if (!medicine.reminderEnabled) {
+                                AssistChip(
+                                    onClick = {},
+                                    label = {
+                                        Text(
+                                            text = "Bildirim kapalı",
+                                            color = DoziCoral,
+                                            style = MaterialTheme.typography.labelMedium
+                                        )
+                                    },
+                                    leadingIcon = {
+                                        Icon(
+                                            imageVector = Icons.Default.NotificationsOff,
+                                            contentDescription = null,
+                                            tint = DoziCoral,
+                                            modifier = Modifier.size(14.dp)
+                                        )
+                                    },
+                                    colors = AssistChipDefaults.assistChipColors(
+                                        containerColor = DoziCoral.copy(alpha = 0.08f)
+                                    ),
+                                    border = BorderStroke(
+                                        width = 1.dp,
+                                        color = DoziCoral.copy(alpha = 0.4f)
+                                    )
+                                )
+                            }
                         }
                     } else {
                         // Hatırlatma yoksa bilgilendirme göster
+                        val reminderMessage = when {
+                            !medicine.reminderEnabled && medicine.times.isEmpty() -> "Hatırlatmalar devre dışı"
+                            medicine.reminderEnabled && medicine.times.isEmpty() -> "Henüz hatırlatma eklenmemiş"
+                            else -> "Hatırlatma bilgisi senkronize ediliyor"
+                        }
                         Text(
-                            text = if (!medicine.reminderEnabled) "Hatırlatmalar devre dışı" else "Henüz hatırlatma eklenmemiş",
+                            text = reminderMessage,
                             style = MaterialTheme.typography.bodyMedium,
                             color = Gray600,
                             fontWeight = FontWeight.Medium
