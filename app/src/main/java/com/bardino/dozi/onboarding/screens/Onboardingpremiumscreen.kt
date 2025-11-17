@@ -6,7 +6,9 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
@@ -64,6 +66,7 @@ fun OnboardingPremiumScreen(
                 "☁️ Bulut yedekleme",
                 "🔊 Sesli hatırlatıcılar",
                 "📊 Gelişmiş istatistikler",
+                "👥 Badi Sistemi",
                 "🎯 Akıllı öneriler",
                 "💬 Öncelikli destek"
             )
@@ -80,7 +83,7 @@ fun OnboardingPremiumScreen(
                 "☁️ Bulut yedekleme & senkronizasyon",
                 "🔊 Sesli hatırlatıcılar",
                 "📊 Aile sağlık raporları",
-                "👥 Aile takip sistemi (Badi+)",
+                "👥 Gelişmiş Badi Sistemi (Aile+)",
                 "🎯 Akıllı öneriler",
                 "💬 Premium destek (7/24)",
                 "💰 Yıllık %70 tasarruf"
@@ -96,34 +99,54 @@ fun OnboardingPremiumScreen(
         Column(
             modifier = Modifier
                 .fillMaxSize()
+                .verticalScroll(rememberScrollState())
                 .padding(horizontal = 24.dp, vertical = 16.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Spacer(Modifier.height(16.dp))
 
+            // Adım göstergesi
+            Text(
+                text = "Adım 3/3",
+                style = MaterialTheme.typography.labelLarge,
+                color = DoziCoral,
+                fontWeight = FontWeight.Bold
+            )
+
+            Spacer(Modifier.height(16.dp))
+
             // Başlık
             Text(
-                text = "✨ Dozi Premium'a Yükselt!",
-                style = MaterialTheme.typography.headlineMedium,
-                fontWeight = FontWeight.Bold,
-                color = DoziTurquoise,
+                text = "🎁 Hoş Geldin Hediyesi!",
+                style = MaterialTheme.typography.headlineLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = DoziCoral,
                 textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(8.dp))
 
-            Text(
-                text = "Sağlık yönetiminde bir adım öne çık!",
-                style = MaterialTheme.typography.titleMedium,
-                color = DoziBlue,
-                fontWeight = FontWeight.SemiBold,
-                textAlign = TextAlign.Center
-            )
+            // Hediye mesajı
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = DoziCoral.copy(alpha = 0.15f)
+                ),
+                shape = RoundedCornerShape(16.dp)
+            ) {
+                Text(
+                    text = "İlk kaydın! Sana 1 haftalık Dozi Ekstra hediye! 🎉",
+                    style = MaterialTheme.typography.titleMedium,
+                    color = DoziCoral,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center,
+                    modifier = Modifier.padding(16.dp)
+                )
+            }
 
-            Spacer(Modifier.height(4.dp))
+            Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "🎁 7 gün ücretsiz dene, istediğin zaman iptal et",
+                text = "Daha fazlası için premium'a yükselt!",
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary,
                 textAlign = TextAlign.Center
@@ -141,9 +164,9 @@ fun OnboardingPremiumScreen(
                 Spacer(Modifier.height(12.dp))
             }
 
-            Spacer(Modifier.weight(1f))
+            Spacer(Modifier.height(12.dp))
 
-            // Devam butonu
+            // Google ile Giriş Yap butonu
             Button(
                 onClick = {
                     isLoading = true
@@ -151,12 +174,16 @@ fun OnboardingPremiumScreen(
                 },
                 modifier = Modifier
                     .fillMaxWidth()
-                    .height(56.dp),
+                    .height(60.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = DoziTurquoise
+                    containerColor = DoziCoral
                 ),
                 shape = RoundedCornerShape(16.dp),
-                enabled = !isLoading
+                enabled = !isLoading,
+                elevation = ButtonDefaults.buttonElevation(
+                    defaultElevation = 6.dp,
+                    pressedElevation = 10.dp
+                )
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
@@ -167,29 +194,84 @@ fun OnboardingPremiumScreen(
                     Spacer(Modifier.width(12.dp))
                     Text(
                         text = "Başlatılıyor...",
-                        style = MaterialTheme.typography.titleMedium,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold
                     )
                 } else {
+                    Icon(
+                        painter = painterResource(id = R.drawable.ic_google),
+                        contentDescription = "Google",
+                        modifier = Modifier.size(24.dp),
+                        tint = Color.White
+                    )
+                    Spacer(Modifier.width(12.dp))
                     Text(
-                        text = "Ücretsiz Denemeyi Başlat",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold
+                        text = "Google ile Giriş Yap",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        fontSize = 18.sp
                     )
                 }
             }
 
-            Spacer(Modifier.height(8.dp))
+            Spacer(Modifier.height(12.dp))
+
+            // Avantajlar
+            Card(
+                colors = CardDefaults.cardColors(
+                    containerColor = SuccessGreen.copy(alpha = 0.1f)
+                ),
+                shape = RoundedCornerShape(12.dp)
+            ) {
+                Column(
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Text(
+                        text = "Google ile giriş yapmanın avantajları:",
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = SuccessGreen
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    AdvantageRow("☁️ Verileriniz güvende")
+                    AdvantageRow("🔄 Cihazlar arası senkronizasyon")
+                    AdvantageRow("🎁 1 haftalık premium hediye")
+                    AdvantageRow("📱 Kolay ve hızlı giriş")
+                }
+            }
+
+            Spacer(Modifier.height(16.dp))
 
             Text(
-                text = "İstediğin zaman iptal edebilirsin",
+                text = "Ücretsiz deneme sonunda istediğin zaman iptal edebilirsin",
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary,
                 textAlign = TextAlign.Center
             )
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
         }
+    }
+}
+
+@Composable
+private fun AdvantageRow(text: String) {
+    Row(
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+        modifier = Modifier.padding(vertical = 4.dp)
+    ) {
+        Icon(
+            Icons.Default.CheckCircle,
+            contentDescription = null,
+            tint = SuccessGreen,
+            modifier = Modifier.size(18.dp)
+        )
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = TextPrimary
+        )
     }
 }
 
@@ -200,14 +282,14 @@ private fun PremiumPlanCard(
     onClick: () -> Unit
 ) {
     val backgroundColor = when {
-        plan.id == "yearly" && isSelected -> DoziTurquoise.copy(alpha = 0.15f)
-        plan.id == "yearly" -> DoziTurquoise.copy(alpha = 0.08f)
+        plan.id == "yearly" && isSelected -> DoziCoral.copy(alpha = 0.15f)
+        plan.id == "yearly" -> DoziCoral.copy(alpha = 0.08f)
         isSelected -> DoziBlue.copy(alpha = 0.15f)
         else -> Gray100
     }
 
     val borderColor = when {
-        plan.id == "yearly" && isSelected -> DoziTurquoise
+        plan.id == "yearly" && isSelected -> DoziCoral
         isSelected -> DoziBlue
         else -> Color.Transparent
     }
@@ -237,7 +319,7 @@ private fun PremiumPlanCard(
                             modifier = Modifier
                                 .clip(RoundedCornerShape(8.dp))
                                 .background(
-                                    if (plan.id == "yearly") DoziTurquoise else DoziCoral
+                                    if (plan.id == "yearly") DoziCoral else DoziBlue
                                 )
                                 .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
@@ -269,7 +351,7 @@ private fun PremiumPlanCard(
                             text = plan.price,
                             style = MaterialTheme.typography.headlineSmall,
                             fontWeight = FontWeight.ExtraBold,
-                            color = if (plan.id == "yearly") DoziTurquoise else DoziBlue
+                            color = if (plan.id == "yearly") DoziCoral else DoziBlue
                         )
                         Text(
                             text = "/ ${plan.period}",
@@ -331,7 +413,7 @@ private fun PremiumPlanCard(
                 selected = isSelected,
                 onClick = onClick,
                 colors = RadioButtonDefaults.colors(
-                    selectedColor = DoziTurquoise,
+                    selectedColor = DoziCoral,
                     unselectedColor = TextSecondary
                 ),
                 modifier = Modifier.align(Alignment.TopEnd)

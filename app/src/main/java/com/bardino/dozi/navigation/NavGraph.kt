@@ -267,29 +267,15 @@ fun NavGraph(
                 )
             }
 
-            // Onboarding akışı
+            // Onboarding akışı - YENİ: Name → MedicineReminder → Premium
             composable(Screen.OnboardingWelcome.route) {
                 OnboardingWelcomeScreen(
-                    onStartTour = { navController.navigate(Screen.OnboardingMedicineReminder.route) },
+                    onStartTour = { navController.navigate(Screen.OnboardingName.route) },
                     onSkip = {
                         OnboardingPreferences.skipOnboarding(context)
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
                         }
-                    }
-                )
-            }
-
-            composable(Screen.OnboardingMedicineReminder.route) {
-                OnboardingMedicineReminderScreen(
-                    onNext = { navController.navigate(Screen.OnboardingName.route) },
-                    onTryMedicine = {
-                        // İlaç ekleme ekranına git
-                        navController.navigate(Screen.MedicineLookup.route)
-                    },
-                    onTryReminder = {
-                        // Hatırlatma ekleme ekranına git
-                        navController.navigate(Screen.AddReminder.route)
                     }
                 )
             }
@@ -307,7 +293,21 @@ fun NavGraph(
                             android.util.Log.d("OnboardingName", "✅ User name saved to Firebase: $name")
                         }
 
-                        navController.navigate(Screen.OnboardingHomeTour.route)
+                        navController.navigate(Screen.OnboardingMedicineReminder.route)
+                    }
+                )
+            }
+
+            composable(Screen.OnboardingMedicineReminder.route) {
+                OnboardingMedicineReminderScreen(
+                    onNext = { navController.navigate(Screen.OnboardingPremium.route) },
+                    onTryMedicine = {
+                        // İlaç ekleme ekranına git
+                        navController.navigate(Screen.MedicineLookup.route)
+                    },
+                    onTryReminder = {
+                        // Hatırlatma ekleme ekranına git
+                        navController.navigate(Screen.AddReminder.route)
                     }
                 )
             }
