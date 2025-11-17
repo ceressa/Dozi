@@ -395,7 +395,7 @@ fun ModernMedicineCard(
                     )
                 }
 
-                // Hatırlatma bilgileri (varsa)
+                // Hatırlatma bilgileri (varsa) - Geliştirilmiş versiyon
                 if (medicine.reminderEnabled && medicine.times.isNotEmpty()) {
                     HorizontalDivider(
                         modifier = Modifier.padding(vertical = 8.dp),
@@ -403,44 +403,101 @@ fun ModernMedicineCard(
                     )
 
                     Column(
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                brush = Brush.horizontalGradient(
+                                    listOf(
+                                        DoziCoral.copy(alpha = 0.05f),
+                                        DoziTurquoise.copy(alpha = 0.05f)
+                                    )
+                                ),
+                                shape = RoundedCornerShape(12.dp)
+                            )
+                            .padding(12.dp),
+                        verticalArrangement = Arrangement.spacedBy(10.dp)
                     ) {
                         Row(
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Icon(
-                                Icons.Default.Notifications,
-                                contentDescription = null,
-                                tint = DoziCoral,
-                                modifier = Modifier.size(18.dp)
-                            )
+                            Surface(
+                                color = DoziCoral.copy(alpha = 0.2f),
+                                shape = CircleShape,
+                                modifier = Modifier.size(28.dp)
+                            ) {
+                                Box(contentAlignment = Alignment.Center) {
+                                    Icon(
+                                        Icons.Default.Notifications,
+                                        contentDescription = null,
+                                        tint = DoziCoral,
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                }
+                            }
                             Text(
                                 text = "Hatırlatmalar",
-                                style = MaterialTheme.typography.labelLarge,
+                                style = MaterialTheme.typography.titleSmall,
                                 fontWeight = FontWeight.Bold,
-                                color = Gray700
+                                color = DoziCoral
                             )
                         }
 
-                        // Hatırlatma saatleri
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        // Hatırlatma saatleri - chip formatında
+                        Column(
+                            verticalArrangement = Arrangement.spacedBy(6.dp)
                         ) {
-                            Icon(
-                                Icons.Default.Schedule,
-                                contentDescription = null,
-                                tint = DoziTurquoise,
-                                modifier = Modifier.size(16.dp)
-                            )
-                            Text(
-                                text = medicine.times.joinToString(", "),
-                                style = MaterialTheme.typography.bodyMedium,
-                                fontWeight = FontWeight.Medium,
-                                color = Gray900
-                            )
+                            Row(
+                                horizontalArrangement = Arrangement.spacedBy(6.dp),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    Icons.Default.Schedule,
+                                    contentDescription = null,
+                                    tint = DoziTurquoise,
+                                    modifier = Modifier.size(16.dp)
+                                )
+                                Text(
+                                    text = "Saatler:",
+                                    style = MaterialTheme.typography.labelMedium,
+                                    fontWeight = FontWeight.Bold,
+                                    color = Gray700
+                                )
+                            }
+
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.spacedBy(6.dp)
+                            ) {
+                                medicine.times.take(4).forEach { time ->
+                                    Surface(
+                                        color = DoziTurquoise.copy(alpha = 0.15f),
+                                        shape = RoundedCornerShape(8.dp),
+                                        border = BorderStroke(1.dp, DoziTurquoise.copy(alpha = 0.3f))
+                                    ) {
+                                        Text(
+                                            text = time,
+                                            style = MaterialTheme.typography.labelMedium,
+                                            fontWeight = FontWeight.Bold,
+                                            color = DoziTurquoise,
+                                            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                                if (medicine.times.size > 4) {
+                                    Surface(
+                                        color = Gray200,
+                                        shape = RoundedCornerShape(8.dp)
+                                    ) {
+                                        Text(
+                                            text = "+${medicine.times.size - 4}",
+                                            style = MaterialTheme.typography.labelSmall,
+                                            color = Gray700,
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                        )
+                                    }
+                                }
+                            }
                         }
 
                         // Sıklık bilgisi
@@ -451,13 +508,14 @@ fun ModernMedicineCard(
                             Icon(
                                 Icons.Default.CalendarToday,
                                 contentDescription = null,
-                                tint = DoziTurquoise,
+                                tint = DoziCoral,
                                 modifier = Modifier.size(16.dp)
                             )
                             Text(
                                 text = medicine.frequency,
                                 style = MaterialTheme.typography.bodyMedium,
-                                color = Gray700
+                                fontWeight = FontWeight.Medium,
+                                color = Gray900
                             )
                         }
                     }

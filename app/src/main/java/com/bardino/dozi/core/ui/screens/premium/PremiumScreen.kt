@@ -109,7 +109,8 @@ fun PremiumScreen(
                 PremiumFeature("Kişisel alışkanlıklara göre akıllı hatırlatmalar")
                 PremiumFeature("Bulut yedekleme ve cihazlar arası senkronizasyon")
                 PremiumFeature("Özel bildirim sesleri ve titreşim ayarları")
-                PremiumFeature("Aile üyelerini aynı ekrandan yönetme")
+                PremiumFeature("Aile üyelerini aynı ekrandan yönetme (Aile Paketi)")
+                PremiumFeature("6 kişiye kadar aile üyesi ekleyebilme (Aile Paketi)")
                 PremiumFeature("Öncelikli destek ve erken erişim")
             }
 
@@ -142,6 +143,12 @@ fun PremiumScreen(
                     isSelected = selectedPlan == PlanType.YEARLY,
                     onSelect = { selectedPlan = PlanType.YEARLY },
                     highlight = "En Popüler"
+                )
+                PricingOption(
+                    planType = PlanType.FAMILY,
+                    isSelected = selectedPlan == PlanType.FAMILY,
+                    onSelect = { selectedPlan = PlanType.FAMILY },
+                    highlight = "Aile İçin"
                 )
                 PricingOption(
                     planType = PlanType.LIFETIME,
@@ -346,6 +353,13 @@ enum class PlanType(
         "yıl",
         originalPrice = "839.88",
         equivalentPrice = "Sadece ₺49.99/ay"
+    ),
+    FAMILY(
+        "Aile Paketi",
+        "899.99",
+        "yıl",
+        originalPrice = "1259.88",
+        equivalentPrice = "6 kişiye kadar • Sadece ₺74.99/ay"
     ),
     LIFETIME(
         "Ömür Boyu",
