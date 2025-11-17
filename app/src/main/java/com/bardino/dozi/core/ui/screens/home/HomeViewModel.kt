@@ -96,21 +96,19 @@ class HomeViewModel @Inject constructor(
     @RequiresApi(Build.VERSION_CODES.O)
     private suspend fun updateMedicinesState(allMedicines: List<Medicine>) {
         try {
-            val todaysMeds = allMedicines.filter { medicine ->
-                val today = System.currentTimeMillis()
-                val todayDateString = getCurrentDateString()
+            // ✅ Bugünün tarihini al
+            val today = java.time.LocalDate.now()
+            val todayMillis = System.currentTimeMillis()
 
-                when (medicine.frequency) {
-                    "Günlük" -> true
-                    "Haftalık" -> {
-                        val currentDayName = getCurrentDayName()
-                        medicine.selectedDays.contains(currentDayName)
-                    }
-                    "Belirli günlerde" -> {
-                        medicine.selectedDates.contains(todayDateString)
-                    }
-                    else -> false
-                }
+            // ✅ Bugün için geçerli olan ilaçları filtrele
+            val todaysMeds = allMedicines.filter { medicine ->
+                // Hatırlatma aktif mi ve tarih aralığında mı?
+                if (!medicine.reminderEnabled) return@filter false
+                if (medicine.startDate > todayMillis) return@filter false
+                if (medicine.endDate != null && medicine.endDate < todayMillis) return@filter false
+
+                // shouldMedicineShowOnDate() mantığını kullan
+                shouldMedicineShowOnDate(medicine, today)
             }
 
             val upcoming = todaysMeds.flatMap { medicine ->
@@ -151,6 +149,72 @@ class HomeViewModel @Inject constructor(
             6 -> "Cumartesi"
             7 -> "Pazar"
             else -> ""
+        }
+    }
+
+    /**
+     * Helper: Belirli bir tarihte ilacın gösterilip gösterilmeyeceğini kontrol eder
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    private fun shouldMedicineShowOnDate(medicine: Medicine, date: java.time.LocalDate): Boolean {
+        // startDate kontrolü
+        val startLocalDate = java.time.Instant.ofEpochMilli(medicine.startDate)
+            .atZone(java.time.ZoneId.systemDefault())
+            .toLocalDate()
+
+        if (date.isBefore(startLocalDate)) {
+            return false // Başlangıç tarihinden önce gösterme
+        }
+
+        // endDate kontrolü
+        if (medicine.endDate != null) {
+            val endLocalDate = java.time.Instant.ofEpochMilli(medicine.endDate!!)
+                .atZone(java.time.ZoneId.systemDefault())
+                .toLocalDate()
+            if (date.isAfter(endLocalDate)) {
+                return false // Bitiş tarihinden sonra gösterme
+            }
+        }
+
+        when (medicine.frequency) {
+            "Her gün" -> return true
+
+            "Gün aşırı" -> {
+                // Başlangıç gününden itibaren gün aşırı: gün 0 (al), gün 1 (alma), gün 2 (al), ...
+                val daysSinceStart = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
+                return daysSinceStart % 2 == 0L
+            }
+
+            "Haftada bir" -> {
+                // Başlangıç tarihinin haftanın günü ile aynı günlerde al
+                return startLocalDate.dayOfWeek == date.dayOfWeek
+            }
+
+            "15 günde bir" -> {
+                // Her 15 günde bir: gün 0, 15, 30, 45, ...
+                val daysSinceStart = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
+                return daysSinceStart % 15 == 0L
+            }
+
+            "Ayda bir" -> {
+                // Her 30 günde bir: gün 0, 30, 60, 90, ...
+                val daysSinceStart = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
+                return daysSinceStart % 30 == 0L
+            }
+
+            "Her X günde bir" -> {
+                // Her X günde bir: gün 0, X, 2X, 3X, ...
+                val daysSinceStart = java.time.temporal.ChronoUnit.DAYS.between(startLocalDate, date)
+                return daysSinceStart % medicine.frequencyValue.toLong() == 0L
+            }
+
+            "İstediğim tarihlerde" -> {
+                // Kullanıcının seçtiği özel tarihlerde
+                val dateString = "%02d/%02d/%d".format(date.dayOfMonth, date.monthValue, date.year)
+                return medicine.days.contains(dateString)
+            }
+
+            else -> return false
         }
     }
 
