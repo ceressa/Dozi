@@ -306,7 +306,7 @@ fun NavGraph(
                         navController.navigate(Screen.MedicineLookup.route)
                     },
                     onTryReminder = {
-                        // Hatırlatma ekleme ekranına git
+                        // Hatırlatma ekleme ekranına git (artık kullanılmıyor)
                         navController.navigate(Screen.AddReminder.route)
                     }
                 )
