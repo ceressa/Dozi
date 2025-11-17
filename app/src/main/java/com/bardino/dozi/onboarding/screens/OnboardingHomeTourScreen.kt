@@ -36,27 +36,31 @@ fun OnboardingHomeTourScreen(
     val steps = listOf(
         OnboardingStep(
             title = "Ana Ekran 🏠",
-            description = "Burası ana ekranın! İlaçlarını zamanında almana yardımcı olacağım.",
+            description = "Burası ana ekranın! Bugünkü ilaçlarını, hatırlatmalarını ve sağlık durumunu burada görebilirsin.",
             icon = Icons.Default.Home,
-            color = DoziTurquoise
+            color = DoziTurquoise,
+            premiumFeature = "Premium'da gelişmiş istatistikler ve sağlık raporları!"
         ),
         OnboardingStep(
-            title = "Hatırlatmalar ⏰",
+            title = "Akıllı Hatırlatmalar ⏰",
             description = "Her ilaç için sana hatırlatma göndereceğim. AL, ATLA veya ERTELE diyebilirsin.",
             icon = Icons.Default.Notifications,
-            color = DoziCoral
+            color = DoziCoral,
+            premiumFeature = "Premium'da sesli hatırlatmalar ve akıllı öneriler!"
         ),
         OnboardingStep(
-            title = "İlaç Listesi 💊",
-            description = "Tüm ilaçların burada. Yeni ilaç ekleyebilir, düzenleyebilirsin.",
+            title = "İlaç Yönetimi 💊",
+            description = "Tüm ilaçların burada. Yeni ilaç ekleyebilir, düzenleyebilir ve takip edebilirsin.",
             icon = Icons.Default.MedicalServices,
-            color = DoziBlue
+            color = DoziBlue,
+            premiumFeature = "Premium'da sınırsız ilaç ve bulut yedekleme!"
         ),
         OnboardingStep(
-            title = "Badi Sistemi 👥",
-            description = "Sevdiklerini ekleyebilirsin. Onlar da seni takip edip destek olabilir!",
+            title = "Aile Paketi 👨‍👩‍👧",
+            description = "Sevdiklerini ekleyebilirsin. Onlar da seni takip edip destek olabilir! Premium Aile Paketi ile 3 kişiye kadar.",
             icon = Icons.Default.People,
-            color = SuccessGreen
+            color = SuccessGreen,
+            premiumFeature = "Aile Paketi ile aile sağlık raporları ve takip sistemi!"
         )
     )
 
@@ -68,7 +72,17 @@ fun OnboardingHomeTourScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.SpaceBetween
     ) {
-        Spacer(Modifier.height(40.dp))
+        Spacer(Modifier.height(16.dp))
+
+        // Adım göstergesi
+        Text(
+            text = "Adım 3/3",
+            style = MaterialTheme.typography.labelLarge,
+            color = DoziTurquoise,
+            fontWeight = FontWeight.Bold
+        )
+
+        Spacer(Modifier.height(24.dp))
 
         // Dozi karakteri - Değişen ifadeler (transparan arka plan)
         AnimatedContent(
@@ -230,26 +244,32 @@ private fun OnboardingStepCard(step: OnboardingStep) {
 
             Spacer(Modifier.height(16.dp))
 
-            // Ek özellikler (isteğe bağlı)
-            if (step == OnboardingStep(
-                    "Badi Sistemi 👥",
-                    "Sevdiklerini ekleyebilirsin. Onlar da seni takip edip destek olabilir!",
-                    Icons.Default.People,
-                    SuccessGreen
-                )) {
+            // Premium özellik vurgusu
+            if (step.premiumFeature != null) {
                 Card(
                     colors = CardDefaults.cardColors(
-                        containerColor = SuccessGreen.copy(alpha = 0.1f)
+                        containerColor = DoziTurquoise.copy(alpha = 0.1f)
                     ),
                     shape = RoundedCornerShape(12.dp)
                 ) {
-                    Text(
-                        text = "💡 İpucu: Badiler ilaç aldığını görebilir ve sana destek olabilir!",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = SuccessGreen,
+                    Row(
                         modifier = Modifier.padding(12.dp),
-                        fontWeight = FontWeight.Medium
-                    )
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.Diamond,
+                            contentDescription = null,
+                            tint = DoziTurquoise,
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Text(
+                            text = step.premiumFeature,
+                            style = MaterialTheme.typography.bodySmall,
+                            color = DoziTurquoise,
+                            fontWeight = FontWeight.Bold
+                        )
+                    }
                 }
             }
         }
@@ -260,5 +280,6 @@ private data class OnboardingStep(
     val title: String,
     val description: String,
     val icon: ImageVector,
-    val color: Color
+    val color: Color,
+    val premiumFeature: String? = null
 )

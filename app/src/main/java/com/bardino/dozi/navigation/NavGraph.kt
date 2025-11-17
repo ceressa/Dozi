@@ -36,10 +36,9 @@ import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
 import com.bardino.dozi.core.ui.screens.family.FamilyManagementScreen
 import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
-import com.bardino.dozi.onboarding.screens.OnboardingMedicineScreen
+import com.bardino.dozi.onboarding.screens.OnboardingMedicineReminderScreen
 import com.bardino.dozi.onboarding.screens.OnboardingNameScreen
 import com.bardino.dozi.onboarding.screens.OnboardingPremiumScreen
-import com.bardino.dozi.onboarding.screens.OnboardingReminderScreen
 import com.bardino.dozi.onboarding.screens.OnboardingWelcomeScreen
 import kotlinx.coroutines.launch
 
@@ -271,7 +270,7 @@ fun NavGraph(
             // Onboarding akışı
             composable(Screen.OnboardingWelcome.route) {
                 OnboardingWelcomeScreen(
-                    onStartTour = { navController.navigate(Screen.OnboardingMedicine.route) },
+                    onStartTour = { navController.navigate(Screen.OnboardingMedicineReminder.route) },
                     onSkip = {
                         OnboardingPreferences.skipOnboarding(context)
                         navController.navigate(Screen.Home.route) {
@@ -281,12 +280,16 @@ fun NavGraph(
                 )
             }
 
-            composable(Screen.OnboardingMedicine.route) {
-                OnboardingMedicineScreen(
+            composable(Screen.OnboardingMedicineReminder.route) {
+                OnboardingMedicineReminderScreen(
                     onNext = { navController.navigate(Screen.OnboardingName.route) },
-                    onTryNow = {
+                    onTryMedicine = {
                         // İlaç ekleme ekranına git
                         navController.navigate(Screen.MedicineLookup.route)
+                    },
+                    onTryReminder = {
+                        // Hatırlatma ekleme ekranına git
+                        navController.navigate(Screen.AddReminder.route)
                     }
                 )
             }
@@ -304,17 +307,7 @@ fun NavGraph(
                             android.util.Log.d("OnboardingName", "✅ User name saved to Firebase: $name")
                         }
 
-                        navController.navigate(Screen.OnboardingReminder.route)
-                    }
-                )
-            }
-
-            composable(Screen.OnboardingReminder.route) {
-                OnboardingReminderScreen(
-                    onNext = { navController.navigate(Screen.OnboardingPremium.route) },
-                    onTryNow = {
-                        // Hatırlatma ekleme ekranına git
-                        navController.navigate(Screen.AddReminder.route)
+                        navController.navigate(Screen.OnboardingHomeTour.route)
                     }
                 )
             }

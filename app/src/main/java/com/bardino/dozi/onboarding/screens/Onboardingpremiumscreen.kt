@@ -47,37 +47,43 @@ fun OnboardingPremiumScreen(
             price = "49₺",
             period = "hafta",
             features = listOf(
-                "Sınırsız ilaç ekleme",
-                "Bulut yedekleme",
-                "Sesli hatırlatıcılar"
+                "✨ Sınırsız ilaç ekleme",
+                "☁️ Bulut yedekleme",
+                "🔊 Sesli hatırlatıcılar",
+                "📊 İstatistikler"
             )
         ),
         PremiumPlan(
             id = "monthly",
-            title = "Aylık",
+            title = "Aylık Premium",
             price = "149₺",
             period = "ay",
             badge = "POPÜLER",
             features = listOf(
-                "Sınırsız ilaç ekleme",
-                "Bulut yedekleme",
-                "Sesli hatırlatıcılar",
-                "Öncelikli destek"
+                "✨ Sınırsız ilaç ekleme",
+                "☁️ Bulut yedekleme",
+                "🔊 Sesli hatırlatıcılar",
+                "📊 Gelişmiş istatistikler",
+                "🎯 Akıllı öneriler",
+                "💬 Öncelikli destek"
             )
         ),
         PremiumPlan(
             id = "yearly",
-            title = "Yıllık Aile",
+            title = "Yıllık Aile Paketi",
             price = "999₺",
-            period = "yıl",
-            badge = "EN AVANTAJLI",
+            period = "yıl - 3 kişi",
+            badge = "EN AVANTAJLI 🏆",
             features = listOf(
-                "3 kişilik aile paketi",
-                "Sınırsız ilaç ekleme",
-                "Bulut yedekleme",
-                "Sesli hatırlatıcılar",
-                "Öncelikli destek",
-                "Aile takip sistemi"
+                "👨‍👩‍👧 3 kişilik aile paketi",
+                "✨ Sınırsız ilaç ekleme (tüm aile)",
+                "☁️ Bulut yedekleme & senkronizasyon",
+                "🔊 Sesli hatırlatıcılar",
+                "📊 Aile sağlık raporları",
+                "👥 Aile takip sistemi (Badi+)",
+                "🎯 Akıllı öneriler",
+                "💬 Premium destek (7/24)",
+                "💰 Yıllık %70 tasarruf"
             )
         )
     )
@@ -97,16 +103,27 @@ fun OnboardingPremiumScreen(
 
             // Başlık
             Text(
-                text = "Dozi Ekstra 💧",
+                text = "✨ Dozi Premium'a Yükselt!",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
-                color = DoziTurquoise
+                color = DoziTurquoise,
+                textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "7 gün ücretsiz dene, sonra devam et",
+                text = "Sağlık yönetiminde bir adım öne çık!",
+                style = MaterialTheme.typography.titleMedium,
+                color = DoziBlue,
+                fontWeight = FontWeight.SemiBold,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(4.dp))
+
+            Text(
+                text = "🎁 7 gün ücretsiz dene, istediğin zaman iptal et",
                 style = MaterialTheme.typography.bodyLarge,
                 color = TextSecondary,
                 textAlign = TextAlign.Center
