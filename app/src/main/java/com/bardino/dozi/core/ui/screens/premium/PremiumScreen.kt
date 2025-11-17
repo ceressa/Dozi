@@ -14,7 +14,6 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -22,37 +21,86 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bardino.dozi.R
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 
+data class PremiumPlan(
+    val id: String,
+    val title: String,
+    val price: String,
+    val period: String,
+    val badge: String? = null,
+    val features: List<String>,
+    val badgeColor: Color = DoziCoral
+)
+
 @Composable
 fun PremiumScreen(
     onNavigateBack: () -> Unit,
     onPurchase: (PlanType) -> Unit
 ) {
-    var selectedPlan by remember { mutableStateOf(PlanType.YEARLY) }
-    var isVisible by remember { mutableStateOf(false) }
+    var selectedPlan by remember { mutableStateOf("yearly") }
 
-    LaunchedEffect(Unit) {
-        isVisible = true
-    }
+    val plans = listOf(
+        PremiumPlan(
+            id = "weekly",
+            title = "Haftalık",
+            price = "49₺",
+            period = "hafta",
+            features = listOf(
+                "Sınırsız ilaç ekleme",
+                "Bulut yedekleme",
+                "Sesli hatırlatıcılar"
+            )
+        ),
+        PremiumPlan(
+            id = "monthly",
+            title = "Aylık",
+            price = "149₺",
+            period = "ay",
+            badge = "POPÜLER",
+            badgeColor = DoziCoral,
+            features = listOf(
+                "Sınırsız ilaç ekleme",
+                "Bulut yedekleme",
+                "Sesli hatırlatıcılar",
+                "Öncelikli destek"
+            )
+        ),
+        PremiumPlan(
+            id = "yearly",
+            title = "Yıllık Aile",
+            price = "999₺",
+            period = "yıl",
+            badge = "EN AVANTAJLI",
+            badgeColor = DoziTurquoise,
+            features = listOf(
+                "3 kişilik aile paketi",
+                "Sınırsız ilaç ekleme",
+                "Bulut yedekleme",
+                "Sesli hatırlatıcılar",
+                "Öncelikli destek",
+                "Aile takip sistemi"
+            )
+        )
+    )
 
     Scaffold(
         topBar = {
             DoziTopBar(
-                title = "",
+                title = "Dozi Ekstra",
                 canNavigateBack = true,
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = BackgroundLight
     ) { padding ->
         Column(
             modifier = Modifier
@@ -60,64 +108,64 @@ fun PremiumScreen(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // 🌈 Hero Bölümü
+            // Hero Bölümü
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(DoziTurquoise, DoziBlue)
-                        )
-                    )
-                    .padding(vertical = 40.dp, horizontal = 24.dp),
+                    .background(BackgroundLight)
+                    .padding(vertical = 32.dp, horizontal = 24.dp),
                 contentAlignment = Alignment.Center
             ) {
                 Column(
                     horizontalAlignment = Alignment.CenterHorizontally,
-                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     AnimatedDozi()
                     Text(
-                        text = "Dozi Ekstra",
-                        style = MaterialTheme.typography.headlineLarge,
+                        text = "Dozi Ekstra 💧",
+                        style = MaterialTheme.typography.headlineMedium,
                         fontWeight = FontWeight.Bold,
-                        color = Color.White,
+                        color = DoziTurquoise,
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "Sağlık düzeninin en akıllı hali",
+                        text = "7 gün ücretsiz dene, sonra devam et",
                         style = MaterialTheme.typography.bodyLarge,
-                        color = Color.White.copy(alpha = 0.95f),
+                        color = TextSecondary,
                         textAlign = TextAlign.Center
                     )
                 }
             }
 
-            Spacer(Modifier.height(32.dp))
+            Spacer(Modifier.height(8.dp))
 
-            // ✨ Özellikler - Grid Layout
+            // Özellikler Başlık
+            Text(
+                text = "✨ Premium Özellikler",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Özellik Grid
             Column(
                 modifier = Modifier.padding(horizontal = 24.dp),
-                verticalArrangement = Arrangement.spacedBy(16.dp)
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "✨ Premium Özellikler",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     FeatureCard(
-                        icon = Icons.Default.Analytics,
-                        title = "Gelişmiş İstatistikler",
+                        icon = Icons.Default.AllInclusive,
+                        title = "Sınırsız İlaç",
                         modifier = Modifier.weight(1f)
                     )
                     FeatureCard(
-                        icon = Icons.Default.CloudUpload,
+                        icon = Icons.Default.Cloud,
                         title = "Bulut Yedekleme",
                         modifier = Modifier.weight(1f)
                     )
@@ -129,7 +177,7 @@ fun PremiumScreen(
                 ) {
                     FeatureCard(
                         icon = Icons.Default.NotificationsActive,
-                        title = "Akıllı Hatırlatmalar",
+                        title = "Akıllı Hatırlatma",
                         modifier = Modifier.weight(1f)
                     )
                     FeatureCard(
@@ -156,56 +204,36 @@ fun PremiumScreen(
                 }
             }
 
-            Spacer(Modifier.height(40.dp))
+            Spacer(Modifier.height(32.dp))
 
-            // 💰 Planlar - Yeni Modern Tasarım
+            // Planlar Başlık
+            Text(
+                text = "🎯 Planını Seç",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = TextPrimary,
+                modifier = Modifier.padding(horizontal = 24.dp)
+            )
+
+            Spacer(Modifier.height(16.dp))
+
+            // Paket seçenekleri
             Column(
-                modifier = Modifier.padding(horizontal = 20.dp),
+                modifier = Modifier.padding(horizontal = 24.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    text = "🎯 Planını Seç",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-
-                // En Popüler - Yıllık Plan
-                ModernPricingCard(
-                    planType = PlanType.YEARLY,
-                    isSelected = selectedPlan == PlanType.YEARLY,
-                    onSelect = { selectedPlan = PlanType.YEARLY },
-                    badge = "⭐ En Popüler",
-                    badgeColor = DoziCoral
-                )
-
-                // Aile Paketi - Özel Vurgu
-                FamilyPlanCard(
-                    planType = PlanType.FAMILY,
-                    isSelected = selectedPlan == PlanType.FAMILY,
-                    onSelect = { selectedPlan = PlanType.FAMILY }
-                )
-
-                // Ömür Boyu
-                ModernPricingCard(
-                    planType = PlanType.LIFETIME,
-                    isSelected = selectedPlan == PlanType.LIFETIME,
-                    onSelect = { selectedPlan = PlanType.LIFETIME },
-                    badge = "💎 Tek Seferlik",
-                    badgeColor = DoziPurple
-                )
-
-                // Diğer Planlar - Kompakt
-                CompactPlanRow(
-                    plans = listOf(PlanType.MONTHLY, PlanType.WEEKLY),
-                    selectedPlan = selectedPlan,
-                    onSelectPlan = { selectedPlan = it }
-                )
+                plans.forEach { plan ->
+                    PremiumPlanCard(
+                        plan = plan,
+                        isSelected = selectedPlan == plan.id,
+                        onClick = { selectedPlan = plan.id }
+                    )
+                }
             }
 
             Spacer(Modifier.height(32.dp))
 
-            // 🎯 Satın Al Butonu
+            // Satın Al Butonu
             Column(
                 modifier = Modifier
                     .padding(horizontal = 24.dp)
@@ -213,37 +241,34 @@ fun PremiumScreen(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
                 Button(
-                    onClick = { onPurchase(selectedPlan) },
+                    onClick = {
+                        val planType = when (selectedPlan) {
+                            "weekly" -> PlanType.WEEKLY
+                            "monthly" -> PlanType.MONTHLY
+                            "yearly" -> PlanType.YEARLY
+                            else -> PlanType.YEARLY
+                        }
+                        onPurchase(planType)
+                    },
                     modifier = Modifier
                         .fillMaxWidth()
                         .height(56.dp),
-                    shape = RoundedCornerShape(16.dp),
                     colors = ButtonDefaults.buttonColors(
-                        containerColor = DoziCoral
-                    )
+                        containerColor = DoziTurquoise
+                    ),
+                    shape = RoundedCornerShape(16.dp)
                 ) {
-                    Row(
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Bolt,
-                            contentDescription = null,
-                            tint = Color.White
-                        )
-                        Text(
-                            text = "Başlat",
-                            style = MaterialTheme.typography.titleMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
-                    }
+                    Text(
+                        text = "Ücretsiz Denemeyi Başlat",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
 
                 Text(
-                    text = "✓ 7 gün ücretsiz deneme\n✓ İstediğin zaman iptal et",
+                    text = "İstediğin zaman iptal edebilirsin",
                     style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    color = TextSecondary,
                     textAlign = TextAlign.Center,
                     modifier = Modifier.fillMaxWidth()
                 )
@@ -252,15 +277,14 @@ fun PremiumScreen(
     }
 }
 
-// 🩺 Dozi animasyonu
 @Composable
 private fun AnimatedDozi() {
     val infiniteTransition = rememberInfiniteTransition(label = "dozi_anim")
     val scale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.08f,
+        initialValue = 0.95f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(1800, easing = EaseInOutSine),
+            animation = tween(2500, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
         ),
         label = "scale"
@@ -269,30 +293,29 @@ private fun AnimatedDozi() {
         painter = painterResource(R.drawable.dozi_king),
         contentDescription = "Dozi Premium",
         modifier = Modifier
-            .size(100.dp)
-            .scale(scale)
+            .size(120.dp)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
     )
 }
 
-// ✨ Feature Card
 @Composable
 private fun FeatureCard(
     icon: androidx.compose.ui.graphics.vector.ImageVector,
     title: String,
     modifier: Modifier = Modifier
 ) {
-    Card(
+    Box(
         modifier = modifier
-            .height(90.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = DoziTurquoise.copy(alpha = 0.08f)
-        ),
-        shape = RoundedCornerShape(16.dp)
+            .height(90.dp)
+            .clip(RoundedCornerShape(16.dp))
+            .background(DoziTurquoise.copy(alpha = 0.08f))
+            .padding(12.dp),
+        contentAlignment = Alignment.Center
     ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(12.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center
         ) {
@@ -307,7 +330,7 @@ private fun FeatureCard(
                 text = title,
                 style = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
-                color = MaterialTheme.colorScheme.onSurface,
+                color = TextPrimary,
                 textAlign = TextAlign.Center,
                 fontSize = 11.sp
             )
@@ -315,400 +338,160 @@ private fun FeatureCard(
     }
 }
 
-// 💳 Modern Plan Card
 @Composable
-private fun ModernPricingCard(
-    planType: PlanType,
+private fun PremiumPlanCard(
+    plan: PremiumPlan,
     isSelected: Boolean,
-    onSelect: () -> Unit,
-    badge: String? = null,
-    badgeColor: Color = DoziCoral
+    onClick: () -> Unit
 ) {
-    val borderBrush = if (isSelected)
-        Brush.horizontalGradient(listOf(DoziTurquoise, DoziBlue))
-    else
-        Brush.linearGradient(listOf(LightGray.copy(alpha = 0.3f), LightGray.copy(alpha = 0.3f)))
+    val backgroundColor = when {
+        plan.id == "yearly" && isSelected -> DoziTurquoise.copy(alpha = 0.15f)
+        plan.id == "yearly" -> DoziTurquoise.copy(alpha = 0.08f)
+        isSelected -> DoziBlue.copy(alpha = 0.15f)
+        else -> Gray100
+    }
 
-    Card(
+    val borderColor = when {
+        plan.id == "yearly" && isSelected -> DoziTurquoise
+        isSelected -> DoziBlue
+        else -> Color.Transparent
+    }
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable { onSelect() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                DoziTurquoise.copy(alpha = 0.1f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 4.dp else 0.dp
-        )
+            .clip(RoundedCornerShape(20.dp))
+            .background(backgroundColor)
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(16.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(
-                    width = if (isSelected) 2.dp else 1.dp,
-                    brush = borderBrush,
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .padding(20.dp)
-        ) {
+        Column {
             Row(
                 modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.Top
             ) {
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(4.dp)
-                ) {
-                    badge?.let {
-                        Surface(
-                            color = badgeColor,
-                            shape = RoundedCornerShape(8.dp)
+                Column(modifier = Modifier.weight(1f)) {
+                    // Badge (opsiyonel)
+                    if (plan.badge != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(plan.badgeColor)
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
                         ) {
                             Text(
-                                text = it,
+                                text = plan.badge,
                                 style = MaterialTheme.typography.labelSmall,
-                                color = Color.White,
                                 fontWeight = FontWeight.Bold,
-                                modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp)
+                                color = Color.White,
+                                fontSize = 10.sp
                             )
                         }
-                        Spacer(Modifier.height(4.dp))
+                        Spacer(Modifier.height(8.dp))
                     }
 
                     Text(
-                        text = planType.title,
-                        style = MaterialTheme.typography.titleMedium,
+                        text = plan.title,
+                        style = MaterialTheme.typography.titleLarge,
                         fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onSurface
+                        color = TextPrimary
                     )
 
-                    planType.equivalentPrice?.let {
-                        Text(
-                            text = it,
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                }
+                    Spacer(Modifier.height(4.dp))
 
-                Column(
-                    horizontalAlignment = Alignment.End,
-                    verticalArrangement = Arrangement.spacedBy(2.dp)
-                ) {
                     Row(
-                        verticalAlignment = Alignment.Bottom
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
                     ) {
                         Text(
-                            text = "₺${planType.price}",
+                            text = plan.price,
                             style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.Bold,
-                            color = DoziCoral
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (plan.id == "yearly") DoziTurquoise else DoziBlue
                         )
                         Text(
-                            text = "/${planType.period}",
+                            text = "/ ${plan.period}",
                             style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            modifier = Modifier.padding(start = 2.dp, bottom = 2.dp)
-                        )
-                    }
-
-                    planType.originalPrice?.let {
-                        Text(
-                            text = "₺$it",
-                            style = MaterialTheme.typography.bodySmall.copy(
-                                textDecoration = TextDecoration.LineThrough
-                            ),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                            color = TextSecondary
                         )
                     }
                 }
-            }
-        }
-    }
-}
 
-// 👨‍👩‍👧‍👦 Aile Paketi Özel Kart
-@Composable
-private fun FamilyPlanCard(
-    planType: PlanType,
-    isSelected: Boolean,
-    onSelect: () -> Unit
-) {
-    val borderBrush = if (isSelected)
-        Brush.horizontalGradient(listOf(DoziCoral, DoziPink))
-    else
-        Brush.linearGradient(listOf(DoziCoral.copy(alpha = 0.3f), DoziPink.copy(alpha = 0.3f)))
+                // Aile paketi için özel görsel
+                if (plan.id == "yearly") {
+                    Image(
+                        painter = painterResource(id = R.drawable.dozi_family),
+                        contentDescription = "Aile Paketi",
+                        modifier = Modifier.size(80.dp)
+                    )
+                }
 
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable { onSelect() },
-        shape = RoundedCornerShape(20.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                DoziCoral.copy(alpha = 0.12f)
-            else
-                DoziCoral.copy(alpha = 0.05f)
-        ),
-        elevation = CardDefaults.cardElevation(
-            defaultElevation = if (isSelected) 6.dp else 2.dp
-        )
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .border(
-                    width = if (isSelected) 2.dp else 1.dp,
-                    brush = borderBrush,
-                    shape = RoundedCornerShape(20.dp)
-                )
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(
-                            DoziCoral.copy(alpha = 0.08f),
-                            DoziPink.copy(alpha = 0.08f)
+                // Seçim göstergesi
+                if (plan.id != "yearly") {
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = onClick,
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = DoziBlue,
+                            unselectedColor = TextSecondary
                         )
                     )
-                )
-                .padding(20.dp)
-        ) {
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp)
-            ) {
-                // Badge ve Başlık
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Surface(
-                        color = DoziCoral,
-                        shape = RoundedCornerShape(12.dp)
-                    ) {
-                        Row(
-                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                            horizontalArrangement = Arrangement.spacedBy(4.dp),
-                            verticalAlignment = Alignment.CenterVertically
-                        ) {
-                            Icon(
-                                imageVector = Icons.Default.FamilyRestroom,
-                                contentDescription = null,
-                                tint = Color.White,
-                                modifier = Modifier.size(18.dp)
-                            )
-                            Text(
-                                text = "👨‍👩‍👧‍👦 Aile İçin",
-                                style = MaterialTheme.typography.labelMedium,
-                                color = Color.White,
-                                fontWeight = FontWeight.Bold
-                            )
-                        }
-                    }
-
-                    // Fiyat
-                    Column(
-                        horizontalAlignment = Alignment.End
-                    ) {
-                        Row(
-                            verticalAlignment = Alignment.Bottom
-                        ) {
-                            Text(
-                                text = "₺${planType.price}",
-                                style = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                color = DoziCoral
-                            )
-                            Text(
-                                text = "/${planType.period}",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                modifier = Modifier.padding(start = 2.dp, bottom = 4.dp)
-                            )
-                        }
-                        planType.originalPrice?.let {
-                            Text(
-                                text = "₺$it",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    textDecoration = TextDecoration.LineThrough
-                                ),
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
-                    }
                 }
+            }
 
-                // Açıklama
-                Text(
-                    text = planType.title,
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+            Spacer(Modifier.height(12.dp))
 
-                // Özellikler
+            // Özellikler
+            plan.features.forEach { feature ->
                 Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(vertical = 4.dp)
                 ) {
-                    FamilyFeatureChip("6 kişiye kadar")
-                    FamilyFeatureChip("Sadece ₺74.99/ay")
-                }
-
-                // Öne Çıkan Özellikler
-                Column(
-                    verticalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    FamilyFeatureRow("Aynı ekrandan tüm aileyi yönet")
-                    FamilyFeatureRow("Her üye için ayrı profil")
-                    FamilyFeatureRow("Paylaşımlı ilaç takibi")
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = SuccessGreen,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = feature,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextPrimary
+                    )
                 }
             }
         }
-    }
-}
 
-@Composable
-private fun FamilyFeatureChip(text: String) {
-    Surface(
-        color = DoziCoral.copy(alpha = 0.2f),
-        shape = RoundedCornerShape(8.dp)
-    ) {
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            fontWeight = FontWeight.SemiBold,
-            color = DoziCoral,
-            modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp)
-        )
-    }
-}
-
-@Composable
-private fun FamilyFeatureRow(text: String) {
-    Row(
-        horizontalArrangement = Arrangement.spacedBy(6.dp),
-        verticalAlignment = Alignment.CenterVertically
-    ) {
-        Icon(
-            imageVector = Icons.Default.CheckCircle,
-            contentDescription = null,
-            tint = DoziCoral,
-            modifier = Modifier.size(16.dp)
-        )
-        Text(
-            text = text,
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurface
-        )
-    }
-}
-
-// 📦 Kompakt Plan Row
-@Composable
-private fun CompactPlanRow(
-    plans: List<PlanType>,
-    selectedPlan: PlanType,
-    onSelectPlan: (PlanType) -> Unit
-) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(8.dp)
-    ) {
-        plans.forEach { plan ->
-            CompactPlanCard(
-                planType = plan,
-                isSelected = selectedPlan == plan,
-                onSelect = { onSelectPlan(plan) },
-                modifier = Modifier.weight(1f)
+        // Aile paketinde RadioButton sağ üstte
+        if (plan.id == "yearly") {
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = DoziTurquoise,
+                    unselectedColor = TextSecondary
+                ),
+                modifier = Modifier.align(Alignment.TopEnd)
             )
         }
     }
 }
 
-@Composable
-private fun CompactPlanCard(
-    planType: PlanType,
-    isSelected: Boolean,
-    onSelect: () -> Unit,
-    modifier: Modifier = Modifier
-) {
-    Card(
-        modifier = modifier
-            .clickable { onSelect() },
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isSelected)
-                DoziTurquoise.copy(alpha = 0.1f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        border = if (isSelected)
-            BorderStroke(2.dp, DoziTurquoise)
-        else
-            BorderStroke(1.dp, LightGray.copy(alpha = 0.3f))
-    ) {
-        Column(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(6.dp)
-        ) {
-            Text(
-                text = planType.title,
-                style = MaterialTheme.typography.titleSmall,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-
-            Text(
-                text = "₺${planType.price}",
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = DoziCoral
-            )
-
-            Text(
-                text = planType.period,
-                style = MaterialTheme.typography.bodySmall,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
-        }
-    }
-}
-
-// 📊 Plan Modeli
+// Plan Modeli - Eski PlanType enum'ı korunuyor (geriye uyumluluk için)
 enum class PlanType(
     val title: String,
     val price: String,
-    val period: String,
-    val originalPrice: String? = null,
-    val equivalentPrice: String? = null
+    val period: String
 ) {
-    WEEKLY("Haftalık", "24.99", "hafta", equivalentPrice = "~₺100/ay"),
-    MONTHLY("Aylık", "69.99", "ay"),
-    YEARLY(
-        "Yıllık Plan",
-        "599.99",
-        "yıl",
-        originalPrice = "839.88",
-        equivalentPrice = "Sadece ₺49.99/ay"
-    ),
-    FAMILY(
-        "Aile Paketi",
-        "899.99",
-        "yıl",
-        originalPrice = "1259.88",
-        equivalentPrice = "6 kişiye kadar"
-    ),
-    LIFETIME(
-        "Ömür Boyu",
-        "1999.99",
-        "tek seferlik",
-        originalPrice = "7199.64",
-        equivalentPrice = "Bir kez öde, sonsuza kadar kullan"
-    )
+    WEEKLY("Haftalık", "49", "hafta"),
+    MONTHLY("Aylık", "149", "ay"),
+    YEARLY("Yıllık Aile", "999", "yıl"),
+    FAMILY("Aile Paketi", "999", "yıl"),
+    LIFETIME("Ömür Boyu", "1999.99", "tek seferlik")
 }
