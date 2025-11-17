@@ -57,4 +57,7 @@ sealed class Screen(val route: String) {
         fun createRoute(time: String) = "medication_action/$time"
     }
 
+    // Family Management
+    object FamilyManagement : Screen("family_management")
+
 }

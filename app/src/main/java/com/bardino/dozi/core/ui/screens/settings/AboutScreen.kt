@@ -210,16 +210,107 @@ fun AboutScreen(
             }
 
             // Gizlilik ve Şartlar
+            var showPrivacyDialog by remember { mutableStateOf(false) }
+            var showTermsDialog by remember { mutableStateOf(false) }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceEvenly
             ) {
-                TextButton(onClick = { /* TODO: Gizlilik politikası */ }) {
+                TextButton(onClick = { showPrivacyDialog = true }) {
                     Text("Gizlilik Politikası", color = DoziTurquoise)
                 }
-                TextButton(onClick = { /* TODO: Kullanım şartları */ }) {
+                TextButton(onClick = { showTermsDialog = true }) {
                     Text("Kullanım Şartları", color = DoziTurquoise)
                 }
+            }
+
+            // Gizlilik Politikası Dialog
+            if (showPrivacyDialog) {
+                AlertDialog(
+                    onDismissRequest = { showPrivacyDialog = false },
+                    title = { Text("Gizlilik Politikası") },
+                    text = {
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState())
+                        ) {
+                            Text(
+                                text = """
+                                    Dozi olarak kullanıcılarımızın gizliliğini ciddiye alıyoruz.
+
+                                    Toplanan Veriler:
+                                    • Sağlık bilgileri (ilaç ve doz bilgileri)
+                                    • Hesap bilgileri (email, isim)
+                                    • Cihaz bilgileri
+
+                                    Veri Kullanımı:
+                                    • İlaç hatırlatmaları için
+                                    • Kullanıcı deneyimini iyileştirmek için
+                                    • İstatistik ve raporlama için
+
+                                    Veri Güvenliği:
+                                    • Tüm veriler Firebase'de güvenli şekilde saklanır
+                                    • End-to-end şifreleme kullanılır
+                                    • Verileriniz 3. şahıslarla paylaşılmaz
+
+                                    Daha fazla bilgi için: info@dozi.app
+                                """.trimIndent(),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showPrivacyDialog = false }) {
+                            Text("Tamam")
+                        }
+                    }
+                )
+            }
+
+            // Kullanım Şartları Dialog
+            if (showTermsDialog) {
+                AlertDialog(
+                    onDismissRequest = { showTermsDialog = false },
+                    title = { Text("Kullanım Şartları") },
+                    text = {
+                        Column(
+                            modifier = Modifier.verticalScroll(rememberScrollState())
+                        ) {
+                            Text(
+                                text = """
+                                    Dozi Kullanım Şartları
+
+                                    1. Genel Şartlar:
+                                    Dozi'yi kullanarak bu şartları kabul etmiş olursunuz.
+
+                                    2. Kullanıcı Sorumlulukları:
+                                    • İlaç bilgilerinizi doğru girmelisiniz
+                                    • Hatırlatmaları kontrol etme sorumluluğu kullanıcıya aittir
+                                    • Dozi, tıbbi tavsiye yerine geçmez
+
+                                    3. Hizmet Kapsamı:
+                                    • İlaç takibi ve hatırlatma hizmeti
+                                    • İstatistik ve raporlama
+                                    • Aile üyesi takibi (Premium)
+
+                                    4. Sorumluluk Reddi:
+                                    Dozi bir hatırlatma uygulamasıdır. Tıbbi karar ve tedavi için mutlaka doktorunuza danışın.
+
+                                    5. Hesap İptali:
+                                    Hesabınızı istediğiniz zaman silebilirsiniz.
+
+                                    Son Güncelleme: Ocak 2025
+                                """.trimIndent(),
+                                style = MaterialTheme.typography.bodyMedium
+                            )
+                        }
+                    },
+                    confirmButton = {
+                        TextButton(onClick = { showTermsDialog = false }) {
+                            Text("Tamam")
+                        }
+                    }
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
