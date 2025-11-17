@@ -61,9 +61,13 @@ enum class PremiumPlanType(
     WEEKLY("Haftalık", 7, "24.99", "dozi_weekly"),
     MONTHLY("Aylık", 30, "69.99", "dozi_monthly"),
     YEARLY("Yıllık", 365, "599.99", "dozi_yearly"),
+    FAMILY_PREMIUM("Aile Paketi", 30, "149.99", "dozi_family_monthly"), // 4 kişiye kadar
+    FAMILY_YEARLY("Aile Paketi (Yıllık)", 365, "1299.99", "dozi_family_yearly"),
     LIFETIME("Ömür Boyu", Int.MAX_VALUE, "1999.99", "dozi_lifetime");
 
     fun isPremium(): Boolean = this != FREE
+
+    fun isFamilyPlan(): Boolean = this == FAMILY_PREMIUM || this == FAMILY_YEARLY
 
     fun toTurkish(): String = displayName
 }

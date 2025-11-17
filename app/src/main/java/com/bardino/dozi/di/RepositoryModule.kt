@@ -64,4 +64,13 @@ object RepositoryModule {
     fun provideMedicineRepository(): MedicineRepository {
         return MedicineRepository()
     }
+
+    @Provides
+    @Singleton
+    fun provideFamilyPlanRepository(
+        auth: FirebaseAuth,
+        firestore: FirebaseFirestore
+    ): FamilyPlanRepository {
+        return FamilyPlanRepository(auth, firestore)
+    }
 }

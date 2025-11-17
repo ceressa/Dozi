@@ -56,7 +56,11 @@ data class User(
 
     // 🎵 Bildirim sesi özelleştirme (Premium özellik)
     val customSoundUri: String? = null,          // Özel bildirim sesi URI
-    val customSoundName: String = "Varsayılan"   // Özel ses adı
+    val customSoundName: String = "Varsayılan",  // Özel ses adı
+
+    // 👨‍👩‍👧‍👦 Aile Paketi (Dozi Ekstra Aile)
+    val familyPlanId: String? = null,            // Hangi aile planına ait (null ise yok)
+    val familyRole: String? = null               // "ORGANIZER" veya "MEMBER"
 ) {
     /**
      * Kullanıcının şu anda premium olup olmadığını kontrol eder
@@ -87,7 +91,29 @@ data class User(
             "monthly" -> PremiumPlanType.MONTHLY
             "yearly" -> PremiumPlanType.YEARLY
             "lifetime" -> PremiumPlanType.LIFETIME
+            "family_premium" -> PremiumPlanType.FAMILY_PREMIUM
             else -> PremiumPlanType.FREE
         }
+    }
+
+    /**
+     * Kullanıcı bir aile planının üyesi mi?
+     */
+    fun isInFamilyPlan(): Boolean {
+        return !familyPlanId.isNullOrEmpty()
+    }
+
+    /**
+     * Kullanıcı aile planının organizatörü mü?
+     */
+    fun isFamilyOrganizer(): Boolean {
+        return familyRole == "ORGANIZER"
+    }
+
+    /**
+     * Kullanıcı aile planının üyesi mi? (organizatör değil)
+     */
+    fun isFamilyMember(): Boolean {
+        return familyRole == "MEMBER"
     }
 }

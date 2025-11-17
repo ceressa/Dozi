@@ -116,4 +116,53 @@ class UserRepository(
 
         docRef.update(updates).await()
     }
+
+    /**
+     * 👨‍👩‍👧‍👦 Kullanıcının premium durumunu kontrol et (Aile planı dahil)
+     *
+     * Premium durumu iki şekilde olabilir:
+     * 1. Bireysel premium (isPremium = true, premiumExpiryDate kontrol)
+     * 2. Aile planı üyesi (familyPlanId var, aile planı aktif)
+     */
+    suspend fun isPremiumUser(): Boolean {
+        val userData = getUserData() ?: return false
+
+        // 1. Bireysel premium kontrolü
+        if (userData.isCurrentlyPremium()) {
+            return true
+        }
+
+        // 2. Aile planı kontrolü
+        if (userData.isInFamilyPlan()) {
+            // Aile planının aktif olup olmadığını kontrol et
+            try {
+                val familyPlanId = userData.familyPlanId ?: return false
+                val familyPlanDoc = db.collection("family_plans").document(familyPlanId).get().await()
+
+                if (familyPlanDoc.exists()) {
+                    val status = familyPlanDoc.getString("status") ?: ""
+                    val expiresAt = familyPlanDoc.getTimestamp("expiresAt")
+
+                    // Plan aktif mi ve süresi dolmamış mı?
+                    if (status == "ACTIVE" && expiresAt != null) {
+                        val now = System.currentTimeMillis()
+                        return now < expiresAt.toDate().time
+                    }
+                }
+            } catch (e: Exception) {
+                android.util.Log.e("UserRepository", "❌ Error checking family plan: ${e.message}")
+            }
+        }
+
+        return false
+    }
+
+    /**
+     * 🌟 Premium özelliklere erişim kontrolü
+     *
+     * Premium gerektiren özellikler için kullan
+     */
+    suspend fun requiresPremium(): Boolean {
+        return !isPremiumUser()
+    }
 }
