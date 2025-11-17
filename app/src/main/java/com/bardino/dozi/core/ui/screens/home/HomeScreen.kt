@@ -873,7 +873,7 @@ private fun CalendarExpandedContent(
                 Spacer(Modifier.height(8.dp))
 
                 if (status == MedicineStatus.NONE) {
-                    ClickableReminderText(onNavigateToReminders, isLoggedIn)
+                    ClickableReminderText(onNavigateToReminders, isLoggedIn, date)
                 } else {
                     medicines.forEach { med ->
                         Row(
@@ -923,29 +923,45 @@ private fun CalendarExpandedContent(
     }
 }
 
+@RequiresApi(Build.VERSION_CODES.O)
 @Composable
-private fun ClickableReminderText(onNavigateToReminders: () -> Unit, isLoggedIn: Boolean) {
+private fun ClickableReminderText(onNavigateToReminders: () -> Unit, isLoggedIn: Boolean, date: LocalDate) {
+    val today = LocalDate.now()
+    val isToday = date == today
+    val isFuture = date.isAfter(today)
+
     if (isLoggedIn) {
-        ClickableText(
-            text = buildAnnotatedString {
-                append("💧 Bugün için planlanmış bir ilacın yok.\n\n")
-                append("Yeni bir hatırlatma eklemek için ")
-                withStyle(
-                    style = SpanStyle(
-                        fontWeight = FontWeight.Bold,
-                        color = DoziPurple,
-                        textDecoration = TextDecoration.Underline
-                    )
-                ) {
-                    append("buraya tıklayabilirsin.")
+        // Sadece bugün ve gelecek tarihler için hatırlatma ekleme seçeneği göster
+        if (isToday || isFuture) {
+            ClickableText(
+                text = buildAnnotatedString {
+                    append("💧 ${if (isToday) "Bugün" else "Bu tarih"} için planlanmış bir ilacın yok.\n\n")
+                    append("Yeni bir hatırlatma eklemek için ")
+                    withStyle(
+                        style = SpanStyle(
+                            fontWeight = FontWeight.Bold,
+                            color = DoziPurple,
+                            textDecoration = TextDecoration.Underline
+                        )
+                    ) {
+                        append("buraya tıklayabilirsin.")
+                    }
+                },
+                style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 20.sp),
+                onClick = { offset ->
+                    // Tüm metin tıklanınca Hatırlatmalar ekranına yönlendir
+                    onNavigateToReminders()
                 }
-            },
-            style = MaterialTheme.typography.bodyMedium.copy(color = MaterialTheme.colorScheme.onSurfaceVariant, lineHeight = 20.sp),
-            onClick = { offset ->
-                // Tüm metin tıklanınca Hatırlatmalar ekranına yönlendir
-                onNavigateToReminders()
-            }
-        )
+            )
+        } else {
+            // Geçmiş tarihler için sadece bilgilendirme göster
+            Text(
+                text = "💧 Bu tarih için planlanmış bir ilacın yoktu.",
+                style = MaterialTheme.typography.bodyMedium,
+                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                textAlign = TextAlign.Center
+            )
+        }
     } else {
         Text(
             text = "💧 Login olursan ilaçlarını beraber takip edebiliriz!",

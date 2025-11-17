@@ -362,8 +362,13 @@ private fun MedicineCard(
                 // Başlangıç tarihi
                 val startDateText = remember(medicine.startDate) {
                     try {
-                        val sdf = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale("tr"))
-                        sdf.format(java.util.Date(medicine.startDate))
+                        // Eğer startDate 0 veya çok küçükse (1971'den öncesiyse), "Tarih belirtilmemiş" göster
+                        if (medicine.startDate == 0L || medicine.startDate < 31536000000L) {
+                            "Tarih belirtilmemiş"
+                        } else {
+                            val sdf = java.text.SimpleDateFormat("dd MMM yyyy", java.util.Locale("tr"))
+                            sdf.format(java.util.Date(medicine.startDate))
+                        }
                     } catch (e: Exception) {
                         "Tarih belirtilmemiş"
                     }
