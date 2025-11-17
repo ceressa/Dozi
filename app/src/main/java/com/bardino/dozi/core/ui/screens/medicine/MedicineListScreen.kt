@@ -409,7 +409,7 @@ fun ModernMedicineCard(
                             brush = Brush.horizontalGradient(
                                 listOf(
                                     if (hasReminderTimes) DoziCoral.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
-                                    if (hasReminderTimes) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f)
+                                    if (hasReminderTimes) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
                                     if (medicine.times.any { it.isNotBlank() }) DoziCoral.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
                                     if (medicine.times.any { it.isNotBlank() }) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f)
                                 )
