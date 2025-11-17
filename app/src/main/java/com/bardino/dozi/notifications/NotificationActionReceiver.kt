@@ -2,7 +2,6 @@ package com.bardino.dozi.notifications
 
 import android.Manifest
 import android.app.AlarmManager
-import android.app.AlertDialog
 import android.app.PendingIntent
 import android.content.BroadcastReceiver
 import android.content.Context
@@ -14,13 +13,13 @@ import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.speech.tts.TextToSpeech
-import android.view.WindowManager
 import android.widget.Toast
 import androidx.annotation.RequiresPermission
 import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
+import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.core.data.repository.BadiRepository
 import kotlinx.coroutines.CoroutineScope

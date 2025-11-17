@@ -2,7 +2,6 @@ package com.bardino.dozi.core.utils
 
 import android.content.Context
 import android.util.Log
-import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.core.data.model.*
 import com.bardino.dozi.core.data.repository.BadiRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository

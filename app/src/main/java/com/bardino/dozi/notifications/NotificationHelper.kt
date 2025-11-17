@@ -45,36 +45,29 @@ object NotificationHelper {
         dosage: String = "",
         time: String = getCurrentTime(),
         scheduledTime: Long = System.currentTimeMillis(),
-        timeNote: String = "",  // "Tok karnına", "Aç karnına", vs.
-        profileName: String = "",  // 🆕 Profil adı
-        reminderName: String = ""  // 🆕 Hatırlatma adı
+        timeNote: String = "",
+        reminderName: String = ""
     ) {
         createDoziChannel(context)
         val nm = NotificationManagerCompat.from(context)
 
-        // MedicationActionScreen'e yönlendir (zamanı parametre olarak gönder)
         val contentIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                // Deep link için navigation route ekle
                 putExtra("navigation_route", "medication_action/$time")
             },
             PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
         )
 
-        // Aksiyonlar
         val takenPending = createActionPendingIntent(context, ACTION_TAKEN, medicineName, medicineId, dosage, time, scheduledTime, 1)
         val snoozePending = createActionPendingIntent(context, ACTION_SNOOZE, medicineName, medicineId, dosage, time, scheduledTime, 2)
         val skipPending = createActionPendingIntent(context, ACTION_SKIP, medicineName, medicineId, dosage, time, scheduledTime, 3)
 
-        // Dozi large icon
         val largeIcon = BitmapFactory.decodeResource(context.resources, R.drawable.dozi)
 
-        // 🎨 Bildirim metni - hatırlatma adı (varsa), ilaç adı, dozaj, profil ve not ile
         val contentTitle = when {
             reminderName.isNotEmpty() -> reminderName
-            profileName.isNotEmpty() && medicineName.isNotEmpty() -> "💊 $medicineName ($profileName için)"
             medicineName.isNotEmpty() -> "💊 $medicineName"
             else -> "💊 İlaç Hatırlatması"
         }
@@ -86,7 +79,6 @@ object NotificationHelper {
         }
 
         val bigText = buildString {
-            if (profileName.isNotEmpty()) append("👤 Profil: $profileName\n")
             append("⏰ Saat: $time\n")
             if (medicineName.isNotEmpty()) append("💊 İlaç: $medicineName\n")
             if (dosage.isNotEmpty()) append("💉 Dozaj: $dosage\n")
@@ -106,30 +98,17 @@ object NotificationHelper {
                     .setBigContentTitle(contentTitle)
                     .setSummaryText("Dozi")
             )
-            .setAutoCancel(false) // Butonlarla kontrol ediyoruz
+            .setAutoCancel(false)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setVibrate(longArrayOf(0, 300, 150, 300))
             .setLights(Color.parseColor("#26C6DA"), 1000, 1000)
             .setContentIntent(contentIntent)
-            .setSound(null) // Özel ses eklemek isterseniz buraya ekleyin
-            // Action buttons
-            .addAction(
-                R.drawable.ic_notification_pill,
-                "Aldım ✓",
-                takenPending
-            )
-            .addAction(
-                R.drawable.ic_notification_pill,
-                "Ertele ⏰",
-                snoozePending
-            )
-            .addAction(
-                R.drawable.ic_notification_pill,
-                "Atla ✕",
-                skipPending
-            )
+            .setSound(null)
+            .addAction(R.drawable.ic_notification_pill, "Aldım ✓", takenPending)
+            .addAction(R.drawable.ic_notification_pill, "Ertele ⏰", snoozePending)
+            .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
             .build()
 
         nm.notify(NOTIF_ID, notification)

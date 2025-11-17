@@ -29,6 +29,7 @@ import com.bardino.dozi.core.data.model.Achievements
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import java.time.LocalDate
@@ -52,7 +53,7 @@ fun StatsScreen(
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = DoziLightGray
+        containerColor = DoziCharacterLight
     ) { padding ->
         Box(
             modifier = Modifier
