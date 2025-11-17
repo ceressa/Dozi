@@ -50,6 +50,7 @@ fun ProfileManagementScreen(
     var showEditDialog by remember { mutableStateOf<ProfileEntity?>(null) }
     var showDeleteDialog by remember { mutableStateOf<ProfileEntity?>(null) }
     var showPinDialog by remember { mutableStateOf<ProfileEntity?>(null) }
+    var showPinVerifyDialog by remember { mutableStateOf<ProfileEntity?>(null) }
 
     Scaffold(
         topBar = {
@@ -187,7 +188,8 @@ fun ProfileManagementScreen(
                             isActive = profile.id == uiState.activeProfile?.id,
                             onSwitch = { viewModel.switchToProfile(profile.id) },
                             onEdit = { showEditDialog = profile },
-                            onDelete = { showDeleteDialog = profile }
+                            onDelete = { showDeleteDialog = profile },
+                            onPinRequired = { showPinVerifyDialog = it }
                         )
                     }
 
@@ -262,6 +264,18 @@ fun ProfileManagementScreen(
                 }
             )
         }
+
+        // PIN verify dialog for profile switching
+        showPinVerifyDialog?.let { profile ->
+            VerifyPinDialog(
+                profile = profile,
+                onDismiss = { showPinVerifyDialog = null },
+                onConfirm = { pin ->
+                    viewModel.switchToProfile(profile.id, pin)
+                    showPinVerifyDialog = null
+                }
+            )
+        }
     }
 }
 
@@ -271,12 +285,20 @@ fun ProfileCard(
     isActive: Boolean,
     onSwitch: () -> Unit,
     onEdit: () -> Unit,
-    onDelete: () -> Unit
+    onDelete: () -> Unit,
+    onPinRequired: ((ProfileEntity) -> Unit)? = null
 ) {
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(enabled = !isActive) { onSwitch() },
+            .clickable(enabled = !isActive) {
+                // Check if profile requires PIN
+                if (profile.pinCode != null && onPinRequired != null) {
+                    onPinRequired(profile)
+                } else {
+                    onSwitch()
+                }
+            },
         colors = CardDefaults.cardColors(
             containerColor = if (isActive) {
                 MaterialTheme.colorScheme.primaryContainer
