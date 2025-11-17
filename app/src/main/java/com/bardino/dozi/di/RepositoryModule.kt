@@ -34,10 +34,9 @@ object RepositoryModule {
     fun provideMedicationLogRepository(
         @ApplicationContext context: Context,
         auth: FirebaseAuth,
-        firestore: FirebaseFirestore,
-        profileManager: com.bardino.dozi.core.profile.ProfileManager
+        firestore: FirebaseFirestore
     ): MedicationLogRepository {
-        return MedicationLogRepository(context, auth, firestore, profileManager)
+        return MedicationLogRepository(context, auth, firestore)
     }
 
     @Provides
@@ -62,9 +61,7 @@ object RepositoryModule {
 
     @Provides
     @Singleton
-    fun provideMedicineRepository(
-        profileManager: com.bardino.dozi.core.profile.ProfileManager
-    ): MedicineRepository {
-        return MedicineRepository(profileManager)
+    fun provideMedicineRepository(): MedicineRepository {
+        return MedicineRepository()
     }
 }

@@ -3,7 +3,6 @@ package com.bardino.dozi.di
 import android.content.Context
 import com.bardino.dozi.core.data.local.DoziDatabase
 import com.bardino.dozi.core.data.local.dao.MedicationLogDao
-import com.bardino.dozi.core.data.local.dao.ProfileDao
 import com.bardino.dozi.core.data.local.dao.SyncQueueDao
 import dagger.Module
 import dagger.Provides
@@ -32,11 +31,5 @@ object DatabaseModule {
     @Singleton
     fun provideSyncQueueDao(database: DoziDatabase): SyncQueueDao {
         return database.syncQueueDao()
-    }
-
-    @Provides
-    @Singleton
-    fun provideProfileDao(database: DoziDatabase): ProfileDao {
-        return database.profileDao()
     }
 }

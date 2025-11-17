@@ -4,116 +4,27 @@ import android.content.Context
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
-import androidx.room.migration.Migration
-import androidx.sqlite.db.SupportSQLiteDatabase
 import com.bardino.dozi.core.data.local.dao.MedicationLogDao
-import com.bardino.dozi.core.data.local.dao.ProfileDao
 import com.bardino.dozi.core.data.local.dao.SyncQueueDao
 import com.bardino.dozi.core.data.local.entity.MedicationLogEntity
-import com.bardino.dozi.core.data.local.entity.ProfileEntity
 import com.bardino.dozi.core.data.local.entity.SyncQueueEntity
 
 @Database(
     entities = [
         MedicationLogEntity::class,
-        SyncQueueEntity::class,
-        ProfileEntity::class
+        SyncQueueEntity::class
     ],
-    version = 3,
+    version = 1,
     exportSchema = false
 )
 abstract class DoziDatabase : RoomDatabase() {
 
     abstract fun medicationLogDao(): MedicationLogDao
     abstract fun syncQueueDao(): SyncQueueDao
-    abstract fun profileDao(): ProfileDao
 
     companion object {
         @Volatile
         private var INSTANCE: DoziDatabase? = null
-
-        // Migration from version 1 to 2: Add profiles table and profileId to medication_logs
-        val MIGRATION_1_2 = object : Migration(1, 2) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Create profiles table
-                database.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS profiles (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        name TEXT NOT NULL,
-                        avatarIcon TEXT NOT NULL,
-                        color TEXT NOT NULL,
-                        createdAt INTEGER NOT NULL,
-                        updatedAt INTEGER NOT NULL,
-                        isActive INTEGER NOT NULL DEFAULT 0
-                    )
-                    """.trimIndent()
-                )
-
-                // Create a default profile for existing users
-                val currentTime = System.currentTimeMillis()
-                val defaultProfileId = "default-profile"
-                database.execSQL(
-                    """
-                    INSERT INTO profiles (id, name, avatarIcon, color, createdAt, updatedAt, isActive)
-                    VALUES ('$defaultProfileId', 'Varsayılan Profil', '👤', '#6200EE', $currentTime, $currentTime, 1)
-                    """.trimIndent()
-                )
-
-                // Recreate medication_logs table with profileId as NOT NULL
-                // Step 1: Create new table with correct schema
-                database.execSQL(
-                    """
-                    CREATE TABLE IF NOT EXISTS medication_logs_new (
-                        id TEXT PRIMARY KEY NOT NULL,
-                        userId TEXT NOT NULL,
-                        profileId TEXT NOT NULL,
-                        medicineId TEXT NOT NULL,
-                        medicineName TEXT NOT NULL,
-                        dosage TEXT NOT NULL,
-                        scheduledTime INTEGER NOT NULL,
-                        takenAt INTEGER,
-                        status TEXT NOT NULL,
-                        notes TEXT,
-                        sideEffects TEXT,
-                        mood TEXT,
-                        locationLat REAL,
-                        locationLng REAL,
-                        createdAt INTEGER NOT NULL,
-                        updatedAt INTEGER NOT NULL,
-                        isSynced INTEGER NOT NULL DEFAULT 0
-                    )
-                    """.trimIndent()
-                )
-
-                // Step 2: Copy data from old table to new table with default profileId
-                database.execSQL(
-                    """
-                    INSERT INTO medication_logs_new
-                    SELECT id, userId, '$defaultProfileId' as profileId, medicineId, medicineName,
-                           dosage, scheduledTime, takenAt, status, notes, sideEffects, mood,
-                           locationLat, locationLng, createdAt, updatedAt, isSynced
-                    FROM medication_logs
-                    """.trimIndent()
-                )
-
-                // Step 3: Drop old table
-                database.execSQL("DROP TABLE medication_logs")
-
-                // Step 4: Rename new table to original name
-                database.execSQL("ALTER TABLE medication_logs_new RENAME TO medication_logs")
-            }
-        }
-
-        // Migration from version 2 to 3: Add PIN code support
-        val MIGRATION_2_3 = object : Migration(2, 3) {
-            override fun migrate(database: SupportSQLiteDatabase) {
-                // Add pinCode column to profiles table
-                database.execSQL(
-                    "ALTER TABLE profiles ADD COLUMN pinCode TEXT DEFAULT NULL"
-                )
-            }
-        }
 
         fun getDatabase(context: Context): DoziDatabase {
             return INSTANCE ?: synchronized(this) {
@@ -122,8 +33,7 @@ abstract class DoziDatabase : RoomDatabase() {
                     DoziDatabase::class.java,
                     "dozi_database"
                 )
-                    .addMigrations(MIGRATION_1_2, MIGRATION_2_3)
-                    .fallbackToDestructiveMigration() // ⚠️ Only as fallback
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
