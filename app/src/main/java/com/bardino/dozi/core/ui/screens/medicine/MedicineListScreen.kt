@@ -409,7 +409,9 @@ fun ModernMedicineCard(
                             brush = Brush.horizontalGradient(
                                 listOf(
                                     if (hasReminderTimes) DoziCoral.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
-                                    if (hasReminderTimes) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f)
+                                    if (hasReminderTimes) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
+                                    if (medicine.times.any { it.isNotBlank() }) DoziCoral.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
+                                    if (medicine.times.any { it.isNotBlank() }) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f)
                                 )
                             ),
                             shape = RoundedCornerShape(12.dp)
@@ -421,6 +423,7 @@ fun ModernMedicineCard(
                         horizontalArrangement = Arrangement.spacedBy(8.dp),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+                        val hasReminderTimes = medicine.times.any { it.isNotBlank() }
                         Surface(
                             color = if (hasReminderTimes) DoziCoral.copy(alpha = 0.2f) else Gray400.copy(alpha = 0.2f),
                             shape = CircleShape,
@@ -543,6 +546,8 @@ fun ModernMedicineCard(
                                     border = BorderStroke(
                                         width = 1.dp,
                                         color = DoziCoral.copy(alpha = 0.4f)
+                                    border = AssistChipDefaults.assistChipBorder(
+                                        borderColor = DoziCoral.copy(alpha = 0.4f)
                                     )
                                 )
                             }
