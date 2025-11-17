@@ -2285,6 +2285,7 @@ private fun saveMedicinesToFirestore(
                 boxSize = 0,
                 notes = buildNotesFromTimes(selectedTimes, frequency, xValue),
                 reminderEnabled = true,
+                reminderName = medicineEntry.reminderName.ifEmpty { medicineEntry.name },
                 icon = "💊"
             )
 

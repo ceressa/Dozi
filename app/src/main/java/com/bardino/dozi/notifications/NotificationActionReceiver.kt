@@ -377,7 +377,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     }
                     val scheduledTime = calendar.timeInMillis
 
-                    // Bildirim göster (medicineId, dosage ve time note ile)
+                    // Bildirim göster (medicineId, dosage, time note ve reminderName ile)
                     if (hasNotificationPermission(context)) {
                         val timeNote = parseTimeNoteFromMedicine(medicine.notes, time)
                         NotificationHelper.showMedicationNotification(
@@ -387,7 +387,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                             dosage = "${medicine.dosage} ${medicine.unit}",
                             time = time,
                             scheduledTime = scheduledTime,
-                            timeNote = timeNote
+                            timeNote = timeNote,
+                            reminderName = medicine.reminderName
                         )
                     }
 
