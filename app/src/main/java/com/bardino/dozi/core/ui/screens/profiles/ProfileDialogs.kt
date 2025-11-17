@@ -348,6 +348,86 @@ fun ColorPicker(
 }
 
 /**
+ * Dialog for verifying PIN when switching profiles
+ */
+@Composable
+fun VerifyPinDialog(
+    profile: ProfileEntity,
+    onDismiss: () -> Unit,
+    onConfirm: (pin: String) -> Unit
+) {
+    var pin by remember { mutableStateOf("") }
+    var error by remember { mutableStateOf(false) }
+
+    AlertDialog(
+        onDismissRequest = onDismiss,
+        icon = {
+            Icon(Icons.Default.Lock, contentDescription = null)
+        },
+        title = { Text("PIN Kodu Girin") },
+        text = {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(8.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "\"${getProfileDisplayName(profile)}\" profiline geçmek için PIN kodunu girin",
+                    fontSize = 14.sp,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                OutlinedTextField(
+                    value = pin,
+                    onValueChange = {
+                        if (it.length <= 4 && it.all { char -> char.isDigit() }) {
+                            pin = it
+                            error = false
+                        }
+                    },
+                    label = { Text("PIN Kodu") },
+                    placeholder = { Text("4 haneli") },
+                    modifier = Modifier.fillMaxWidth(),
+                    singleLine = true,
+                    isError = error
+                )
+
+                if (error) {
+                    Text(
+                        "Hatalı PIN kodu",
+                        color = MaterialTheme.colorScheme.error,
+                        fontSize = 12.sp
+                    )
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = {
+                    if (pin.length == 4) {
+                        // Verify PIN by comparing with profile.pinCode
+                        if (pin == profile.pinCode) {
+                            onConfirm(pin)
+                        } else {
+                            error = true
+                        }
+                    }
+                },
+                enabled = pin.length == 4
+            ) {
+                Text("Onayla")
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDismiss) {
+                Text("İptal")
+            }
+        }
+    )
+}
+
+/**
  * Dialog for setting/changing PIN code
  */
 @Composable
