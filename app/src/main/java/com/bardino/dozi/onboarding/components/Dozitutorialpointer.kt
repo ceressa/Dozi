@@ -74,7 +74,7 @@ fun DoziTutorialPointer(
         ) {
             // Dozi karakteri
             Image(
-                painter = painterResource(id = R.drawable.dozi),
+                painter = painterResource(id = R.drawable.dozi_teach1),
                 contentDescription = "Dozi",
                 modifier = Modifier
                     .size(60.dp)

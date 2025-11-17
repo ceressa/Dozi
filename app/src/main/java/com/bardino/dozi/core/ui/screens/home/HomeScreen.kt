@@ -396,7 +396,7 @@ fun HomeScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.dozi_ok),
+                    painter = painterResource(id = R.drawable.dozi_perfect),
                     contentDescription = null,
                     modifier = Modifier.size(200.dp)
                 )
@@ -409,7 +409,7 @@ fun HomeScreen(
                 contentAlignment = Alignment.Center
             ) {
                 Image(
-                    painter = painterResource(id = R.drawable.dozi_happy),
+                    painter = painterResource(id = R.drawable.dozi_happy2),
                     contentDescription = null,
                     modifier = Modifier.size(200.dp)
                 )
@@ -589,7 +589,7 @@ private fun DoziHeader(firestoreUser: User?, isLoggedIn: Boolean) {
             }
 
             Image(
-                painter = painterResource(id = R.drawable.dozi_brand),
+                painter = painterResource(id = R.drawable.dozi_bravo),
                 contentDescription = "Dozi logosu",
                 modifier = Modifier
                     .size(64.dp)
@@ -835,10 +835,10 @@ private fun CalendarExpandedContent(
     }
 
     val character = when (status) {
-        MedicineStatus.TAKEN -> R.drawable.dozi_happy
-        MedicineStatus.PARTIAL -> R.drawable.dozi_ok
+        MedicineStatus.TAKEN -> R.drawable.dozi_perfect
+        MedicineStatus.PARTIAL -> R.drawable.dozi_bravo
         MedicineStatus.SKIPPED -> R.drawable.dozi_unhappy
-        MedicineStatus.PLANNED -> R.drawable.dozi_ok
+        MedicineStatus.PLANNED -> R.drawable.dozi_time
         else -> R.drawable.dozi
     }
 
@@ -1244,7 +1244,7 @@ private fun EmptyMedicineCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Image(
-                painter = painterResource(id = R.drawable.dozi_happy),
+                painter = painterResource(id = R.drawable.dozi_happy2),
                 contentDescription = null,
                 modifier = Modifier.size(100.dp)
             )

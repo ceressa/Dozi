@@ -59,7 +59,7 @@ fun OnboardingWelcomeScreen(
 
             // Dozi logosu
             Image(
-                painter = painterResource(id = R.drawable.dozi_brand),
+                painter = painterResource(id = R.drawable.dozi_hosgeldin),
                 contentDescription = "Dozi Logo",
                 modifier = Modifier
                     .size(200.dp)

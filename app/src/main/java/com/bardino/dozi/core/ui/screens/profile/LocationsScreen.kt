@@ -385,7 +385,7 @@ private fun EmptyLocationsState(
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(R.drawable.dozi),
+            painter = painterResource(R.drawable.dozi_idea),
             contentDescription = null,
             modifier = Modifier
                 .size(160.dp)

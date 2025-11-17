@@ -203,7 +203,7 @@ fun FamilyManagementScreen(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     Image(
-                        painter = painterResource(R.drawable.dozi_noted),
+                        painter = painterResource(R.drawable.dozi_family),
                         contentDescription = null,
                         modifier = Modifier.size(120.dp)
                     )
