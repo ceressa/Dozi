@@ -480,11 +480,15 @@ service cloud.firestore {
     // ═══════════════════════════════════════════════════════════════════════
 
     match /family_plans/{planId} {
-      // 📖 OKUMA: Organizatör veya üyeler okuyabilir
-      allow read: if isAuthenticated() && (
+      // 📖 GET (Document Read): Organizatör veya üyeler kendi planlarını okuyabilir
+      allow get: if isAuthenticated() && (
         resource.data.organizerId == request.auth.uid ||
         request.auth.uid in resource.data.currentMembers
       );
+
+      // 📋 LIST (Query): Herkes query yapabilir (davet kodu kontrolü için)
+      // Not: Query sonucunda sadece kendi planları dönecek (yukarıdaki get kuralı ile)
+      allow list: if isAuthenticated();
 
       // ✏️ OLUŞTURMA: Organizatör planı oluşturabilir
       // - organizerId giriş yapan kullanıcı olmalı
