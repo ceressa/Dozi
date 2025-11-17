@@ -29,6 +29,7 @@ fun AdvancedNotificationSettingsScreen(
 ) {
     val uiState by viewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val snackbarHostState = remember { SnackbarHostState() }
 
     Scaffold(
         topBar = {
@@ -39,6 +40,7 @@ fun AdvancedNotificationSettingsScreen(
                 backgroundColor = DoziTurquoise
             )
         },
+        snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = Color(0xFFF5F7FA)
     ) { padding ->
         if (uiState.isLoading) {
@@ -113,7 +115,10 @@ fun AdvancedNotificationSettingsScreen(
         // Error Snackbar
         uiState.error?.let { error ->
             LaunchedEffect(error) {
-                // TODO: Show snackbar
+                snackbarHostState.showSnackbar(
+                    message = error,
+                    duration = SnackbarDuration.Short
+                )
                 viewModel.clearError()
             }
         }

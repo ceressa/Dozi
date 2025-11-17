@@ -38,6 +38,7 @@ import kotlinx.coroutines.launch
 fun ProfileScreen(
     onNavigateToLocations: () -> Unit = {},
     onNavigateToPremium: () -> Unit = {},
+    onNavigateToFamilyManagement: () -> Unit = {},
     onNavigateToSettings: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
@@ -68,6 +69,7 @@ fun ProfileScreen(
             user = currentUser,
             onNavigateToLocations = onNavigateToLocations,
             onNavigateToPremium = onNavigateToPremium,
+            onNavigateToFamilyManagement = onNavigateToFamilyManagement,
             onNavigateToSettings = onNavigateToSettings,
             onNavigateToNotifications = onNavigateToNotifications,
             onNavigateToAbout = onNavigateToAbout,
@@ -85,6 +87,7 @@ private fun ProfileContent(
     user: com.google.firebase.auth.FirebaseUser?,
     onNavigateToLocations: () -> Unit,
     onNavigateToPremium: () -> Unit,
+    onNavigateToFamilyManagement: () -> Unit,
     onNavigateToSettings: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToAbout: () -> Unit,
@@ -190,6 +193,16 @@ private fun ProfileContent(
                 description = "Premium özelliklere erişin",
                 onClick = onNavigateToPremium
             )
+
+            // Aile Yönetimi - Sadece family plan olan kullanıcılar için
+            if (firestoreUser?.familyPlanId != null) {
+                ProfileMenuItem(
+                    icon = Icons.Default.FamilyRestroom,
+                    title = "Aile Yönetimi",
+                    description = "Aile üyelerini yönet",
+                    onClick = onNavigateToFamilyManagement
+                )
+            }
 
             ProfileMenuItem(
                 icon = Icons.Default.Settings,
