@@ -60,6 +60,7 @@ import java.util.*
 data class MedicineEntry(
     val id: Int,
     var name: String = "",
+    var reminderName: String = "", // Hatırlatma için özel isim
     var dosageType: String = "1",
     var customDosage: String = "",
     var unit: String = "hap"
@@ -653,6 +654,37 @@ private fun MultipleMedicinesStep(
                             }
                         },
                         onAddNew = { onAddNewMedicine(index) }
+                    )
+
+                    // Hatırlatma adı (özel isim)
+                    Text(
+                        "Hatırlatma Adı (İsteğe Bağlı)",
+                        style = MaterialTheme.typography.labelLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+
+                    OutlinedTextField(
+                        value = medicine.reminderName,
+                        onValueChange = { newName ->
+                            onMedicinesChange(medicines.toMutableList().also {
+                                it[index] = it[index].copy(reminderName = newName)
+                            })
+                        },
+                        label = { Text("Hatırlatmaya özel isim", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                        placeholder = { Text("Örn: Sabah ilacım, Tansiyon ilacı") },
+                        leadingIcon = { Icon(Icons.Default.Label, null, tint = DoziCoral) },
+                        modifier = Modifier.fillMaxWidth(),
+                        singleLine = true,
+                        shape = MaterialTheme.shapes.medium,
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedBorderColor = DoziCoral,
+                            focusedLabelColor = DoziCoral,
+                            cursorColor = DoziCoral,
+                            unfocusedBorderColor = Gray200,
+                            focusedContainerColor = DoziCoral.copy(alpha = 0.05f),
+                            unfocusedContainerColor = Color.White
+                        )
                     )
 
                     // Dozaj seçici
