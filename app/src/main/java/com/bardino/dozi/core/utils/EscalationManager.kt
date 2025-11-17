@@ -19,13 +19,11 @@ import java.util.Calendar
 class EscalationManager(
     private val context: Context
 ) {
-    private val app = context.applicationContext as com.bardino.dozi.DoziApplication
-    private val medicineRepository = MedicineRepository(app.profileManager)
+    private val medicineRepository = MedicineRepository()
     private val medicationLogRepository = MedicationLogRepository(
         context,
         com.google.firebase.auth.FirebaseAuth.getInstance(),
-        com.google.firebase.firestore.FirebaseFirestore.getInstance(),
-        app.profileManager
+        com.google.firebase.firestore.FirebaseFirestore.getInstance()
     )
     private val badiRepository = BadiRepository()
     private val notificationRepository = NotificationRepository()

@@ -55,8 +55,7 @@ fun MedicineListScreen(
         isVisible = true
         while (true) {
             try {
-                val app = context.applicationContext as DoziApplication
-                val medicineRepository = MedicineRepository(app.profileManager)
+                val medicineRepository = MedicineRepository()
                 medicines = medicineRepository.getAllMedicines()
                 android.util.Log.d("MedicineListScreen", "✅ Loaded ${medicines.size} medicines from Firestore")
             } catch (e: Exception) {
@@ -260,8 +259,7 @@ fun MedicineListScreen(
                                     onConfirm = {
                                         scope.launch {
                                             try {
-                                                val app = context.applicationContext as DoziApplication
-                                                val medicineRepository = MedicineRepository(app.profileManager)
+                                                val medicineRepository = MedicineRepository()
                                                 medicineRepository.deleteMedicine(medicine.id)
                                                 Toast.makeText(
                                                     context,

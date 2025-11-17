@@ -40,30 +40,18 @@ fun ReminderListScreen(
     onNavigateToEditReminder: (String) -> Unit = {}
 ) {
     val context = LocalContext.current
-    val app = context.applicationContext as com.bardino.dozi.DoziApplication
-    val medicineRepository = remember { MedicineRepository(app.profileManager) }
+    val medicineRepository = remember { MedicineRepository() }
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var isVisible by remember { mutableStateOf(false) }
-    var activeProfileId by remember { mutableStateOf<String?>(null) }
 
-    // Firebase'den sadece aktif profile ait hatırlatmaları sürekli dinle
-    // ✅ Profil değiştiğinde otomatik olarak yeniden yükler (activeProfileId dependency)
+    // Firebase'den hatırlatmaları sürekli dinle
     LaunchedEffect(Unit) {
         isVisible = true
 
         while (true) {
             try {
-                // Get current active profile ID
-                val currentProfileId = app.profileManager.getActiveProfileId()
-
-                // Only reload if profile changed
-                if (currentProfileId != activeProfileId) {
-                    activeProfileId = currentProfileId
-                    android.util.Log.d("ReminderListScreen", "🔄 Profile changed, loading reminders for: $currentProfileId")
-                }
-
-                medicines = medicineRepository.getMedicinesForProfile(currentProfileId)
-                android.util.Log.d("ReminderListScreen", "✅ Loaded ${medicines.size} reminders for profile: $currentProfileId")
+                medicines = medicineRepository.getAllMedicines()
+                android.util.Log.d("ReminderListScreen", "✅ Loaded ${medicines.size} reminders")
             } catch (e: Exception) {
                 android.util.Log.e("ReminderListScreen", "❌ Error loading reminders", e)
                 e.printStackTrace()
