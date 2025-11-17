@@ -13,15 +13,12 @@ import kotlinx.coroutines.flow.callbackFlow
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.flow.firstOrNull
-import javax.inject.Inject
-import javax.inject.Singleton
 
 /**
  * Repository for managing Medicine data in Firestore
  * All medicines are stored under: /users/{userId}/medicines/{medicineId}
  */
-@Singleton
-class MedicineRepository @Inject constructor() {
+class MedicineRepository {
     private val auth = FirebaseAuth.getInstance()
     private val db = FirebaseFirestore.getInstance()
 
