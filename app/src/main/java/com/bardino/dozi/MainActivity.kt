@@ -59,9 +59,6 @@ class MainActivity : ComponentActivity() {
     private var currentIntent by mutableStateOf<Intent?>(null)
     private var navController: androidx.navigation.NavHostController? = null
 
-    @Inject
-    lateinit var profileRepository: com.bardino.dozi.core.data.repository.ProfileRepository
-
     // 🔹 Çoklu izin isteyici (bildirim, kamera, konum)
     private val permissionLauncher =
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { permissions ->
@@ -120,10 +117,6 @@ class MainActivity : ComponentActivity() {
                                             Log.d("PREMIUM_TRIAL", "1 haftalık trial aktivasyonu yapıldı")
                                         }
 
-                                        // 👥 Firestore'dan profilleri senkronize et
-                                        profileRepository.syncProfilesFromFirestore()
-                                        Log.d("GOOGLE_AUTH", "Profiller Firestore'dan senkronize edildi")
-
                                         // ✅ FCM token'ı al ve kaydet (retry logic ile)
                                         saveFCMToken()
                                     } catch (e: Exception) {
@@ -163,7 +156,6 @@ class MainActivity : ComponentActivity() {
                     Settings.Secure.ANDROID_ID
                 )
                 userRepository.updateUserField("deviceId", deviceId)
-                profileRepository.syncProfilesFromFirestore()
                 saveFCMToken()
             }
         }

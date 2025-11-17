@@ -10,33 +10,14 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import com.bardino.dozi.core.common.Constants.BUDDY_CHANNEL_ID
 import com.bardino.dozi.core.common.Constants.REMINDER_CHANNEL_ID
 import com.bardino.dozi.core.data.MedicineRepository
-import com.bardino.dozi.core.profile.ProfileManager
 import com.bardino.dozi.notifications.NotificationHelper
-import com.bardino.dozi.core.data.repository.MedicineRepository as FirebaseMedicineRepository
-import com.bardino.dozi.core.data.repository.UserRepository
 import com.google.android.libraries.places.api.Places
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import dagger.hilt.android.HiltAndroidApp
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.SupervisorJob
-import kotlinx.coroutines.launch
-import javax.inject.Inject
 
 @HiltAndroidApp
 class DoziApplication : Application() {
-
-    @Inject
-    lateinit var profileManager: ProfileManager
-
-    @Inject
-    lateinit var firebaseMedicineRepository: FirebaseMedicineRepository
-
-    @Inject
-    lateinit var userRepository: UserRepository
-
-    private val applicationScope = CoroutineScope(SupervisorJob() + Dispatchers.Main)
 
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate() {
@@ -54,25 +35,6 @@ class DoziApplication : Application() {
 
         // 💊 Uygulama açıldığında ilaç veritabanını belleğe yükle (ilaclar.json lookup için)
         MedicineRepository.initialize(this)
-
-        // 👥 Default profil oluştur (eğer yoksa) - kullanıcının adını kullan
-        // Not: Firestore sync MainActivity'de yapılıyor (kullanıcı login olduktan sonra)
-        applicationScope.launch {
-            val defaultProfileId = profileManager.ensureDefaultProfile(userRepository)
-
-            // 🔧 MIGRATION: Assign profile-specific reminders (set ownerProfileId to default profile)
-            val prefs = getSharedPreferences("dozi_migrations", MODE_PRIVATE)
-            val migrationDone = prefs.getBoolean("profile_reminders_migration_v4", false)
-
-            if (!migrationDone) {
-                android.util.Log.d("DoziApplication", "🔧 Starting profile-specific reminders migration v4...")
-                val migratedCount = firebaseMedicineRepository.migrateOldMedicines(defaultProfileId)
-                if (migratedCount >= 0) {
-                    prefs.edit().putBoolean("profile_reminders_migration_v4", true).apply()
-                    android.util.Log.d("DoziApplication", "✅ Profile-specific reminders migration v4 completed: $migratedCount medicines migrated")
-                }
-            }
-        }
 
         // 🔔 Bildirim kanallarını oluştur
         createNotificationChannels()
