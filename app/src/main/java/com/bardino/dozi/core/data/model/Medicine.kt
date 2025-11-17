@@ -24,6 +24,7 @@ data class Medicine(
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
     val reminderEnabled: Boolean = true,
+    val reminderName: String = "",              // Hatırlatma adı (ör: "Sabah İlacım", "Kahvaltıdan Önce")
     val icon: String = "💊",                    // Emoji icon for visual display
 
     // 🤝 Badi sistem için yeni alanlar
