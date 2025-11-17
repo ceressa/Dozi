@@ -24,8 +24,8 @@ import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.theme.*
 
 /**
- * Onboarding - İlaç Ekleme + Hatırlatma Kurma (Birleşik Akıllı Ekran)
- * İlaç ekleyince direkt hatırlatma kurulması için rehberlik eder
+ * Onboarding - İlaç Ekleme Ekranı
+ * İlaç eklenince otomatik olarak premium ekranına geçiş yapar
  */
 @Composable
 fun OnboardingMedicineReminderScreen(
@@ -41,9 +41,9 @@ fun OnboardingMedicineReminderScreen(
         val step = OnboardingPreferences.getOnboardingStep(context)
         when (step) {
             "medicine_completed" -> {
-                // İlaç eklendi, hatırlatma fazına geç
-                currentPhase = "reminder"
+                // İlaç eklendi, premium ekranına geç (hatırlatma otomatik ekleniyor)
                 OnboardingPreferences.clearOnboardingState(context)
+                onNext()
             }
             "reminder_completed" -> {
                 // Hatırlatma da eklendi, devam et
@@ -64,7 +64,7 @@ fun OnboardingMedicineReminderScreen(
 
         // Adım göstergesi
         Text(
-            text = "Adım 2/3",
+            text = "Adım 2/4",
             style = MaterialTheme.typography.labelLarge,
             color = DoziPurple,
             fontWeight = FontWeight.Bold
@@ -126,7 +126,7 @@ private fun InitialPhaseContent(
             ) {
                 // Başlık
                 Text(
-                    text = "İlaç & Hatırlatma 💊",
+                    text = "İlaç Ekleme 💊",
                     style = MaterialTheme.typography.headlineMedium,
                     fontWeight = FontWeight.Bold,
                     color = DoziPurple,
@@ -137,7 +137,7 @@ private fun InitialPhaseContent(
 
                 // Ana açıklama
                 Text(
-                    text = "İlaç ekle, hatırlatma kur. Hepsi bu kadar basit!",
+                    text = "İlacını ekle, ben sana hatırlatayım!",
                     style = MaterialTheme.typography.bodyLarge,
                     color = TextSecondary,
                     textAlign = TextAlign.Center,
@@ -193,7 +193,7 @@ private fun InitialPhaseContent(
                             modifier = Modifier.size(24.dp)
                         )
                         Text(
-                            text = "İlaç ekle, hatırlatma popup'ı gelir. Hızlıca kur!",
+                            text = "İlaç eklediğinde, hatırlatmaları daha sonra özelleştirebilirsin!",
                             style = MaterialTheme.typography.bodyMedium,
                             color = DoziPurple,
                             fontWeight = FontWeight.Bold
@@ -223,7 +223,7 @@ private fun InitialPhaseContent(
             Icon(Icons.Default.Add, "Ekle", modifier = Modifier.size(24.dp))
             Spacer(Modifier.width(8.dp))
             Text(
-                text = "İlaç Ekle & Başla!",
+                text = "İlaç Ekle!",
                 fontWeight = FontWeight.Bold,
                 fontSize = 18.sp
             )
