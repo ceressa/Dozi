@@ -1,12 +1,11 @@
 package com.bardino.dozi.onboarding.screens
 
 import androidx.compose.animation.core.*
-import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
-import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -15,50 +14,78 @@ import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bardino.dozi.R
-import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.theme.*
+
+data class PremiumPlan(
+    val id: String,
+    val title: String,
+    val price: String,
+    val period: String,
+    val badge: String? = null,
+    val features: List<String>
+)
 
 @Composable
 fun OnboardingPremiumScreen(
     onGoogleSignIn: () -> Unit
 ) {
-    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
-    var neverShowAgain by remember { mutableStateOf(false) }
+    var selectedPlan by remember { mutableStateOf("yearly") }
 
-    // Pulse animasyonu
-    val infiniteTransition = rememberInfiniteTransition(label = "pulse")
-    val pulseScale by infiniteTransition.animateFloat(
-        initialValue = 1f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(1000, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
+    val plans = listOf(
+        PremiumPlan(
+            id = "weekly",
+            title = "Haftalık",
+            price = "49₺",
+            period = "hafta",
+            features = listOf(
+                "Sınırsız ilaç ekleme",
+                "Bulut yedekleme",
+                "Sesli hatırlatıcılar"
+            )
         ),
-        label = "pulse"
+        PremiumPlan(
+            id = "monthly",
+            title = "Aylık",
+            price = "149₺",
+            period = "ay",
+            badge = "POPÜLER",
+            features = listOf(
+                "Sınırsız ilaç ekleme",
+                "Bulut yedekleme",
+                "Sesli hatırlatıcılar",
+                "Öncelikli destek"
+            )
+        ),
+        PremiumPlan(
+            id = "yearly",
+            title = "Yıllık Aile",
+            price = "999₺",
+            period = "yıl",
+            badge = "EN AVANTAJLI",
+            features = listOf(
+                "3 kişilik aile paketi",
+                "Sınırsız ilaç ekleme",
+                "Bulut yedekleme",
+                "Sesli hatırlatıcılar",
+                "Öncelikli destek",
+                "Aile takip sistemi"
+            )
+        )
     )
 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(
-                Brush.verticalGradient(
-                    colors = listOf(
-                        DoziTurquoise.copy(alpha = 0.1f),
-                        BackgroundLight
-                    )
-                )
-            )
+            .background(BackgroundLight)
     ) {
         Column(
             modifier = Modifier
@@ -68,37 +95,9 @@ fun OnboardingPremiumScreen(
         ) {
             Spacer(Modifier.height(16.dp))
 
-            // Adım göstergesi
-            Text(
-                text = "Adım 4/4",
-                style = MaterialTheme.typography.labelLarge,
-                color = DoziTurquoise,
-                fontWeight = FontWeight.Bold
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            // Dozi karakteri - Kalp Dozi (hediye veriyor, transparan arka plan)
-            Image(
-                painter = painterResource(id = R.drawable.dozi_kalp),
-                contentDescription = "Dozi Kalp",
-                modifier = Modifier
-                    .size(140.dp)
-                    .scale(pulseScale)
-            )
-
-            // Hediye ikonu (kalp gibi)
-            Text(
-                text = "💝",
-                style = MaterialTheme.typography.displayMedium,
-                modifier = Modifier.offset(y = (-20).dp)
-            )
-
-            Spacer(Modifier.height(24.dp))
-
             // Başlık
             Text(
-                text = "Tebrikler!",
+                text = "Dozi Ekstra 💧",
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = DoziTurquoise
@@ -107,192 +106,219 @@ fun OnboardingPremiumScreen(
             Spacer(Modifier.height(8.dp))
 
             Text(
-                text = "1 Haftalık Dozi Ekstra Hediye!",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary,
+                text = "7 gün ücretsiz dene, sonra devam et",
+                style = MaterialTheme.typography.bodyLarge,
+                color = TextSecondary,
                 textAlign = TextAlign.Center
             )
 
             Spacer(Modifier.height(24.dp))
 
-            // Özellikler - Daha kompakt
-            Column(
-                verticalArrangement = Arrangement.spacedBy(12.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                PremiumFeature(
-                    icon = Icons.Default.AllInclusive,
-                    title = "Sınırsız İlaç",
-                    description = "Dilediğin kadar ilaç ekle"
+            // Paket seçenekleri
+            plans.forEach { plan ->
+                PremiumPlanCard(
+                    plan = plan,
+                    isSelected = selectedPlan == plan.id,
+                    onClick = { selectedPlan = plan.id }
                 )
-                PremiumFeature(
-                    icon = Icons.Default.Cloud,
-                    title = "Bulut Yedekleme",
-                    description = "Verilerini güvenle sakla"
-                )
-                PremiumFeature(
-                    icon = Icons.Default.FamilyRestroom,
-                    title = "Aile Takibi",
-                    description = "Sevdiklerini takip et"
-                )
+                Spacer(Modifier.height(12.dp))
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.weight(1f))
 
-            // Bilgilerini kaydet kartı
-            Card(
-                colors = CardDefaults.cardColors(
-                    containerColor = DoziCoral.copy(alpha = 0.1f)
-                ),
-                shape = RoundedCornerShape(16.dp),
-                modifier = Modifier.fillMaxWidth()
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(12.dp)
-                ) {
-                    Icon(
-                        Icons.Default.Info,
-                        contentDescription = null,
-                        tint = DoziCoral
-                    )
-                    Text(
-                        text = "Bilgilerinin kaybolmaması için Google ile giriş yap",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextPrimary
-                    )
-                }
-            }
-
-            Spacer(Modifier.height(16.dp))
-
-            // Google giriş butonu
+            // Devam butonu
             Button(
                 onClick = {
                     isLoading = true
-                    // "Bir daha gösterme" tercihini kaydet
-                    if (neverShowAgain) {
-                        OnboardingPreferences.setNeverShowOnboardingAgain(context, true)
-                    }
                     onGoogleSignIn()
                 },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
                 colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.White
+                    containerColor = DoziTurquoise
                 ),
-                border = BorderStroke(1.dp, Gray200),
                 shape = RoundedCornerShape(16.dp),
                 enabled = !isLoading
             ) {
                 if (isLoading) {
                     CircularProgressIndicator(
                         modifier = Modifier.size(24.dp),
-                        color = DoziTurquoise,
+                        color = Color.White,
                         strokeWidth = 3.dp
                     )
                     Spacer(Modifier.width(12.dp))
                     Text(
-                        text = "Giriş yapılıyor...",
+                        text = "Başlatılıyor...",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = TextSecondary
+                        fontWeight = FontWeight.Bold
                     )
                 } else {
-                    Image(
-                        painter = painterResource(id = R.drawable.ic_google),
-                        contentDescription = "Google",
-                        modifier = Modifier.size(24.dp)
-                    )
-                    Spacer(Modifier.width(12.dp))
                     Text(
-                        text = "Google ile Giriş Yap ve Başla",
+                        text = "Ücretsiz Denemeyi Başlat",
                         style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
+                        fontWeight = FontWeight.Bold
                     )
                 }
             }
 
-            Spacer(Modifier.height(16.dp))
-
-            // "Bir daha gösterme" checkbox
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 4.dp),
-                horizontalArrangement = Arrangement.Start,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                Checkbox(
-                    checked = neverShowAgain,
-                    onCheckedChange = { neverShowAgain = it },
-                    colors = CheckboxDefaults.colors(
-                        checkedColor = DoziTurquoise,
-                        uncheckedColor = TextSecondary
-                    )
-                )
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    text = "Bir daha gösterme",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = TextSecondary,
-                    modifier = Modifier.weight(1f)
-                )
-            }
-
             Spacer(Modifier.height(8.dp))
+
+            Text(
+                text = "İstediğin zaman iptal edebilirsin",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
+
+            Spacer(Modifier.height(16.dp))
         }
     }
 }
 
 @Composable
-private fun PremiumFeature(
-    icon: ImageVector,
-    title: String,
-    description: String
+private fun PremiumPlanCard(
+    plan: PremiumPlan,
+    isSelected: Boolean,
+    onClick: () -> Unit
 ) {
-    Row(
-        modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.spacedBy(16.dp),
-        verticalAlignment = Alignment.CenterVertically
+    val backgroundColor = when {
+        plan.id == "yearly" && isSelected -> DoziTurquoise.copy(alpha = 0.15f)
+        plan.id == "yearly" -> DoziTurquoise.copy(alpha = 0.08f)
+        isSelected -> DoziBlue.copy(alpha = 0.15f)
+        else -> Gray100
+    }
+
+    val borderColor = when {
+        plan.id == "yearly" && isSelected -> DoziTurquoise
+        isSelected -> DoziBlue
+        else -> Color.Transparent
+    }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(20.dp))
+            .background(backgroundColor)
+            .border(
+                width = if (isSelected) 2.dp else 0.dp,
+                color = borderColor,
+                shape = RoundedCornerShape(20.dp)
+            )
+            .clickable(onClick = onClick)
+            .padding(16.dp)
     ) {
-        Box(
-            modifier = Modifier
-                .size(48.dp)
-                .clip(CircleShape)
-                .background(DoziTurquoise.copy(alpha = 0.15f)),
-            contentAlignment = Alignment.Center
-        ) {
-            Icon(
-                icon,
-                contentDescription = null,
-                tint = DoziTurquoise,
-                modifier = Modifier.size(24.dp)
-            )
+        Column {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.Top
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    // Badge (opsiyonel)
+                    if (plan.badge != null) {
+                        Box(
+                            modifier = Modifier
+                                .clip(RoundedCornerShape(8.dp))
+                                .background(
+                                    if (plan.id == "yearly") DoziTurquoise else DoziCoral
+                                )
+                                .padding(horizontal = 8.dp, vertical = 4.dp)
+                        ) {
+                            Text(
+                                text = plan.badge,
+                                style = MaterialTheme.typography.labelSmall,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White,
+                                fontSize = 10.sp
+                            )
+                        }
+                        Spacer(Modifier.height(8.dp))
+                    }
+
+                    Text(
+                        text = plan.title,
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = TextPrimary
+                    )
+
+                    Spacer(Modifier.height(4.dp))
+
+                    Row(
+                        verticalAlignment = Alignment.Bottom,
+                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            text = plan.price,
+                            style = MaterialTheme.typography.headlineSmall,
+                            fontWeight = FontWeight.ExtraBold,
+                            color = if (plan.id == "yearly") DoziTurquoise else DoziBlue
+                        )
+                        Text(
+                            text = "/ ${plan.period}",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = TextSecondary
+                        )
+                    }
+                }
+
+                // Aile paketi için özel görsel
+                if (plan.id == "yearly") {
+                    Image(
+                        painter = painterResource(id = R.drawable.dozi_family),
+                        contentDescription = "Aile Paketi",
+                        modifier = Modifier.size(80.dp)
+                    )
+                }
+
+                // Seçim göstergesi
+                if (plan.id != "yearly") {
+                    RadioButton(
+                        selected = isSelected,
+                        onClick = onClick,
+                        colors = RadioButtonDefaults.colors(
+                            selectedColor = DoziBlue,
+                            unselectedColor = TextSecondary
+                        )
+                    )
+                }
+            }
+
+            Spacer(Modifier.height(12.dp))
+
+            // Özellikler
+            plan.features.forEach { feature ->
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp),
+                    modifier = Modifier.padding(vertical = 4.dp)
+                ) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = null,
+                        tint = SuccessGreen,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Text(
+                        text = feature,
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextPrimary
+                    )
+                }
+            }
         }
 
-        Column(modifier = Modifier.weight(1f)) {
-            Text(
-                text = title,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.Bold,
-                color = TextPrimary
-            )
-            Text(
-                text = description,
-                style = MaterialTheme.typography.bodyMedium,
-                color = TextSecondary
+        // Aile paketinde RadioButton sağ üstte
+        if (plan.id == "yearly") {
+            RadioButton(
+                selected = isSelected,
+                onClick = onClick,
+                colors = RadioButtonDefaults.colors(
+                    selectedColor = DoziTurquoise,
+                    unselectedColor = TextSecondary
+                ),
+                modifier = Modifier.align(Alignment.TopEnd)
             )
         }
-
-        Icon(
-            Icons.Default.CheckCircle,
-            contentDescription = null,
-            tint = SuccessGreen
-        )
     }
 }

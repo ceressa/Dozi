@@ -11,11 +11,14 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.bardino.dozi.R
+import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.theme.*
 
 @Composable
@@ -23,16 +26,28 @@ fun OnboardingWelcomeScreen(
     onStartTour: () -> Unit,
     onSkip: () -> Unit
 ) {
-    // Float animasyonu
-    val infiniteTransition = rememberInfiniteTransition(label = "float")
-    val floatOffset by infiniteTransition.animateFloat(
-        initialValue = 0f,
-        targetValue = 15f,
+    val context = LocalContext.current
+    var neverShowAgain by remember { mutableStateOf(false) }
+
+    // Yumuşak ölçeklendirme + rotate animasyonu
+    val infiniteTransition = rememberInfiniteTransition(label = "gentle_animation")
+    val scale by infiniteTransition.animateFloat(
+        initialValue = 0.95f,
+        targetValue = 1.05f,
         animationSpec = infiniteRepeatable(
-            animation = tween(2000, easing = EaseInOutSine),
+            animation = tween(3000, easing = EaseInOutSine),
             repeatMode = RepeatMode.Reverse
         ),
-        label = "float"
+        label = "scale"
+    )
+    val rotation by infiniteTransition.animateFloat(
+        initialValue = -3f,
+        targetValue = 3f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(4000, easing = EaseInOutSine),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "rotation"
     )
 
     Box(
@@ -57,13 +72,17 @@ fun OnboardingWelcomeScreen(
         ) {
             Spacer(Modifier.weight(1f))
 
-            // Dozi logosu
+            // Dozi logosu - yumuşak animasyon
             Image(
                 painter = painterResource(id = R.drawable.dozi_hosgeldin),
                 contentDescription = "Dozi Logo",
                 modifier = Modifier
                     .size(200.dp)
-                    .offset(y = floatOffset.dp)
+                    .graphicsLayer {
+                        scaleX = scale
+                        scaleY = scale
+                        rotationZ = rotation
+                    }
             )
 
             Spacer(Modifier.height(32.dp))
@@ -90,7 +109,13 @@ fun OnboardingWelcomeScreen(
 
             // Başlat butonu
             Button(
-                onClick = onStartTour,
+                onClick = {
+                    // "Bir daha gösterme" tercihini kaydet
+                    if (neverShowAgain) {
+                        OnboardingPreferences.setNeverShowOnboardingAgain(context, true)
+                    }
+                    onStartTour()
+                },
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(56.dp),
@@ -106,11 +131,43 @@ fun OnboardingWelcomeScreen(
                 )
             }
 
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(12.dp))
+
+            // "Bir daha gösterme" checkbox
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.Center,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = neverShowAgain,
+                    onCheckedChange = { neverShowAgain = it },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = DoziTurquoise,
+                        uncheckedColor = TextSecondary
+                    )
+                )
+                Spacer(Modifier.width(4.dp))
+                Text(
+                    text = "Bir daha gösterme",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
 
             // Atla butonu
             TextButton(
-                onClick = onSkip,
+                onClick = {
+                    // "Bir daha gösterme" tercihini kaydet
+                    if (neverShowAgain) {
+                        OnboardingPreferences.setNeverShowOnboardingAgain(context, true)
+                    }
+                    onSkip()
+                },
                 modifier = Modifier.fillMaxWidth()
             ) {
                 Text(
