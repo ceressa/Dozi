@@ -307,6 +307,34 @@ fun MedicineEditScreen(
 
                             MedicineRepository.saveMedicine(context, updated)
 
+                            // 🔥 Firestore'a da kaydet (stockCount ile)
+                            kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                                try {
+                                    val firestoreRepo = com.bardino.dozi.core.data.repository.MedicineRepository()
+                                    // Mevcut Firestore ilaç var mı kontrol et
+                                    val existingMedicine = firestoreRepo.getMedicineById(newId)
+
+                                    if (existingMedicine != null) {
+                                        // Mevcut ilacı güncelle, sadece stockCount'u değiştir
+                                        firestoreRepo.updateMedicineField(newId, "stockCount", stock.toInt())
+                                        android.util.Log.d("MedicineEditScreen", "✅ Firestore stockCount güncellendi: $newId -> ${stock.toInt()}")
+                                    } else {
+                                        // Yeni ilaç oluştur (temel bilgilerle)
+                                        val firestoreMedicine = com.bardino.dozi.core.data.model.Medicine(
+                                            id = "",
+                                            name = name.trim(),
+                                            stockCount = stock.toInt(),
+                                            boxSize = stock.toInt(),
+                                            reminderEnabled = false
+                                        )
+                                        firestoreRepo.addMedicine(firestoreMedicine)
+                                        android.util.Log.d("MedicineEditScreen", "✅ Firestore'a yeni ilaç eklendi: ${name.trim()}")
+                                    }
+                                } catch (e: Exception) {
+                                    android.util.Log.e("MedicineEditScreen", "❌ Firestore kayıt hatası", e)
+                                }
+                            }
+
                             // Onboarding state kontrolü
                             if (OnboardingPreferences.isInOnboarding(context) &&
                                 OnboardingPreferences.getOnboardingStep(context) == "medicine") {

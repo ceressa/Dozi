@@ -2257,7 +2257,7 @@ private fun saveMedicinesToFirestore(
         else -> 1 // "İstediğim tarihlerde" için önemsiz
     }
 
-    // Her ilaç için Medicine nesnesi oluştur ve kaydet
+    // Her ilaç için Medicine nesnesi oluştur veya mevcut olanı güncelle
     CoroutineScope(Dispatchers.IO).launch {
         var allSuccess = true
 
@@ -2268,33 +2268,75 @@ private fun saveMedicinesToFirestore(
                 medicineEntry.dosageType
             }
 
-            val medicine = Medicine(
-                id = "", // Repository tarafından oluşturulacak
-                userId = "", // Repository tarafından oluşturulacak
-                name = medicineEntry.name,
-                dosage = dosage,
-                unit = medicineEntry.unit,
-                form = "tablet",
-                times = times,
-                days = days,
-                frequency = frequency,
-                frequencyValue = calculatedFrequencyValue,
-                startDate = startDate,
-                endDate = null,
-                stockCount = 0,
-                boxSize = 0,
-                notes = buildNotesFromTimes(selectedTimes, frequency, xValue),
-                reminderEnabled = true,
-                reminderName = medicineEntry.reminderName.ifEmpty { medicineEntry.name },
-                icon = "💊"
-            )
+            // 🔍 Aynı isimde ilaç var mı kontrol et
+            val existingMedicines = medicineRepository.getAllMedicines()
+            val existingMedicine = existingMedicines.find {
+                it.name.equals(medicineEntry.name, ignoreCase = true)
+            }
 
-            val savedMedicine = medicineRepository.addMedicine(medicine)
+            val savedMedicine = if (existingMedicine != null) {
+                // ✅ Mevcut ilacı güncelle - times listesine yeni saatleri ekle
+                val mergedTimes = (existingMedicine.times + times).distinct().sorted()
+
+                try {
+                    // Times, reminderName ve notes'u güncelle
+                    medicineRepository.updateMedicineField(existingMedicine.id, "times", mergedTimes)
+
+                    // ReminderName güncelleme (eğer yeni bir isim verildiyse)
+                    if (medicineEntry.reminderName.isNotEmpty()) {
+                        medicineRepository.updateMedicineField(existingMedicine.id, "reminderName", medicineEntry.reminderName)
+                    }
+
+                    // Notes'u birleştir
+                    val newNotes = buildNotesFromTimes(selectedTimes, frequency, xValue)
+                    val mergedNotes = if (existingMedicine.notes.isNotEmpty() && newNotes.isNotEmpty()) {
+                        "${existingMedicine.notes} | $newNotes"
+                    } else if (newNotes.isNotEmpty()) {
+                        newNotes
+                    } else {
+                        existingMedicine.notes
+                    }
+                    medicineRepository.updateMedicineField(existingMedicine.id, "notes", mergedNotes)
+
+                    android.util.Log.d("AddReminderScreen", "✅ Mevcut ilaç güncellendi: ${existingMedicine.name} - Saatler: ${existingMedicine.times} -> $mergedTimes")
+
+                    // Güncellenmiş Medicine'i al
+                    medicineRepository.getMedicineById(existingMedicine.id)
+                } catch (e: Exception) {
+                    android.util.Log.e("AddReminderScreen", "❌ İlaç güncellenemedi: ${existingMedicine.name}", e)
+                    null
+                }
+            } else {
+                // 🆕 Yeni ilaç oluştur
+                val medicine = Medicine(
+                    id = "", // Repository tarafından oluşturulacak
+                    userId = "", // Repository tarafından oluşturulacak
+                    name = medicineEntry.name,
+                    dosage = dosage,
+                    unit = medicineEntry.unit,
+                    form = "tablet",
+                    times = times,
+                    days = days,
+                    frequency = frequency,
+                    frequencyValue = calculatedFrequencyValue,
+                    startDate = startDate,
+                    endDate = null,
+                    stockCount = 0,
+                    boxSize = 0,
+                    notes = buildNotesFromTimes(selectedTimes, frequency, xValue),
+                    reminderEnabled = true,
+                    reminderName = medicineEntry.reminderName.ifEmpty { medicineEntry.name },
+                    icon = "💊"
+                )
+
+                medicineRepository.addMedicine(medicine)
+            }
+
             if (savedMedicine == null) {
                 allSuccess = false
-                android.util.Log.e("AddReminderScreen", "❌ ${medicine.name} kaydedilemedi")
+                android.util.Log.e("AddReminderScreen", "❌ ${medicineEntry.name} kaydedilemedi")
             } else {
-                // ✅ İlaç başarıyla kaydedildi, şimdi alarmları planla
+                // ✅ İlaç başarıyla kaydedildi/güncellendi, şimdi alarmları planla
                 android.util.Log.d("AddReminderScreen", "✅ ${savedMedicine.name} kaydedildi (ID: ${savedMedicine.id})")
                 com.bardino.dozi.notifications.ReminderScheduler.scheduleReminders(context, savedMedicine)
                 android.util.Log.d("AddReminderScreen", "✅ ${savedMedicine.name} için alarmlar planlandı")
