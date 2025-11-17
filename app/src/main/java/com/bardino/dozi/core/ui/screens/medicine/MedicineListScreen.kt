@@ -28,8 +28,8 @@ import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.R
-import com.bardino.dozi.core.data.Medicine
-import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 import kotlinx.coroutines.launch
@@ -48,37 +48,21 @@ fun MedicineListScreen(
     val context = LocalContext.current
     val scope = rememberCoroutineScope()
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
-    var medicineReminders by remember { mutableStateOf<Map<String, List<com.bardino.dozi.core.data.model.Medicine>>>(emptyMap()) }
     var isVisible by remember { mutableStateOf(false) }
 
+    // ✅ Firestore'dan tüm ilaçları yükle (paylaşımlı - tüm profiller)
     LaunchedEffect(Unit) {
         isVisible = true
-        try {
-            medicines = MedicineRepository.loadMedicines(context)
-
-            // Firestore'dan hatırlatmaları yükle
-            scope.launch(Dispatchers.IO) {
-                try {
-                    val app = context.applicationContext as DoziApplication
-                    val firestoreRepo = com.bardino.dozi.core.data.repository.MedicineRepository(app.profileManager)
-                    val allReminders = firestoreRepo.getAllMedicines()
-
-                    // Her ilaç adına göre grupla
-                    val remindersMap = mutableMapOf<String, List<com.bardino.dozi.core.data.model.Medicine>>()
-                    medicines.forEach { localMedicine ->
-                        remindersMap[localMedicine.name] = allReminders.filter { it.name == localMedicine.name }
-                    }
-
-                    // UI thread'de güncelle
-                    launch(Dispatchers.Main) {
-                        medicineReminders = remindersMap
-                    }
-                } catch (e: Exception) {
-                    android.util.Log.e("MedicineList", "Error loading reminders", e)
-                }
+        while (true) {
+            try {
+                val app = context.applicationContext as DoziApplication
+                val medicineRepository = MedicineRepository(app.profileManager)
+                medicines = medicineRepository.getAllMedicines()
+                android.util.Log.d("MedicineListScreen", "✅ Loaded ${medicines.size} medicines from Firestore")
+            } catch (e: Exception) {
+                android.util.Log.e("MedicineListScreen", "❌ Error loading medicines", e)
             }
-        } catch (e: Exception) {
-            android.util.Log.e("MedicineList", "Error loading medicines", e)
+            kotlinx.coroutines.delay(3000) // Refresh every 3 seconds
         }
     }
 
@@ -264,11 +248,6 @@ fun MedicineListScreen(
                                     ModernMedicineCard(
                                         medicine = medicine,
                                         onClick = { onNavigateToDetail(medicine.id) },
-                                        reminders = medicineReminders[medicine.name] ?: emptyList(),
-                                        onAddReminder = onNavigateToAddReminder?.let { callback ->
-                                            { callback(medicine.id) }
-                                        },
-                                        onReminderClick = onNavigateToReminderDetail,
                                         onEdit = { onNavigateToDetail(medicine.id) },
                                         onDelete = { showDeleteConfirm = true }
                                     )
@@ -279,15 +258,26 @@ fun MedicineListScreen(
                                 DeleteConfirmDialog(
                                     medicineName = medicine.name,
                                     onConfirm = {
-                                        MedicineRepository.deleteMedicine(context, medicine.id)
-                                        medicines = MedicineRepository.loadMedicines(context)
-                                        Toast.makeText(
-                                            context,
-                                            "${medicine.name} silindi",
-                                            Toast.LENGTH_SHORT
-                                        ).show()
-                                        showDeleteConfirm = false
-                                        dismissed = true
+                                        scope.launch {
+                                            try {
+                                                val app = context.applicationContext as DoziApplication
+                                                val medicineRepository = MedicineRepository(app.profileManager)
+                                                medicineRepository.deleteMedicine(medicine.id)
+                                                Toast.makeText(
+                                                    context,
+                                                    "${medicine.name} silindi",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                                showDeleteConfirm = false
+                                                dismissed = true
+                                            } catch (e: Exception) {
+                                                Toast.makeText(
+                                                    context,
+                                                    "Silme işlemi başarısız: ${e.message}",
+                                                    Toast.LENGTH_SHORT
+                                                ).show()
+                                            }
+                                        }
                                     },
                                     onDismiss = { showDeleteConfirm = false }
                                 )
@@ -306,9 +296,6 @@ fun MedicineListScreen(
 fun ModernMedicineCard(
     medicine: Medicine,
     onClick: () -> Unit,
-    reminders: List<com.bardino.dozi.core.data.model.Medicine> = emptyList(),
-    onAddReminder: (() -> Unit)? = null,
-    onReminderClick: ((String) -> Unit)? = null,
     onEdit: () -> Unit = {},
     onDelete: () -> Unit = {}
 ) {
@@ -399,99 +386,13 @@ fun ModernMedicineCard(
                 ) {
                     InfoTag(
                         Icons.Default.Inventory,
-                        "Stok: ${medicine.stock}",
+                        "Stok: ${medicine.stockCount}",
                         when {
-                            medicine.stock < 5 -> DoziRed
-                            medicine.stock < 10 -> WarningOrange
+                            medicine.stockCount < 5 -> DoziRed
+                            medicine.stockCount < 10 -> WarningOrange
                             else -> SuccessGreen
                         }
                     )
-                }
-            }
-
-            // Hatırlatmalar bölümü
-            if (reminders.isNotEmpty() || onAddReminder != null) {
-
-                HorizontalDivider(color = Gray200.copy(alpha = 0.5f))
-
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { expanded = !expanded }
-                        .padding(horizontal = 20.dp, vertical = 16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(8.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            Icons.Default.NotificationsActive,
-                            contentDescription = null,
-                            tint = DoziCoral,
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Text(
-                            text = "Hatırlatmalar (${reminders.size})",
-                            style = MaterialTheme.typography.bodyMedium,
-                            fontWeight = FontWeight.Bold,
-                            color = DoziCoral
-                        )
-                    }
-
-                    Icon(
-                        Icons.Default.ExpandMore,
-                        contentDescription = null,
-                        tint = DoziCoral,
-                        modifier = Modifier
-                            .size(24.dp)
-                            .rotate(rotationAngle)
-                    )
-                }
-
-                AnimatedVisibility(
-                    visible = expanded,
-                    enter = expandVertically() + fadeIn(),
-                    exit = shrinkVertically() + fadeOut()
-                ) {
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(horizontal = 20.dp, vertical = 12.dp),
-                        verticalArrangement = Arrangement.spacedBy(8.dp)
-                    ) {
-
-                        if (reminders.isEmpty()) {
-                            Text(
-                                "Henüz hatırlatma eklenmemiş",
-                                style = MaterialTheme.typography.bodySmall,
-                                color = Gray600
-                            )
-                        } else {
-                            reminders.forEach { reminder ->
-                                ReminderListItem(
-                                    reminder = reminder,
-                                    onClick = { onReminderClick?.invoke(reminder.id) }
-                                )
-                            }
-                        }
-
-                        if (onAddReminder != null) {
-                            OutlinedButton(
-                                onClick = onAddReminder,
-                                modifier = Modifier.fillMaxWidth(),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = DoziCoral
-                                ),
-                                border = BorderStroke(1.dp, DoziCoral)
-                            ) {
-                                Icon(Icons.Default.Add, null, modifier = Modifier.size(18.dp))
-                                Spacer(Modifier.width(8.dp))
-                                Text("Yeni Hatırlatma Ekle")
-                            }
-                        }
-                    }
                 }
             }
         }

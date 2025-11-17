@@ -15,6 +15,8 @@ import com.bardino.dozi.notifications.NotificationHelper
 import com.bardino.dozi.core.data.repository.MedicineRepository as FirebaseMedicineRepository
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.google.android.libraries.places.api.Places
+import com.google.firebase.firestore.FirebaseFirestore
+import com.google.firebase.firestore.FirebaseFirestoreSettings
 import dagger.hilt.android.HiltAndroidApp
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -44,7 +46,13 @@ class DoziApplication : Application() {
             Places.initialize(this, getString(R.string.google_maps_key))
         }
 
-        // 💊 Uygulama açıldığında ilaç veritabanını belleğe yükle
+        // 🔥 Firestore offline persistence'ı aktif et
+        FirebaseFirestore.getInstance().firestoreSettings = FirebaseFirestoreSettings.Builder()
+            .setPersistenceEnabled(true)
+            .build()
+        android.util.Log.d("DoziApplication", "✅ Firestore offline persistence enabled")
+
+        // 💊 Uygulama açıldığında ilaç veritabanını belleğe yükle (ilaclar.json lookup için)
         MedicineRepository.initialize(this)
 
         // 👥 Default profil oluştur (eğer yoksa) - kullanıcının adını kullan

@@ -45,13 +45,17 @@ fun ReminderListScreen(
     var medicines by remember { mutableStateOf<List<Medicine>>(emptyList()) }
     var isVisible by remember { mutableStateOf(false) }
 
+    // Get active profile ID - this will trigger recomposition when profile changes
+    val activeProfileId = app.profileManager.getActiveProfileId()
+
     // Firebase'den sadece aktif profile ait hatırlatmaları sürekli dinle
-    LaunchedEffect(Unit) {
+    // ✅ Profil değiştiğinde otomatik olarak yeniden yükler (activeProfileId dependency)
+    LaunchedEffect(activeProfileId) {
         isVisible = true
+        android.util.Log.d("ReminderListScreen", "🔄 Profile changed, loading reminders for: $activeProfileId")
+
         while (true) {
             try {
-                // Get active profile ID and load only that profile's medicines
-                val activeProfileId = app.profileManager.getActiveProfileId()
                 medicines = medicineRepository.getMedicinesForProfile(activeProfileId)
                 android.util.Log.d("ReminderListScreen", "✅ Loaded ${medicines.size} reminders for profile: $activeProfileId")
             } catch (e: Exception) {
