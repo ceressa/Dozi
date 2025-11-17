@@ -21,7 +21,6 @@ import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.core.content.edit
-import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.core.data.repository.BadiRepository
 import kotlinx.coroutines.CoroutineScope
@@ -103,12 +102,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
             "ACTION_AUTO_MISSED" -> {
                 // ⏱️ Auto-MISSED tetiklendi (1 saat geçti, otomatik olarak MISSED işaretle)
                 if (medicineId.isNotEmpty()) {
-                    val app = context.applicationContext as DoziApplication
                     val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
                         context,
                         com.google.firebase.auth.FirebaseAuth.getInstance(),
-                        com.google.firebase.firestore.FirebaseFirestore.getInstance(),
-                        app.profileManager
+                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
                     )
                     CoroutineScope(Dispatchers.IO).launch {
                         val log = com.bardino.dozi.core.data.model.MedicationLog(
@@ -152,12 +149,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         // ✅ MedicationLog'a kaydet
         if (medicineId.isNotEmpty()) {
-            val app = context.applicationContext as DoziApplication
             val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
                 context,
                 com.google.firebase.auth.FirebaseAuth.getInstance(),
-                com.google.firebase.firestore.FirebaseFirestore.getInstance(),
-                app.profileManager
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
             )
             CoroutineScope(Dispatchers.IO).launch {
                 medicationLogRepository.logMedicationTaken(
@@ -207,12 +202,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         // ✅ MedicationLog'a kaydet
         if (medicineId.isNotEmpty()) {
-            val app = context.applicationContext as DoziApplication
             val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
                 context,
                 com.google.firebase.auth.FirebaseAuth.getInstance(),
-                com.google.firebase.firestore.FirebaseFirestore.getInstance(),
-                app.profileManager
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
             )
             CoroutineScope(Dispatchers.IO).launch {
                 medicationLogRepository.logMedicationSkipped(
@@ -249,13 +242,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         // ✅ MedicationLog'a kaydet (SNOOZED)
         if (medicineId.isNotEmpty()) {
-            val app = context.applicationContext as DoziApplication
-
             val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
                 context,
                 com.google.firebase.auth.FirebaseAuth.getInstance(),
-                com.google.firebase.firestore.FirebaseFirestore.getInstance(),
-                app.profileManager
+                com.google.firebase.firestore.FirebaseFirestore.getInstance()
             )
 
             CoroutineScope(Dispatchers.IO).launch {

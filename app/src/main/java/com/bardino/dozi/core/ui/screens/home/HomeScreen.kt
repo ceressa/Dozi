@@ -53,7 +53,6 @@ import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.UserRepository
-import com.bardino.dozi.core.ui.components.ProfileSwitcher
 import com.bardino.dozi.core.ui.screens.home.MedicineStatus
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.core.utils.SoundHelper
@@ -282,17 +281,7 @@ fun HomeScreen(
             DoziHeader(firestoreUser = uiState.user, isLoggedIn = uiState.isLoggedIn)
 
             // 👥 Profil Değiştirici
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
-            ) {
-                ProfileSwitcher(
-                    onNavigateToProfileManagement = onNavigateToProfileManagement
-                )
-            }
+            // Profil yönetimi kaldırıldı
 
             Column(
                 modifier = Modifier
@@ -654,8 +643,7 @@ fun HorizontalCalendar(
     val coroutineScope = rememberCoroutineScope()
 
     // 🔹 Medicines listesini Firebase'den al (Real-time Flow ile)
-    val app = context.applicationContext as com.bardino.dozi.DoziApplication
-    val medicineRepository = remember { MedicineRepository(app.profileManager) }
+    val medicineRepository = remember { MedicineRepository() }
 
     // 🔥 BUG FIX: getMedicinesFlow() ile profil değişikliklerini dinle
     val allMedicines by medicineRepository.getMedicinesFlow()
