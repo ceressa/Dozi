@@ -46,7 +46,8 @@ object NotificationHelper {
         time: String = getCurrentTime(),
         scheduledTime: Long = System.currentTimeMillis(),
         timeNote: String = "",  // "Tok karnına", "Aç karnına", vs.
-        profileName: String = ""  // 🆕 Profil adı
+        profileName: String = "",  // 🆕 Profil adı
+        reminderName: String = ""  // 🆕 Hatırlatma adı
     ) {
         createDoziChannel(context)
         val nm = NotificationManagerCompat.from(context)
@@ -70,8 +71,9 @@ object NotificationHelper {
         // Dozi large icon
         val largeIcon = BitmapFactory.decodeResource(context.resources, R.drawable.dozi)
 
-        // 🎨 Bildirim metni - ilaç adı, dozaj, profil ve not ile
+        // 🎨 Bildirim metni - hatırlatma adı (varsa), ilaç adı, dozaj, profil ve not ile
         val contentTitle = when {
+            reminderName.isNotEmpty() -> reminderName
             profileName.isNotEmpty() && medicineName.isNotEmpty() -> "💊 $medicineName ($profileName için)"
             medicineName.isNotEmpty() -> "💊 $medicineName"
             else -> "💊 İlaç Hatırlatması"

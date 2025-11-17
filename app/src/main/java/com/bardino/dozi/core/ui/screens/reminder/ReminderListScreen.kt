@@ -282,20 +282,24 @@ private fun MedicineCard(
                                 }
                             }
 
-                            Column(verticalArrangement = Arrangement.spacedBy(2.dp)) {
+                            Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                                // Hatırlatma İsmi (ana başlık)
                                 Text(
-                                    text = medicine.name,
+                                    text = medicine.reminderName.ifEmpty { medicine.name },
                                     style = MaterialTheme.typography.titleLarge,
                                     fontWeight = FontWeight.Bold,
                                     color = Gray900,
                                     maxLines = 1,
                                     overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
+                                // İlaç İsmi (alt başlık)
                                 Text(
-                                    text = "${medicine.dosage} ${medicine.unit}",
+                                    text = medicine.name,
                                     style = MaterialTheme.typography.bodyMedium,
                                     color = Gray600,
-                                    fontWeight = FontWeight.Medium
+                                    fontWeight = FontWeight.Medium,
+                                    maxLines = 1,
+                                    overflow = androidx.compose.ui.text.style.TextOverflow.Ellipsis
                                 )
                             }
                         }
@@ -337,48 +341,21 @@ private fun MedicineCard(
                     }
                 }
 
-                // Saatler - Horizontal scroll eğer çok fazlaysa
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    medicine.times.take(3).forEach { time ->
-                        InfoTag(
-                            icon = Icons.Default.Schedule,
-                            text = time,
-                            color = DoziPrimaryDark
-                        )
-                    }
-                    if (medicine.times.size > 3) {
-                        androidx.compose.material3.Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = DoziPrimary.copy(alpha = 0.15f)
-                        ) {
-                            Box(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
-                                contentAlignment = Alignment.Center
-                            ) {
-                                Text(
-                                    text = "+${medicine.times.size - 3}",
-                                    style = MaterialTheme.typography.labelMedium,
-                                    fontWeight = FontWeight.Bold,
-                                    color = DoziPrimaryDark
-                                )
-                            }
-                        }
-                    }
+                // Sıklık - Saat - Dosage (tek satırda)
+                val frequencyText = when (medicine.frequency) {
+                    "Her X günde bir" -> "Her ${medicine.frequencyValue} günde bir"
+                    "İstediğim tarihlerde" -> "${medicine.days.size} tarih seçildi"
+                    else -> medicine.frequency
                 }
+                val timesText = if (medicine.times.isNotEmpty()) {
+                    medicine.times.joinToString(", ")
+                } else "Saat belirtilmemiş"
+                val dosageText = "${medicine.dosage} ${medicine.unit}"
 
-                // Sıklık bilgisi
                 InfoTag(
-                    icon = Icons.Default.CalendarMonth,
-                    text = when (medicine.frequency) {
-                        "Her X günde bir" -> "Her ${medicine.frequencyValue} günde bir"
-                        "İstediğim tarihlerde" -> "${medicine.days.size} tarih seçildi"
-                        else -> medicine.frequency
-                    },
-                    color = Color(0xFF059669), // Daha koyu yeşil
+                    icon = Icons.Default.Info,
+                    text = "$frequencyText • $timesText • $dosageText",
+                    color = DoziPrimaryDark,
                     fullWidth = true
                 )
 
