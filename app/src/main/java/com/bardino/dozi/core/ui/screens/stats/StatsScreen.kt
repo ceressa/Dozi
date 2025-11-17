@@ -38,7 +38,8 @@ import java.util.Locale
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
 fun StatsScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    contentPadding: PaddingValues = PaddingValues()
 ) {
     val viewModel: StatsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
@@ -47,31 +48,48 @@ fun StatsScreen(
         topBar = {
             DoziTopBar(
                 title = "İstatistikler",
-                canNavigateBack = true,
+                canNavigateBack = false,
                 onNavigateBack = onNavigateBack
             )
         },
-        containerColor = MaterialTheme.colorScheme.background
+        containerColor = DoziLightGray
     ) { padding ->
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .verticalScroll(rememberScrollState())
-                .padding(16.dp),
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .padding(contentPadding)
         ) {
-            // 🔥 Streak Kartı
-            StreakCard(stats = uiState.stats)
+            if (uiState.isLoading) {
+                // Yükleniyor göstergesi
+                Box(
+                    modifier = Modifier.fillMaxSize(),
+                    contentAlignment = Alignment.Center
+                ) {
+                    CircularProgressIndicator(color = DoziRed)
+                }
+            } else {
+                Column(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .verticalScroll(rememberScrollState())
+                        .padding(horizontal = 16.dp)
+                        .padding(top = 16.dp, bottom = 24.dp),
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
+                    // 🔥 Streak Kartı
+                    StreakCard(stats = uiState.stats)
 
-            // 📊 Haftalık Özet
-            WeeklySummaryCard(weeklyData = uiState.weeklyLogs)
+                    // 📊 Haftalık Özet
+                    WeeklySummaryCard(weeklyData = uiState.weeklyLogs)
 
-            // 🏆 Başarımlar
-            AchievementsCard(stats = uiState.stats)
+                    // 🏆 Başarımlar
+                    AchievementsCard(stats = uiState.stats)
 
-            // 📈 Uyumluluk Oranı
-            ComplianceCard(stats = uiState.stats)
+                    // 📈 Uyumluluk Oranı
+                    ComplianceCard(stats = uiState.stats)
+                }
+            }
         }
     }
 }
@@ -80,6 +98,7 @@ fun StatsScreen(
 private fun StreakCard(stats: UserStats?) {
     val currentStreak = stats?.currentStreak ?: 0
     val longestStreak = stats?.longestStreak ?: 0
+    val totalMedications = stats?.totalMedicationsTaken ?: 0
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -93,8 +112,11 @@ private fun StreakCard(stats: UserStats?) {
             modifier = Modifier
                 .fillMaxWidth()
                 .background(
-                    Brush.horizontalGradient(
-                        listOf(DoziRed.copy(alpha = 0.1f), WarningOrange.copy(alpha = 0.1f))
+                    Brush.verticalGradient(
+                        listOf(
+                            DoziRed.copy(alpha = 0.08f),
+                            WarningOrange.copy(alpha = 0.08f)
+                        )
                     )
                 )
                 .padding(24.dp)
@@ -103,31 +125,60 @@ private fun StreakCard(stats: UserStats?) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
+                // Flame Icon
                 Text(
                     "🔥",
-                    style = MaterialTheme.typography.displayLarge
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp)
                 )
                 Spacer(Modifier.height(8.dp))
+
+                // Current Streak
                 Text(
                     "$currentStreak",
-                    style = MaterialTheme.typography.displayLarge,
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 56.sp),
                     fontWeight = FontWeight.ExtraBold,
-                    color = DoziRed
+                    color = if (currentStreak > 0) DoziRed else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     "Günlük Seri",
                     style = MaterialTheme.typography.titleMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
                 )
-                Spacer(Modifier.height(16.dp))
-                HorizontalDivider(color = Gray200)
-                Spacer(Modifier.height(16.dp))
+
+                if (currentStreak > 0) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Harika gidiyorsun! 🎉",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = DoziTurquoise,
+                        fontWeight = FontWeight.SemiBold
+                    )
+                }
+
+                Spacer(Modifier.height(20.dp))
+                HorizontalDivider(
+                    color = Gray200,
+                    thickness = 1.dp,
+                    modifier = Modifier.padding(horizontal = 16.dp)
+                )
+                Spacer(Modifier.height(20.dp))
+
+                // Stats Row
                 Row(
                     modifier = Modifier.fillMaxWidth(),
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
-                    StatItem("En Uzun Seri", "$longestStreak gün", Icons.Default.TrendingUp)
-                    StatItem("Toplam İlaç", "${stats?.totalMedicationsTaken ?: 0}", Icons.Default.Medication)
+                    StatItem(
+                        label = "En Uzun Seri",
+                        value = "$longestStreak",
+                        icon = Icons.Default.TrendingUp
+                    )
+                    StatItem(
+                        label = "Toplam Doz",
+                        value = "$totalMedications",
+                        icon = Icons.Default.Medication
+                    )
                 }
             }
         }
@@ -147,16 +198,49 @@ private fun WeeklySummaryCard(weeklyData: List<DayLog>) {
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                "Son 7 Gün",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "📊 Son 7 Gün",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+            }
             Spacer(Modifier.height(8.dp))
 
-            weeklyData.forEach { day ->
-                WeeklyDayRow(day)
+            if (weeklyData.isEmpty()) {
+                // Boş durum
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "📅",
+                        style = MaterialTheme.typography.displayMedium
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Henüz veri yok",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        "İlaçlarını almaya başla!",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
+            } else {
+                weeklyData.forEach { day ->
+                    WeeklyDayRow(day)
+                }
             }
         }
     }
@@ -235,17 +319,30 @@ private fun AchievementsCard(stats: UserStats?) {
                 color = MaterialTheme.colorScheme.onSurface
             )
 
-            if (unlockedAchievements.isEmpty()) {
-                Text(
-                    "Henüz başarım kazanmadın. Düzenli ilaç kullanımını sürdür!",
-                    style = MaterialTheme.typography.bodyMedium,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    textAlign = TextAlign.Center,
+            Spacer(Modifier.height(8.dp))
+
+            if (Achievements.ALL.isEmpty()) {
+                // Hiç başarım yoksa
+                Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(vertical = 16.dp)
-                )
+                        .padding(vertical = 24.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "🎯",
+                        style = MaterialTheme.typography.displayMedium
+                    )
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "Yakında eklenecek!",
+                        style = MaterialTheme.typography.bodyLarge,
+                        fontWeight = FontWeight.Medium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                }
             } else {
+                // Tüm başarımları göster (kilitli/açık)
                 Achievements.ALL.forEach { achievement ->
                     val isUnlocked = achievement.id in unlockedAchievements
                     AchievementItem(
@@ -253,6 +350,17 @@ private fun AchievementsCard(stats: UserStats?) {
                         description = achievement.description,
                         icon = achievement.icon,
                         isUnlocked = isUnlocked
+                    )
+                }
+
+                if (unlockedAchievements.isEmpty()) {
+                    Spacer(Modifier.height(8.dp))
+                    Text(
+                        "💪 Düzenli ilaç kullanımını sürdürerek başarım kazanabilirsin!",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = DoziTurquoise,
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
                     )
                 }
             }
@@ -320,6 +428,14 @@ private fun ComplianceCard(stats: UserStats?) {
         else -> ErrorRed
     }
 
+    val encouragementText = when {
+        complianceRate >= 90f -> "Mükemmel! 🌟"
+        complianceRate >= 70f -> "İyi gidiyorsun! 💪"
+        complianceRate >= 50f -> "Devam et! 🎯"
+        complianceRate > 0f -> "Başlangıç güzel! 🚀"
+        else -> "Haydi başla! 🌱"
+    }
+
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
@@ -327,37 +443,54 @@ private fun ComplianceCard(stats: UserStats?) {
         elevation = CardDefaults.cardElevation(4.dp)
     ) {
         Column(
-            modifier = Modifier.padding(20.dp),
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(24.dp),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "Uyumluluk Oranı",
-                style = MaterialTheme.typography.titleMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
+                "📈 Uyumluluk Oranı",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.Bold,
+                color = MaterialTheme.colorScheme.onSurface
             )
-            Spacer(Modifier.height(16.dp))
+            Spacer(Modifier.height(24.dp))
+
+            // Circular Progress
             Box(
                 contentAlignment = Alignment.Center,
-                modifier = Modifier.size(120.dp)
+                modifier = Modifier.size(140.dp)
             ) {
                 CircularProgressIndicator(
                     progress = { complianceRate / 100f },
                     modifier = Modifier.fillMaxSize(),
                     color = color,
-                    strokeWidth = 12.dp,
-                    trackColor = color.copy(alpha = 0.2f)
+                    strokeWidth = 14.dp,
+                    trackColor = color.copy(alpha = 0.15f)
                 )
-                Text(
-                    "${complianceRate.toInt()}%",
-                    style = MaterialTheme.typography.displaySmall,
-                    fontWeight = FontWeight.ExtraBold,
-                    color = color
-                )
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        "${complianceRate.toInt()}%",
+                        style = MaterialTheme.typography.displayMedium,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = color
+                    )
+                }
             }
+
             Spacer(Modifier.height(16.dp))
             Text(
+                encouragementText,
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = color
+            )
+            Spacer(Modifier.height(8.dp))
+            Text(
                 "Son 30 günlük ortalama",
-                style = MaterialTheme.typography.bodySmall,
+                style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )
         }
@@ -365,28 +498,35 @@ private fun ComplianceCard(stats: UserStats?) {
 }
 
 @Composable
-private fun StatItem(label: String, value: String, icon: androidx.compose.ui.graphics.vector.ImageVector) {
+private fun StatItem(
+    label: String,
+    value: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector
+) {
     Column(
-        horizontalAlignment = Alignment.CenterHorizontally
+        horizontalAlignment = Alignment.CenterHorizontally,
+        modifier = Modifier.padding(horizontal = 8.dp)
     ) {
         Icon(
             icon,
             contentDescription = null,
             tint = DoziTurquoise,
-            modifier = Modifier.size(24.dp)
+            modifier = Modifier.size(28.dp)
         )
-        Spacer(Modifier.height(4.dp))
+        Spacer(Modifier.height(8.dp))
         Text(
             value,
-            style = MaterialTheme.typography.titleLarge,
-            fontWeight = FontWeight.Bold,
+            style = MaterialTheme.typography.headlineMedium,
+            fontWeight = FontWeight.ExtraBold,
             color = MaterialTheme.colorScheme.onSurface
         )
+        Spacer(Modifier.height(2.dp))
         Text(
             label,
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center
+            textAlign = TextAlign.Center,
+            fontWeight = FontWeight.Medium
         )
     }
 }

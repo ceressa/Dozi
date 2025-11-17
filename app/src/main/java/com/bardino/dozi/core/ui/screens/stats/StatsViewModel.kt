@@ -1,8 +1,9 @@
 package com.bardino.dozi.core.ui.screens.stats
 
+import android.app.Application
 import android.os.Build
 import androidx.annotation.RequiresApi
-import androidx.lifecycle.ViewModel
+import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.model.UserStats
 import com.bardino.dozi.core.data.repository.UserStatsRepository
@@ -16,11 +17,9 @@ import java.time.LocalDate
 import java.time.format.DateTimeFormatter
 import java.time.format.TextStyle
 import java.util.Locale
-import android.content.Context
-import androidx.core.content.ContextCompat
 
 @RequiresApi(Build.VERSION_CODES.O)
-class StatsViewModel : ViewModel() {
+class StatsViewModel(application: Application) : AndroidViewModel(application) {
 
     data class StatsUiState(
         val stats: UserStats? = null,
@@ -32,6 +31,7 @@ class StatsViewModel : ViewModel() {
     val uiState: StateFlow<StatsUiState> = _uiState.asStateFlow()
 
     private val userStatsRepository = UserStatsRepository()
+    private val medicationLogRepository = MedicationLogRepository(application)
 
     init {
         loadStats()
@@ -44,8 +44,8 @@ class StatsViewModel : ViewModel() {
             // UserStats yükle
             val stats = userStatsRepository.getUserStats()
 
-            // Haftalık dummy data (gerçek implementasyon için MedicationLogRepository kullanılabilir)
-            val weeklyLogs = generateWeeklyLogs()
+            // Haftalık gerçek veriyi Firestore'dan çek
+            val weeklyLogs = loadWeeklyLogs()
 
             _uiState.update {
                 it.copy(
@@ -57,25 +57,35 @@ class StatsViewModel : ViewModel() {
         }
     }
 
-    private fun generateWeeklyLogs(): List<DayLog> {
-        val today = LocalDate.now()
+    /**
+     * Firestore'dan gerçek haftalık ilaç loglarını çek
+     */
+    private suspend fun loadWeeklyLogs(): List<DayLog> {
         val dateFormatter = DateTimeFormatter.ofPattern("dd MMM", Locale("tr"))
 
-        return (0..6).map { daysAgo ->
-            val date = today.minusDays(daysAgo.toLong())
-            val dayName = date.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("tr"))
-            val dateStr = date.format(dateFormatter)
+        // Firestore'dan son 7 günün verilerini al
+        val dailyLogs = medicationLogRepository.getWeeklyMedicationLogs()
 
-            // Dummy data - gerçek implementasyonda MedicationLogRepository'den gelecek
-            val taken = (3..5).random()
-            val total = 5
+        // DailyMedicationLogs'u DayLog'a dönüştür
+        return dailyLogs.reversed().map { dailyLog ->
+            // Tarih string'ini parse et
+            val localDate = LocalDate.parse(dailyLog.date)
+            val dayName = localDate.dayOfWeek.getDisplayName(TextStyle.SHORT, Locale("tr"))
+            val dateStr = localDate.format(dateFormatter)
 
             DayLog(
                 date = dateStr,
                 dayName = dayName,
-                taken = taken,
-                total = total
+                taken = dailyLog.takenCount,
+                total = dailyLog.totalCount
             )
-        }.reversed()
+        }
+    }
+
+    /**
+     * İstatistikleri yenile
+     */
+    fun refresh() {
+        loadStats()
     }
 }

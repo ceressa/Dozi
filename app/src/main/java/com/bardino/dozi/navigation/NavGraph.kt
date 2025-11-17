@@ -365,7 +365,8 @@ fun NavGraph(
             // 📊 İstatistikler
             composable(Screen.Stats.route) {
                 StatsScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    contentPadding = padding
                 )
             }
 
