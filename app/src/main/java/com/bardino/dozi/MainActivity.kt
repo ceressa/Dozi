@@ -50,6 +50,7 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
+import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -103,6 +104,15 @@ class MainActivity : ComponentActivity() {
                                         userRepository.createUserIfNotExists()
                                         Log.d("GOOGLE_AUTH", "Kullanıcı Firestore'a kaydedildi/güncellendi")
 
+                                        // ✅ Onboarding tamamlandıysa kullanıcı belgesini güncelle
+                                        if (!OnboardingPreferences.isFirstTime(this@MainActivity)) {
+                                            userRepository.updateUserField("onboardingCompleted", true)
+                                            Log.d(
+                                                "GOOGLE_AUTH",
+                                                "Onboarding durumu Firestore'da tamamlandı olarak işaretlendi"
+                                            )
+                                        }
+
                                         // 📱 Device ID'yi kaydet
                                         val deviceId = Settings.Secure.getString(
                                             contentResolver,
@@ -119,6 +129,9 @@ class MainActivity : ComponentActivity() {
 
                                         // ✅ FCM token'ı al ve kaydet (retry logic ile)
                                         saveFCMToken()
+
+                                        // ✅ Firestore onboarding bayrağı true ise yerel tercihi de güncelle
+                                        syncLocalOnboardingState()
                                     } catch (e: Exception) {
                                         Log.e("GOOGLE_AUTH", "Firestore kaydı başarısız: ${e.localizedMessage}")
                                     }
@@ -157,6 +170,7 @@ class MainActivity : ComponentActivity() {
                 )
                 userRepository.updateUserField("deviceId", deviceId)
                 saveFCMToken()
+                syncLocalOnboardingState()
             }
         }
 
@@ -278,6 +292,24 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             Log.d("MainActivity", "No navigation_route in intent extras")
+        }
+    }
+
+    private suspend fun syncLocalOnboardingState(forceRemoteFlag: Boolean? = null) {
+        if (!OnboardingPreferences.isFirstTime(this@MainActivity)) return
+
+        val onboardingCompleted = forceRemoteFlag ?: kotlin.runCatching {
+            userRepository.getUserData()?.onboardingCompleted
+        }.getOrNull()
+
+        if (onboardingCompleted == true) {
+            withContext(Dispatchers.Main) {
+                OnboardingPreferences.setFirstTimeComplete(this@MainActivity)
+            }
+            Log.d(
+                "GOOGLE_AUTH",
+                "Yerel onboarding tercihi Firestore verisiyle senkronize edildi"
+            )
         }
     }
 
