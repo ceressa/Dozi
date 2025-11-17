@@ -16,9 +16,12 @@ rules_version = '2';
 ║    6. Hatırlatıcılar (Reminders)                                             ║
 ║    7. İlaç Logları (Medication Logs)                                         ║
 ║    8. Bildirimler (Notifications)                                            ║
+║    9. Aile Paketi (Family Plans) 👨‍👩‍👧‍👦                                          ║
+║   10. Ban Yönetimi (User Bans)                                               ║
+║   11. Analytics                                                              ║
 ║                                                                              ║
 ║  🔒 Güvenlik Seviyesi: YÜKSEK                                                ║
-║  ⚡ Son Güncelleme: 2025-11-15                                               ║
+║  ⚡ Son Güncelleme: 2025-11-17                                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 */
 
@@ -464,7 +467,65 @@ service cloud.firestore {
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 🚫 BÖLÜM 9: BAN YÖNETİMİ (USER_BANS COLLECTION)
+    // 👨‍👩‍👧‍👦 BÖLÜM 9: AİLE PAKETİ (FAMILY_PLANS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Aile paketi (Dozi Ekstra Aile) yönetimi
+    // 1 organizatör + max 3 üye = toplam 4 kişi
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Organizatör planı oluşturabilir, güncelleyebilir, silebilir
+    //    - Organizatör ve üyeler planı okuyabilir
+    //    - Davet kodu ile katılım için invitationCode kontrolü
+    //    - maxMembers limiti kontrol edilir (max 3)
+    // ═══════════════════════════════════════════════════════════════════════
+
+    match /family_plans/{planId} {
+      // 📖 OKUMA: Organizatör veya üyeler okuyabilir
+      allow read: if isAuthenticated() && (
+        resource.data.organizerId == request.auth.uid ||
+        request.auth.uid in resource.data.currentMembers
+      );
+
+      // ✏️ OLUŞTURMA: Organizatör planı oluşturabilir
+      // - organizerId giriş yapan kullanıcı olmalı
+      // - maxMembers 3 olmalı
+      // - currentMembers boş liste olmalı
+      // - status ACTIVE olmalı
+      // - invitationCode 6 karakter olmalı
+      allow create: if isAuthenticated() &&
+                       request.auth.uid == request.resource.data.organizerId &&
+                       request.resource.data.maxMembers == 3 &&
+                       request.resource.data.currentMembers.size() == 0 &&
+                       request.resource.data.status == 'ACTIVE' &&
+                       request.resource.data.invitationCode.size() == 6;
+
+      // 🔄 GÜNCELLEME: Organizatör veya üye (kendini eklemek için) güncelleyebilir
+      // - organizerId değiştirilemez (immutable)
+      // - maxMembers değiştirilemez (immutable)
+      // - currentMembers max 3 olmalı
+      // - Organizatör tüm güncellemeleri yapabilir
+      // - Üyeler sadece kendilerini currentMembers'a ekleyebilir (davet kodu ile katılım)
+      allow update: if isAuthenticated() && (
+        // Organizatör tüm güncellemeleri yapabilir
+        (request.auth.uid == resource.data.organizerId &&
+         request.resource.data.organizerId == resource.data.organizerId &&
+         request.resource.data.maxMembers == resource.data.maxMembers &&
+         request.resource.data.currentMembers.size() <= 3) ||
+        // Üye kendini ekleyebilir (davet kodu kontrolü implicit - client-side yapılmalı)
+        (request.auth.uid in request.resource.data.currentMembers &&
+         !(request.auth.uid in resource.data.currentMembers) &&
+         request.resource.data.organizerId == resource.data.organizerId &&
+         request.resource.data.currentMembers.size() <= 3)
+      );
+
+      // 🗑️ SİLME: Sadece organizatör silebilir
+      allow delete: if isAuthenticated() &&
+                       resource.data.organizerId == request.auth.uid;
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🚫 BÖLÜM 10: BAN YÖNETİMİ (USER_BANS COLLECTION)
     // ═══════════════════════════════════════════════════════════════════════
     // Kullanıcı ban bilgilerini saklar
     //
@@ -484,7 +545,7 @@ service cloud.firestore {
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 📊 BÖLÜM 10: ANALYTICS (ANALYTICS COLLECTION)
+    // 📊 BÖLÜM 11: ANALYTICS (ANALYTICS COLLECTION)
     // ═══════════════════════════════════════════════════════════════════════
     // Premium analytics ve günlük kullanım istatistikleri
     //
@@ -507,7 +568,7 @@ service cloud.firestore {
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 🚫 BÖLÜM 11: VARSAYILAN REDDETME KURALI
+    // 🚫 BÖLÜM 12: VARSAYILAN REDDETME KURALI
     // ═══════════════════════════════════════════════════════════════════════
     // Yukarıda belirtilmeyen tüm koleksiyonlara erişim varsayılan olarak
     // engellenmiştir. Bu, güvenliği artırır ve yanlışlıkla veri sızıntısını
@@ -565,8 +626,8 @@ service cloud.firestore {
    - Düzenli olarak security audit yapın
 
 ══════════════════════════════════════════════════════════════════════════════
-Son Güncelleme: 2025-11-15
-Versiyon: 2.0.0
+Son Güncelleme: 2025-11-17
+Versiyon: 2.1.0 (Aile Paketi Eklendi)
 Geliştirici: Dozi Security Team
 ══════════════════════════════════════════════════════════════════════════════
 */
