@@ -72,7 +72,7 @@ fun EmptyMedicineList(
     onAddMedicine: () -> Unit
 ) {
     EmptyState(
-        icon = com.bardino.dozi.R.drawable.dozi_noted2,
+        icon = com.bardino.dozi.R.drawable.dozi_idea,
         title = "Henüz ilaç eklemediniz",
         description = "İlaçlarınızı ekleyerek takibini kolaylaştırın",
         actionButton = {
@@ -95,7 +95,7 @@ fun EmptyReminderList(
     onAddReminder: () -> Unit
 ) {
     EmptyState(
-        icon = com.bardino.dozi.R.drawable.dozi_noted,
+        icon = com.bardino.dozi.R.drawable.dozi_time,
         title = "Henüz hatırlatma yok",
         description = "İlaç hatırlatmaları kurarak hiçbir dozu kaçırmayın",
         actionButton = {
@@ -115,7 +115,7 @@ fun EmptyReminderList(
 @Composable
 fun EmptySearchResults() {
     EmptyState(
-        icon = com.bardino.dozi.R.drawable.dozi,
+        icon = com.bardino.dozi.R.drawable.dozi_unhappy,
         title = "Sonuç bulunamadı",
         description = "Arama kriterlerinizi değiştirip tekrar deneyin"
     )

@@ -634,7 +634,7 @@ private fun EmptyMedicineState(
         verticalArrangement = Arrangement.Center
     ) {
         Image(
-            painter = painterResource(id = R.drawable.dozi),
+            painter = painterResource(id = R.drawable.dozi_idea),
             contentDescription = null,
             modifier = Modifier.size(140.dp)
         )

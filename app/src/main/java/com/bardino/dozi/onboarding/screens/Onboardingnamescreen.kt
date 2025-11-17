@@ -43,7 +43,7 @@ fun OnboardingNameScreen(
 
         // Dozi karakteri
         Image(
-            painter = painterResource(id = R.drawable.dozi),
+            painter = painterResource(id = R.drawable.dozi_hosgeldin),
             contentDescription = "Dozi",
             modifier = Modifier.size(120.dp)
         )

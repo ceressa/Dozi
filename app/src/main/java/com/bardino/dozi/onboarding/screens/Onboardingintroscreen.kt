@@ -39,17 +39,17 @@ fun OnboardingIntroScreen(
         IntroSlide(
             title = "İlaçlarını Asla Unutma 💊",
             description = "Akıllı hatırlatmalar ile ilaç saatlerini kaçırma",
-            icon = R.drawable.dozi_noted
+            icon = R.drawable.dozi_teach1
         ),
         IntroSlide(
             title = "Aileni Takip Et 👨‍👩‍👧",
             description = "Sevdiklerinin ilaç alımlarını kolayca izle",
-            icon = R.drawable.dozi_noted2
+            icon = R.drawable.dozi_family
         ),
         IntroSlide(
             title = "Akıllı Hatırlatmalar ⏰",
             description = "Sesli komut, barkod okuma ve daha fazlası",
-            icon = R.drawable.dozi
+            icon = R.drawable.dozi_time
         )
     )
 

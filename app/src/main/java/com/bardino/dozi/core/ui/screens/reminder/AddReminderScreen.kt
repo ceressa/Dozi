@@ -528,11 +528,11 @@ private fun AnimatedDoziIcon(step: Int) {
     )
 
     val doziImage = when (step) {
-        1 -> R.drawable.dozi_noted
-        2 -> R.drawable.dozi_noted2
-        3 -> R.drawable.dozi_ok
-        4 -> R.drawable.dozi
-        else -> R.drawable.dozi
+        1 -> R.drawable.dozi_teach1
+        2 -> R.drawable.dozi_teach2
+        3 -> R.drawable.dozi_teach3
+        4 -> R.drawable.dozi_teach4
+        else -> R.drawable.dozi_perfect
     }
 
     Image(
