@@ -75,6 +75,8 @@ class HomeViewModel @Inject constructor(
 
     /**
      * 🔥 BUG FIX: Medicines Flow'unu dinle (profil değişikliklerini yakala)
+     * ⚠️ NOTE: HomeScreen shows ALL profiles' reminders (family view)
+     * Each family member should see all reminders in the home calendar
      */
     private fun observeMedicinesFlow() {
         viewModelScope.launch {
@@ -83,7 +85,7 @@ class HomeViewModel @Inject constructor(
                     android.util.Log.e(TAG, "Error observing medicines: ${error.message}")
                 }
                 .collect { medicines ->
-                    android.util.Log.d(TAG, "🔄 Medicines updated: ${medicines.size} medicines")
+                    android.util.Log.d(TAG, "🔄 Medicines updated: ${medicines.size} medicines (ALL profiles)")
                     updateMedicinesState(medicines)
                 }
         }
