@@ -10,6 +10,7 @@ object OnboardingPreferences {
     private const val KEY_COMPLETED_AT = "completed_at"
     private const val KEY_CURRENT_STEP = "current_onboarding_step"
     private const val KEY_IN_ONBOARDING = "is_in_onboarding"
+    private const val KEY_NEVER_SHOW_AGAIN = "never_show_onboarding_again"
 
     fun isFirstTime(context: Context): Boolean {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
@@ -67,5 +68,23 @@ object OnboardingPreferences {
             .remove(KEY_CURRENT_STEP)
             .putBoolean(KEY_IN_ONBOARDING, false)
             .apply()
+    }
+
+    // "Bir daha gösterme" tercihi
+    fun setNeverShowOnboardingAgain(context: Context, neverShow: Boolean) {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        prefs.edit()
+            .putBoolean(KEY_NEVER_SHOW_AGAIN, neverShow)
+            .apply()
+    }
+
+    fun shouldNeverShowOnboardingAgain(context: Context): Boolean {
+        val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
+        return prefs.getBoolean(KEY_NEVER_SHOW_AGAIN, false)
+    }
+
+    // Onboarding gösterilmeli mi? (hem ilk sefer hem de "bir daha gösterme" kontrolü)
+    fun shouldShowOnboarding(context: Context): Boolean {
+        return isFirstTime(context) && !shouldNeverShowOnboardingAgain(context)
     }
 }

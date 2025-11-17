@@ -214,7 +214,10 @@ class MainActivity : ComponentActivity() {
                                 Screen.OnboardingWelcome.route
                             }
                         } catch (e: Exception) {
-                            if (OnboardingPreferences.isFirstTime(this@MainActivity)) {
+                            // Kullanıcı "bir daha gösterme" seçtiyse direkt Home'a git
+                            if (OnboardingPreferences.shouldNeverShowOnboardingAgain(this@MainActivity)) {
+                                Screen.Home.route
+                            } else if (OnboardingPreferences.isFirstTime(this@MainActivity)) {
                                 Screen.OnboardingWelcome.route
                             } else {
                                 Screen.Home.route
@@ -227,16 +230,21 @@ class MainActivity : ComponentActivity() {
                             Settings.Secure.ANDROID_ID
                         )
                         runBlocking {
-                            val userWithDevice = userRepository.getUserByDeviceId(deviceId)
+                            // Kullanıcı "bir daha gösterme" seçtiyse direkt Login'e git
+                            if (OnboardingPreferences.shouldNeverShowOnboardingAgain(this@MainActivity)) {
+                                Screen.Login.route
+                            } else {
+                                val userWithDevice = userRepository.getUserByDeviceId(deviceId)
 
-                            when {
-                                userWithDevice != null && userWithDevice.onboardingCompleted ->
-                                    Screen.Login.route
+                                when {
+                                    userWithDevice != null && userWithDevice.onboardingCompleted ->
+                                        Screen.Login.route
 
-                                userWithDevice != null && !userWithDevice.onboardingCompleted ->
-                                    Screen.OnboardingWelcome.route
+                                    userWithDevice != null && !userWithDevice.onboardingCompleted ->
+                                        Screen.OnboardingWelcome.route
 
-                                else -> Screen.OnboardingWelcome.route
+                                    else -> Screen.OnboardingWelcome.route
+                                }
                             }
                         }
                     }

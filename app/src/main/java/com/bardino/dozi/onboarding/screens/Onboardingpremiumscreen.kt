@@ -19,18 +19,22 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import com.bardino.dozi.R
+import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.theme.*
 
 @Composable
 fun OnboardingPremiumScreen(
     onGoogleSignIn: () -> Unit
 ) {
+    val context = LocalContext.current
     var isLoading by remember { mutableStateOf(false) }
+    var neverShowAgain by remember { mutableStateOf(false) }
 
     // Pulse animasyonu
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -168,6 +172,10 @@ fun OnboardingPremiumScreen(
             Button(
                 onClick = {
                     isLoading = true
+                    // "Bir daha gösterme" tercihini kaydet
+                    if (neverShowAgain) {
+                        OnboardingPreferences.setNeverShowOnboardingAgain(context, true)
+                    }
                     onGoogleSignIn()
                 },
                 modifier = Modifier
@@ -209,7 +217,34 @@ fun OnboardingPremiumScreen(
                 }
             }
 
-            Spacer(Modifier.height(24.dp))
+            Spacer(Modifier.height(16.dp))
+
+            // "Bir daha gösterme" checkbox
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 4.dp),
+                horizontalArrangement = Arrangement.Start,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Checkbox(
+                    checked = neverShowAgain,
+                    onCheckedChange = { neverShowAgain = it },
+                    colors = CheckboxDefaults.colors(
+                        checkedColor = DoziTurquoise,
+                        uncheckedColor = TextSecondary
+                    )
+                )
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = "Bir daha gösterme",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(Modifier.height(8.dp))
         }
     }
 }
