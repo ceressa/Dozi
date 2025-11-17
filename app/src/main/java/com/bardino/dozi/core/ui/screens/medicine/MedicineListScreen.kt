@@ -58,6 +58,10 @@ fun MedicineListScreen(
                 val medicineRepository = MedicineRepository()
                 medicines = medicineRepository.getAllMedicines()
                 android.util.Log.d("MedicineListScreen", "✅ Loaded ${medicines.size} medicines from Firestore")
+                // 🔍 Her ilacın hatırlatma bilgilerini logla
+                medicines.forEach { med ->
+                    android.util.Log.d("MedicineListScreen", "📋 ${med.name}: reminderEnabled=${med.reminderEnabled}, times=${med.times.joinToString(", ")}, frequency=${med.frequency}")
+                }
             } catch (e: Exception) {
                 android.util.Log.e("MedicineListScreen", "❌ Error loading medicines", e)
             }
@@ -394,53 +398,53 @@ fun ModernMedicineCard(
                 }
 
                 // Hatırlatma bilgileri (varsa) - Geliştirilmiş versiyon
-                if (medicine.reminderEnabled && medicine.times.isNotEmpty()) {
-                    HorizontalDivider(
-                        modifier = Modifier.padding(vertical = 8.dp),
-                        color = Gray200
-                    )
+                HorizontalDivider(
+                    modifier = Modifier.padding(vertical = 8.dp),
+                    color = Gray200
+                )
 
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(
-                                brush = Brush.horizontalGradient(
-                                    listOf(
-                                        DoziCoral.copy(alpha = 0.05f),
-                                        DoziTurquoise.copy(alpha = 0.05f)
-                                    )
-                                ),
-                                shape = RoundedCornerShape(12.dp)
-                            )
-                            .padding(12.dp),
-                        verticalArrangement = Arrangement.spacedBy(10.dp)
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .background(
+                            brush = Brush.horizontalGradient(
+                                listOf(
+                                    if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziCoral.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f),
+                                    if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziTurquoise.copy(alpha = 0.05f) else Gray200.copy(alpha = 0.3f)
+                                )
+                            ),
+                            shape = RoundedCornerShape(12.dp)
+                        )
+                        .padding(12.dp),
+                    verticalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically
                     ) {
-                        Row(
-                            horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            verticalAlignment = Alignment.CenterVertically
+                        Surface(
+                            color = if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziCoral.copy(alpha = 0.2f) else Gray400.copy(alpha = 0.2f),
+                            shape = CircleShape,
+                            modifier = Modifier.size(28.dp)
                         ) {
-                            Surface(
-                                color = DoziCoral.copy(alpha = 0.2f),
-                                shape = CircleShape,
-                                modifier = Modifier.size(28.dp)
-                            ) {
-                                Box(contentAlignment = Alignment.Center) {
-                                    Icon(
-                                        Icons.Default.Notifications,
-                                        contentDescription = null,
-                                        tint = DoziCoral,
-                                        modifier = Modifier.size(16.dp)
-                                    )
-                                }
+                            Box(contentAlignment = Alignment.Center) {
+                                Icon(
+                                    if (medicine.reminderEnabled && medicine.times.isNotEmpty()) Icons.Default.Notifications else Icons.Default.NotificationsOff,
+                                    contentDescription = null,
+                                    tint = if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziCoral else Gray400,
+                                    modifier = Modifier.size(16.dp)
+                                )
                             }
-                            Text(
-                                text = "Hatırlatmalar",
-                                style = MaterialTheme.typography.titleSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = DoziCoral
-                            )
                         }
+                        Text(
+                            text = "Hatırlatmalar",
+                            style = MaterialTheme.typography.titleSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = if (medicine.reminderEnabled && medicine.times.isNotEmpty()) DoziCoral else Gray600
+                        )
+                    }
 
+                    if (medicine.reminderEnabled && medicine.times.isNotEmpty()) {
                         // Hatırlatma saatleri - chip formatında
                         Column(
                             verticalArrangement = Arrangement.spacedBy(6.dp)
@@ -516,6 +520,14 @@ fun ModernMedicineCard(
                                 color = Gray900
                             )
                         }
+                    } else {
+                        // Hatırlatma yoksa bilgilendirme göster
+                        Text(
+                            text = if (!medicine.reminderEnabled) "Hatırlatmalar devre dışı" else "Henüz hatırlatma eklenmemiş",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = Gray600,
+                            fontWeight = FontWeight.Medium
+                        )
                     }
                 }
             }

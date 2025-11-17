@@ -2287,6 +2287,16 @@ private fun saveMedicinesToFirestore(
                         medicineRepository.updateMedicineField(existingMedicine.id, "reminderName", medicineEntry.reminderName)
                     }
 
+                    // 🔥 FIX: Frequency ve frequencyValue'yu da güncelle
+                    medicineRepository.updateMedicineField(existingMedicine.id, "frequency", frequency)
+                    medicineRepository.updateMedicineField(existingMedicine.id, "frequencyValue", calculatedFrequencyValue)
+
+                    // 🔥 FIX: Days listesini de güncelle (İstediğim tarihlerde için)
+                    medicineRepository.updateMedicineField(existingMedicine.id, "days", days)
+
+                    // 🔥 FIX: startDate'i güncelle
+                    medicineRepository.updateMedicineField(existingMedicine.id, "startDate", startDate)
+
                     // Notes'u birleştir
                     val newNotes = buildNotesFromTimes(selectedTimes, frequency, xValue)
                     val mergedNotes = if (existingMedicine.notes.isNotEmpty() && newNotes.isNotEmpty()) {
@@ -2298,7 +2308,7 @@ private fun saveMedicinesToFirestore(
                     }
                     medicineRepository.updateMedicineField(existingMedicine.id, "notes", mergedNotes)
 
-                    android.util.Log.d("AddReminderScreen", "✅ Mevcut ilaç güncellendi: ${existingMedicine.name} - Saatler: ${existingMedicine.times} -> $mergedTimes")
+                    android.util.Log.d("AddReminderScreen", "✅ Mevcut ilaç güncellendi: ${existingMedicine.name} - Sıklık: ${existingMedicine.frequency} -> $frequency (${calculatedFrequencyValue}), Saatler: ${existingMedicine.times} -> $mergedTimes")
 
                     // Güncellenmiş Medicine'i al
                     medicineRepository.getMedicineById(existingMedicine.id)
