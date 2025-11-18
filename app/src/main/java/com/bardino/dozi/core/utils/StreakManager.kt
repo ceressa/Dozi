@@ -1,7 +1,9 @@
 package com.bardino.dozi.core.utils
 
+import android.content.Context
 import android.util.Log
 import com.bardino.dozi.core.data.model.*
+import com.bardino.dozi.notifications.NotificationHelper
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -13,7 +15,9 @@ import java.util.*
  * 🔥 Streak Manager
  * Kullanıcının ardışık ilaç alma düzenini yönetir
  */
-class StreakManager {
+class StreakManager(
+    private val context: Context
+) {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
 
@@ -82,7 +86,7 @@ class StreakManager {
             Log.d(TAG, "✅ Streak updated: $newStreak days (longest: ${updatedStats.longestStreak})")
 
             // Achievement kontrolü yap
-            checkAchievements(updatedStats)
+            checkAchievements(updatedStats, context)
         } catch (e: Exception) {
             Log.e(TAG, "Error updating streak", e)
         }
@@ -142,49 +146,61 @@ class StreakManager {
     /**
      * Achievement kontrolü yap ve kazanılanları kaydet
      */
-    private suspend fun checkAchievements(stats: UserStats) {
+    private suspend fun checkAchievements(stats: UserStats, context: Context) {
         try {
-            val newAchievements = mutableListOf<String>()
+            val newAchievements = mutableListOf<Pair<String, Pair<String, String>>>()
 
             // Streak bazlı achievement'lar
             if (stats.currentStreak >= 7 && !stats.achievements.contains("first_week")) {
-                newAchievements.add("first_week")
+                newAchievements.add("first_week" to ("İlk Hafta" to "7 gün üst üste ilaçlarınızı aldınız!"))
                 Log.d(TAG, "🏅 Achievement unlocked: İlk Hafta!")
             }
 
             if (stats.currentStreak >= 30 && !stats.achievements.contains("30_days")) {
-                newAchievements.add("30_days")
+                newAchievements.add("30_days" to ("Bir Ay" to "30 gün üst üste ilaçlarınızı aldınız!"))
                 Log.d(TAG, "🎖️ Achievement unlocked: Bir Ay!")
             }
 
             if (stats.currentStreak >= 365 && !stats.achievements.contains("year_streak")) {
-                newAchievements.add("year_streak")
+                newAchievements.add("year_streak" to ("Bir Yıl" to "365 gün üst üste ilaçlarınızı aldınız! İnanılmaz!"))
                 Log.d(TAG, "🏆 Achievement unlocked: Bir Yıl!")
             }
 
             // İlaç sayısı bazlı achievement'lar
             if (stats.totalMedicationsTaken >= 100 && !stats.achievements.contains("hundred_meds")) {
-                newAchievements.add("hundred_meds")
+                newAchievements.add("hundred_meds" to ("Yüzlük Kulüp" to "Toplam 100 ilaç aldınız!"))
                 Log.d(TAG, "💯 Achievement unlocked: Yüzlük Kulüp!")
             }
 
             // Uyumluluk oranı bazlı achievement'lar
             if (stats.complianceRate >= 100f && !stats.achievements.contains("perfect_month")) {
-                newAchievements.add("perfect_month")
+                newAchievements.add("perfect_month" to ("Mükemmel Ay" to "%100 uyum oranına ulaştınız!"))
                 Log.d(TAG, "👑 Achievement unlocked: Mükemmel Ay!")
             }
 
             // Yeni achievement'lar varsa kaydet
             if (newAchievements.isNotEmpty()) {
                 val userId = auth.currentUser?.uid ?: return
-                val allAchievements = stats.achievements + newAchievements
+                val allAchievements = stats.achievements + newAchievements.map { it.first }
 
                 firestore.collection(COLLECTION_USER_STATS)
                     .document(userId)
                     .update("achievements", allAchievements)
                     .await()
 
-                // TODO: Achievement bildirimi göster
+                // Achievement bildirimlerini göster
+                newAchievements.forEach { (_, titleAndDesc) ->
+                    val (title, description) = titleAndDesc
+                    try {
+                        NotificationHelper.showAchievementNotification(
+                            context,
+                            title,
+                            description
+                        )
+                    } catch (e: SecurityException) {
+                        Log.e(TAG, "Permission not granted for achievement notification", e)
+                    }
+                }
             }
         } catch (e: Exception) {
             Log.e(TAG, "Error checking achievements", e)

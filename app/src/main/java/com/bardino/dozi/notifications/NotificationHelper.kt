@@ -431,6 +431,50 @@ object NotificationHelper {
     }
 
     /**
+     * 🏆 Achievement bildirimi göster
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showAchievementNotification(
+        context: Context,
+        achievementTitle: String,
+        achievementDescription: String
+    ) {
+        createDoziChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        // Ana ekrana yönlendir
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "home")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#FFD700")) // Altın renk (achievement)
+            .setContentTitle("🏆 $achievementTitle")
+            .setContentText(achievementDescription)
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText(achievementDescription)
+                    .setBigContentTitle("🏆 $achievementTitle")
+                    .setSummaryText("Dozi")
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(contentIntent)
+            .build()
+
+        // Her achievement için benzersiz bildirim ID'si
+        nm.notify(NOTIF_ID + 3000 + achievementTitle.hashCode(), notification)
+    }
+
+    /**
      * 🔔 Adaptive timing - İlaç zamanını kullanıcı tercihine göre ayarla
      */
     fun adjustTimeWithAdaptiveTiming(
