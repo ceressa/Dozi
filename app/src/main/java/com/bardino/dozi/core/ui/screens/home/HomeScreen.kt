@@ -999,6 +999,15 @@ private fun CurrentMedicineCard(
     val minutesUntilMedicine = java.time.Duration.between(currentTime, medicineTime).toMinutes()
     val canTakeMedicine = minutesUntilMedicine <= 30
     val canSnooze = minutesUntilMedicine <= 60 && minutesUntilMedicine > -15 // 1 saat önceden, 15 dk sonrasına kadar
+    val isOverdue = minutesUntilMedicine < 0 // Vakti geçti mi?
+
+    // Zaman durumu mesajı
+    val timeStatusMessage = when {
+        minutesUntilMedicine > 30 -> "İlaç vaktinize ${if (minutesUntilMedicine < 60) "${minutesUntilMedicine} dakika" else "${minutesUntilMedicine / 60} saat ${minutesUntilMedicine % 60} dakika"} var"
+        minutesUntilMedicine in 1..30 -> "Vakti yaklaşıyor"
+        minutesUntilMedicine >= -15 -> "Vakti geçti!"
+        else -> "Çok geç!"
+    }
 
     // ✅ Pulsing animation for the badge
     val infiniteTransition = rememberInfiniteTransition(label = "pulse")
@@ -1010,6 +1019,17 @@ private fun CurrentMedicineCard(
             repeatMode = RepeatMode.Reverse
         ),
         label = "pulseScale"
+    )
+
+    // ✅ Vakti geçmiş ilaçlar için kartın tamamı yanıp sönsün
+    val cardPulseAlpha by infiniteTransition.animateFloat(
+        initialValue = if (isOverdue) 0.6f else 1f,
+        targetValue = 1f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(if (isOverdue) 600 else 800, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "cardPulseAlpha"
     )
 
     // ✅ snooze_until'e göre kalan süreyi hesapla
@@ -1035,8 +1055,16 @@ private fun CurrentMedicineCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
-        colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            .padding(horizontal = 16.dp)
+            .graphicsLayer {
+                alpha = cardPulseAlpha
+            },
+        colors = CardDefaults.cardColors(
+            containerColor = if (isOverdue)
+                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+            else
+                MaterialTheme.colorScheme.surface
+        ),
         shape = RoundedCornerShape(24.dp),
         elevation = CardDefaults.cardElevation(6.dp)
     ) {
@@ -1048,7 +1076,7 @@ private fun CurrentMedicineCard(
             verticalArrangement = Arrangement.spacedBy(16.dp)
         ) {
             Surface(
-                color = DoziRed,
+                color = if (isOverdue) DoziRed else DoziRed,
                 shape = RoundedCornerShape(14.dp),
                 shadowElevation = 4.dp,
                 modifier = Modifier.graphicsLayer {
@@ -1138,10 +1166,14 @@ private fun CurrentMedicineCard(
 
             HorizontalDivider(color = VeryLightGray, thickness = 1.dp)
 
-            // Henüz vakit değilse uyarı göster
-            if (!canTakeMedicine && minutesUntilMedicine > 0) {
+            // Zaman durumu uyarısı
+            if (minutesUntilMedicine != 0L) {
                 Surface(
-                    color = DoziTurquoise.copy(alpha = 0.1f),
+                    color = when {
+                        isOverdue -> DoziRed.copy(alpha = 0.15f)
+                        minutesUntilMedicine in 1..30 -> WarningOrange.copy(alpha = 0.15f)
+                        else -> DoziTurquoise.copy(alpha = 0.1f)
+                    },
                     shape = RoundedCornerShape(12.dp),
                     modifier = Modifier.fillMaxWidth()
                 ) {
@@ -1151,16 +1183,28 @@ private fun CurrentMedicineCard(
                         verticalAlignment = Alignment.CenterVertically
                     ) {
                         Icon(
-                            Icons.Default.Info,
+                            when {
+                                isOverdue -> Icons.Default.Warning
+                                minutesUntilMedicine in 1..30 -> Icons.Default.Schedule
+                                else -> Icons.Default.Info
+                            },
                             contentDescription = null,
-                            tint = DoziTurquoise,
+                            tint = when {
+                                isOverdue -> DoziRed
+                                minutesUntilMedicine in 1..30 -> WarningOrange
+                                else -> DoziTurquoise
+                            },
                             modifier = Modifier.size(20.dp)
                         )
                         Spacer(Modifier.width(8.dp))
                         Text(
-                            "İlaç vaktinize ${if (minutesUntilMedicine < 60) "${minutesUntilMedicine} dakika" else "${minutesUntilMedicine / 60} saat ${minutesUntilMedicine % 60} dakika"} var",
+                            timeStatusMessage,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = DoziTurquoise,
+                            color = when {
+                                isOverdue -> DoziRed
+                                minutesUntilMedicine in 1..30 -> WarningOrange
+                                else -> DoziTurquoise
+                            },
                             fontWeight = FontWeight.Medium
                         )
                     }
@@ -1226,7 +1270,28 @@ private fun EmptyMedicineCard(
             getMedicineStatus(context, medicine.id, today, time) == "taken"
         }
     }
-    val remainingDoses = totalDosesToday - takenDosesToday
+    val skippedDosesToday = todaysMedicines.sumOf { medicine ->
+        medicine.times.count { time ->
+            getMedicineStatus(context, medicine.id, today, time)?.startsWith("skipped") == true
+        }
+    }
+    val remainingDoses = totalDosesToday - takenDosesToday - skippedDosesToday
+
+    // Vakti geçmiş ama alınmamış/atlanmamış dozları say
+    val currentTime = LocalTime.now()
+    val overdueDoses = todaysMedicines.sumOf { medicine ->
+        medicine.times.count { time ->
+            val status = getMedicineStatus(context, medicine.id, today, time)
+            if (status == "taken" || status?.startsWith("skipped") == true) {
+                false
+            } else {
+                // Zamanı geçmiş mi kontrol et
+                val (hour, minute) = time.split(":").map { it.toInt() }
+                val medicineTime = LocalTime.of(hour, minute)
+                currentTime.isAfter(medicineTime)
+            }
+        }
+    }
 
     Card(
         modifier = Modifier
@@ -1280,6 +1345,32 @@ private fun EmptyMedicineCard(
                     color = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.8f),
                     textAlign = TextAlign.Center
                 )
+            } else if (overdueDoses > 0 && currentMedicineStatus != MedicineStatus.TAKEN) {
+                // Vakti geçmiş dozlar varsa kırmızı uyarı göster
+                Surface(
+                    color = DoziRed.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Column(
+                        modifier = Modifier.padding(16.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        verticalArrangement = Arrangement.spacedBy(4.dp)
+                    ) {
+                        Text(
+                            "⚠️ $overdueDoses doz vakti geçti!",
+                            style = MaterialTheme.typography.bodyLarge,
+                            fontWeight = FontWeight.Bold,
+                            color = DoziRed
+                        )
+                        if (nextMedicine != null) {
+                            Text(
+                                "Lütfen ilacınızı almayı unutmayın",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+                }
             } else if (remainingDoses > 0 && currentMedicineStatus != MedicineStatus.TAKEN) {
                 // Kalan doz varsa göster
                 Surface(
