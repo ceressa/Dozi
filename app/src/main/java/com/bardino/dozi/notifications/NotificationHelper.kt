@@ -21,7 +21,11 @@ import java.util.*
 object NotificationHelper {
 
     const val CHANNEL_ID = "dozi_med_channel"
+    const val CHANNEL_ID_IMPORTANT = "dozi_med_important_channel"
     const val NOTIF_ID = 2025
+    const val NOTIF_ID_ESCALATION_1 = 2026  // 10 dk sonraki bildirim
+    const val NOTIF_ID_ESCALATION_2 = 2027  // 30 dk sonraki bildirim
+    const val NOTIF_ID_ESCALATION_3 = 2028  // 60 dk sonraki bildirim (important)
 
     // Action keys
     const val ACTION_TAKEN = "ACTION_TAKEN"
@@ -98,7 +102,7 @@ object NotificationHelper {
                     .setBigContentTitle(contentTitle)
                     .setSummaryText("Dozi")
             )
-            .setAutoCancel(false)
+            .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -428,6 +432,191 @@ object NotificationHelper {
 
         // ROUTINE ilaçlar DND'de gösterilmez
         return !isInDndPeriod
+    }
+
+    /**
+     * ⚠️ Escalation Level 1 bildirimi (10 dakika sonra)
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showEscalationLevel1Notification(
+        context: Context,
+        medicineName: String,
+        medicineId: String = "",
+        dosage: String = "",
+        time: String = getCurrentTime(),
+        scheduledTime: Long = System.currentTimeMillis()
+    ) {
+        createDoziChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "medication_action/$time")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val takenPending = createActionPendingIntent(context, ACTION_TAKEN, medicineName, medicineId, dosage, time, scheduledTime, 11)
+        val snoozePending = createActionPendingIntent(context, ACTION_SNOOZE, medicineName, medicineId, dosage, time, scheduledTime, 12)
+        val skipPending = createActionPendingIntent(context, ACTION_SKIP, medicineName, medicineId, dosage, time, scheduledTime, 13)
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#26C6DA"))
+            .setContentTitle("⏰ Hatırlatma: $medicineName")
+            .setContentText("İlacınızı almayı unutmayın!")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("⏰ Saat: $time\n💊 İlaç: $medicineName\n💉 Dozaj: $dosage\n\nLütfen ilacınızı almayı unutmayın!")
+                    .setBigContentTitle("⏰ Hatırlatma")
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setContentIntent(contentIntent)
+            .addAction(R.drawable.ic_notification_pill, "Aldım ✓", takenPending)
+            .addAction(R.drawable.ic_notification_pill, "Ertele ⏰", snoozePending)
+            .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
+            .build()
+
+        nm.notify(NOTIF_ID_ESCALATION_1, notification)
+    }
+
+    /**
+     * 🚨 Escalation Level 2 bildirimi (30 dakika sonra - kırmızı, urgent)
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showEscalationLevel2Notification(
+        context: Context,
+        medicineName: String,
+        medicineId: String = "",
+        dosage: String = "",
+        time: String = getCurrentTime(),
+        scheduledTime: Long = System.currentTimeMillis()
+    ) {
+        createDoziChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "medication_action/$time")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val takenPending = createActionPendingIntent(context, ACTION_TAKEN, medicineName, medicineId, dosage, time, scheduledTime, 21)
+        val snoozePending = createActionPendingIntent(context, ACTION_SNOOZE, medicineName, medicineId, dosage, time, scheduledTime, 22)
+        val skipPending = createActionPendingIntent(context, ACTION_SKIP, medicineName, medicineId, dosage, time, scheduledTime, 23)
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#EF5350")) // Kırmızı
+            .setContentTitle("🚨 İlacını kaçırıyorsun!")
+            .setContentText("$medicineName - Lütfen şimdi al!")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("🚨 $medicineName ilacını almayı unutuyorsun!\n\n⏰ Planlanan saat: $time\n💉 Dozaj: $dosage\n\nLütfen hemen ilacını al!")
+                    .setBigContentTitle("🚨 İlacını kaçırıyorsun!")
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVibrate(longArrayOf(0, 500, 200, 500, 200, 500))
+            .setContentIntent(contentIntent)
+            .addAction(R.drawable.ic_notification_pill, "Aldım ✓", takenPending)
+            .addAction(R.drawable.ic_notification_pill, "Ertele ⏰", snoozePending)
+            .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
+            .build()
+
+        nm.notify(NOTIF_ID_ESCALATION_2, notification)
+    }
+
+    /**
+     * 🔴 Escalation Level 3 bildirimi (60 dakika sonra - IMPORTANT, sessizde bile çalar)
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showEscalationLevel3Notification(
+        context: Context,
+        medicineName: String,
+        medicineId: String = "",
+        dosage: String = "",
+        time: String = getCurrentTime(),
+        scheduledTime: Long = System.currentTimeMillis()
+    ) {
+        createImportantChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "medication_action/$time")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val takenPending = createActionPendingIntent(context, ACTION_TAKEN, medicineName, medicineId, dosage, time, scheduledTime, 31)
+        val skipPending = createActionPendingIntent(context, ACTION_SKIP, medicineName, medicineId, dosage, time, scheduledTime, 33)
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_IMPORTANT)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#D32F2F")) // Koyu kırmızı
+            .setContentTitle("🔴 ÖNEMLİ: İlaç Uyarısı!")
+            .setContentText("$medicineName - 1 saattir bekleniyor!")
+            .setStyle(
+                NotificationCompat.BigTextStyle()
+                    .bigText("🔴 $medicineName ilacını almayı 1 saattir bekliyorsun!\n\n⏰ Planlanan saat: $time\n💉 Dozaj: $dosage\n\n⚠️ Bu önemli bir hatırlatmadır. Lütfen ilacını al veya atla!")
+                    .setBigContentTitle("🔴 ÖNEMLİ: İlaç Uyarısı!")
+            )
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_MAX)
+            .setCategory(NotificationCompat.CATEGORY_ALARM)
+            .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVibrate(longArrayOf(0, 700, 300, 700, 300, 700))
+            .setSound(android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM))
+            .setContentIntent(contentIntent)
+            .addAction(R.drawable.ic_notification_pill, "Aldım ✓", takenPending)
+            .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
+            .build()
+
+        nm.notify(NOTIF_ID_ESCALATION_3, notification)
+    }
+
+    /**
+     * Important bildirimler için özel channel (sessizde bile çalar)
+     */
+    fun createImportantChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID_IMPORTANT,
+                "💧 Dozi Önemli Hatırlatmalar",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Kritik ilaç hatırlatmaları - Telefon sessizde bile çalar"
+                enableLights(true)
+                enableVibration(true)
+                lightColor = Color.parseColor("#D32F2F")
+                vibrationPattern = longArrayOf(0, 700, 300, 700, 300, 700)
+                setShowBadge(true)
+                setBypassDnd(true) // DND'yi bypass et
+                lockscreenVisibility = NotificationCompat.VISIBILITY_PUBLIC
+                setSound(
+                    android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM),
+                    android.media.AudioAttributes.Builder()
+                        .setUsage(android.media.AudioAttributes.USAGE_ALARM)
+                        .setContentType(android.media.AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                )
+            }
+            val nm = context.getSystemService(NotificationManager::class.java)
+            nm.createNotificationChannel(channel)
+        }
     }
 
     /**

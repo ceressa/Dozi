@@ -66,11 +66,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         scheduledTime = scheduledTime
                     )
 
-                    // ⏰ YENİ: 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
+                    // ⏰ Escalation sistemi: 10dk, 30dk, 60dk
                     if (medicineId.isNotEmpty()) {
-                        scheduleEscalationReminder(context, medicineId, med, dosage, time, scheduledTime)
-                        // ⏱️ YENİ: 1 saat sonra auto-MISSED (eğer hala aksiyon alınmadıysa)
-                        scheduleAutoMissed(context, medicineId, med, dosage, time, scheduledTime)
+                        scheduleEscalation1(context, medicineId, med, dosage, time, scheduledTime) // 10 dk
+                        scheduleEscalation2(context, medicineId, med, dosage, time, scheduledTime) // 30 dk
+                        scheduleEscalation3(context, medicineId, med, dosage, time, scheduledTime) // 60 dk
                     }
 
                     android.util.Log.d("NotificationActionReceiver", "⏰ Erteleme sonrası bildirim + escalation/auto-missed planlandı: $med")
@@ -84,10 +84,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
                 handleReminderTrigger(context, medicineId, medicineName, reminderTime, nm)
             }
-            "ACTION_ESCALATION_TRIGGER" -> {
-                // ⏰ Escalation tetiklendi (30 dakika geçti, hala aksiyon alınmadı)
+            "ACTION_ESCALATION_1" -> {
+                // ⏰ Escalation Level 1 (10 dakika sonra)
                 if (hasNotificationPermission(context)) {
-                    NotificationHelper.showMedicationNotification(
+                    NotificationHelper.showEscalationLevel1Notification(
                         context = context,
                         medicineName = med,
                         medicineId = medicineId,
@@ -95,32 +95,35 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         time = time,
                         scheduledTime = scheduledTime
                     )
-                    android.util.Log.d("NotificationActionReceiver", "⏰ Escalation bildirimi gösterildi: $med")
+                    android.util.Log.d("NotificationActionReceiver", "⏰ Escalation Level 1 bildirimi gösterildi: $med")
                 }
             }
-            "ACTION_AUTO_MISSED" -> {
-                // ⏱️ Auto-MISSED tetiklendi (1 saat geçti, otomatik olarak MISSED işaretle)
-                if (medicineId.isNotEmpty()) {
-                    val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
-                        context,
-                        com.google.firebase.auth.FirebaseAuth.getInstance(),
-                        com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            "ACTION_ESCALATION_2" -> {
+                // 🚨 Escalation Level 2 (30 dakika sonra - kırmızı, urgent)
+                if (hasNotificationPermission(context)) {
+                    NotificationHelper.showEscalationLevel2Notification(
+                        context = context,
+                        medicineName = med,
+                        medicineId = medicineId,
+                        dosage = dosage,
+                        time = time,
+                        scheduledTime = scheduledTime
                     )
-                    CoroutineScope(Dispatchers.IO).launch {
-                        val log = com.bardino.dozi.core.data.model.MedicationLog(
-                            medicineId = medicineId,
-                            medicineName = med,
-                            dosage = dosage,
-                            scheduledTime = com.google.firebase.Timestamp(java.util.Date(scheduledTime)),
-                            status = com.bardino.dozi.core.data.model.MedicationStatus.MISSED,
-                            notes = "Otomatik olarak kaçırıldı olarak işaretlendi (1 saat cevapsız)"
-                        )
-                        medicationLogRepository.createMedicationLog(log)
-                        android.util.Log.d("NotificationActionReceiver", "⏱️ Otomatik MISSED kaydı oluşturuldu: $med")
-                    }
-
-                    // Bildirimi kapat
-                    nm.cancel(NotificationHelper.NOTIF_ID)
+                    android.util.Log.d("NotificationActionReceiver", "🚨 Escalation Level 2 bildirimi gösterildi: $med")
+                }
+            }
+            "ACTION_ESCALATION_3" -> {
+                // 🔴 Escalation Level 3 (60 dakika sonra - IMPORTANT)
+                if (hasNotificationPermission(context)) {
+                    NotificationHelper.showEscalationLevel3Notification(
+                        context = context,
+                        medicineName = med,
+                        medicineId = medicineId,
+                        dosage = dosage,
+                        time = time,
+                        scheduledTime = scheduledTime
+                    )
+                    android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 bildirimi gösterildi: $med")
                 }
             }
         }
@@ -145,6 +148,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
 
         nm.cancel(NotificationHelper.NOTIF_ID)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_1)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_2)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_3)
 
         // ✅ MedicationLog'a kaydet
         if (medicineId.isNotEmpty()) {
@@ -171,8 +177,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 )
             }
 
-            // İptal: Escalation ve Auto-MISSED alarmları
-            cancelEscalationAndAutoMissed(context, medicineId, time)
+            // İptal: Tüm escalation alarmları
+            cancelAllEscalations(context, medicineId, time)
         }
 
         showToast(context, "$medicineName alındı olarak işaretlendi ✅")
@@ -198,6 +204,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
 
         nm.cancel(NotificationHelper.NOTIF_ID)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_1)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_2)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_3)
 
         // ✅ MedicationLog'a kaydet
         if (medicineId.isNotEmpty()) {
@@ -217,8 +226,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SKIPPED")
             }
 
-            // İptal: Escalation ve Auto-MISSED alarmları
-            cancelEscalationAndAutoMissed(context, medicineId, time)
+            // İptal: Tüm escalation alarmları
+            cancelAllEscalations(context, medicineId, time)
         }
 
         showToast(context, "$medicineName atlandı 🚫")
@@ -238,6 +247,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
         nm: NotificationManagerCompat
     ) {
         nm.cancel(NotificationHelper.NOTIF_ID)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_1)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_2)
+        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_3)
 
         // ✅ MedicationLog'a kaydet (SNOOZED)
         if (medicineId.isNotEmpty()) {
@@ -258,8 +270,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                 android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SNOOZED")
             }
 
-            // 🔥 FIX: Erteleme seçilince escalation ve auto-MISSED iptal et
-            cancelEscalationAndAutoMissed(context, medicineId, time)
+            // 🔥 FIX: Erteleme seçilince tüm escalation alarmlarını iptal et
+            cancelAllEscalations(context, medicineId, time)
         }
 
         // Ses çal
@@ -397,11 +409,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         android.util.Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı: $medicineName (frequency: ${medicine.frequency})")
                     }
 
-                    // ⏰ 30 dakika sonra escalation (eğer hala aksiyon alınmadıysa)
-                    scheduleEscalationReminder(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
-
-                    // ⏱️ 1 saat sonra auto-MISSED (eğer hala aksiyon alınmadıysa)
-                    scheduleAutoMissed(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+                    // ⏰ Escalation sistemi: 10dk, 30dk, 60dk
+                    scheduleEscalation1(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+                    scheduleEscalation2(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+                    scheduleEscalation3(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
                 }
             } catch (e: Exception) {
                 android.util.Log.e("NotificationActionReceiver", "❌ Hatırlatma işlenirken hata", e)
@@ -451,9 +462,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
     }
 
     /**
-     * ⏰ Escalation: 30 dakika sonra tekrar hatırlat (eğer hala aksiyon alınmadıysa)
+     * ⏰ Escalation Level 1: 10 dakika sonra hatırlat
      */
-    private fun scheduleEscalationReminder(
+    private fun scheduleEscalation1(
         context: Context,
         medicineId: String,
         medicineName: String,
@@ -462,10 +473,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
         scheduledTime: Long
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val escalationTime = System.currentTimeMillis() + (30 * 60 * 1000) // 30 dakika sonra
+        val escalationTime = System.currentTimeMillis() + (10 * 60 * 1000) // 10 dakika sonra
 
         val intent = Intent(context, NotificationActionReceiver::class.java).apply {
-            action = "ACTION_ESCALATION_TRIGGER"
+            action = "ACTION_ESCALATION_1"
             putExtra(NotificationHelper.EXTRA_MEDICINE_ID, medicineId)
             putExtra(NotificationHelper.EXTRA_MEDICINE, medicineName)
             putExtra(NotificationHelper.EXTRA_DOSAGE, dosage)
@@ -473,7 +484,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
             putExtra(NotificationHelper.EXTRA_SCHEDULED_TIME, scheduledTime)
         }
 
-        val requestCode = "escalation_${medicineId}_$time".hashCode()
+        val requestCode = "escalation1_${medicineId}_$time".hashCode()
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             requestCode,
@@ -491,13 +502,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
         }
 
-        android.util.Log.d("NotificationActionReceiver", "⏰ Escalation planlandı: $medicineName - 30 dk sonra")
+        android.util.Log.d("NotificationActionReceiver", "⏰ Escalation Level 1 planlandı: $medicineName - 10 dk sonra")
     }
 
     /**
-     * ⏱️ Auto-MISSED: 1 saat sonra otomatik olarak MISSED olarak işaretle
+     * 🚨 Escalation Level 2: 30 dakika sonra hatırlat (kırmızı, urgent)
      */
-    private fun scheduleAutoMissed(
+    private fun scheduleEscalation2(
         context: Context,
         medicineId: String,
         medicineName: String,
@@ -506,10 +517,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
         scheduledTime: Long
     ) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val autoMissedTime = System.currentTimeMillis() + (60 * 60 * 1000) // 1 saat sonra
+        val escalationTime = System.currentTimeMillis() + (30 * 60 * 1000) // 30 dakika sonra
 
         val intent = Intent(context, NotificationActionReceiver::class.java).apply {
-            action = "ACTION_AUTO_MISSED"
+            action = "ACTION_ESCALATION_2"
             putExtra(NotificationHelper.EXTRA_MEDICINE_ID, medicineId)
             putExtra(NotificationHelper.EXTRA_MEDICINE, medicineName)
             putExtra(NotificationHelper.EXTRA_DOSAGE, dosage)
@@ -517,7 +528,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
             putExtra(NotificationHelper.EXTRA_SCHEDULED_TIME, scheduledTime)
         }
 
-        val requestCode = "auto_missed_${medicineId}_$time".hashCode()
+        val requestCode = "escalation2_${medicineId}_$time".hashCode()
         val pendingIntent = PendingIntent.getBroadcast(
             context,
             requestCode,
@@ -530,57 +541,119 @@ class NotificationActionReceiver : BroadcastReceiver() {
         )
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, autoMissedTime, pendingIntent)
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
         } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, autoMissedTime, pendingIntent)
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
         }
 
-        android.util.Log.d("NotificationActionReceiver", "⏱️ Auto-MISSED planlandı: $medicineName - 1 saat sonra")
+        android.util.Log.d("NotificationActionReceiver", "🚨 Escalation Level 2 planlandı: $medicineName - 30 dk sonra")
     }
 
     /**
-     * 🚫 Escalation ve Auto-MISSED alarmlarını iptal et
+     * 🔴 Escalation Level 3: 60 dakika sonra hatırlat (IMPORTANT)
      */
-    private fun cancelEscalationAndAutoMissed(context: Context, medicineId: String, time: String) {
+    private fun scheduleEscalation3(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        time: String,
+        scheduledTime: Long
+    ) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+        val escalationTime = System.currentTimeMillis() + (60 * 60 * 1000) // 60 dakika sonra
+
+        val intent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = "ACTION_ESCALATION_3"
+            putExtra(NotificationHelper.EXTRA_MEDICINE_ID, medicineId)
+            putExtra(NotificationHelper.EXTRA_MEDICINE, medicineName)
+            putExtra(NotificationHelper.EXTRA_DOSAGE, dosage)
+            putExtra(NotificationHelper.EXTRA_TIME, time)
+            putExtra(NotificationHelper.EXTRA_SCHEDULED_TIME, scheduledTime)
+        }
+
+        val requestCode = "escalation3_${medicineId}_$time".hashCode()
+        val pendingIntent = PendingIntent.getBroadcast(
+            context,
+            requestCode,
+            intent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+        )
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
+        } else {
+            alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
+        }
+
+        android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 planlandı: $medicineName - 60 dk sonra")
+    }
+
+    /**
+     * 🚫 Tüm escalation alarmlarını iptal et
+     */
+    private fun cancelAllEscalations(context: Context, medicineId: String, time: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        // Escalation iptal
-        val escalationIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-            action = "ACTION_ESCALATION_TRIGGER"
+        // Escalation 1 iptal
+        val esc1Intent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = "ACTION_ESCALATION_1"
         }
-        val escalationRequestCode = "escalation_${medicineId}_$time".hashCode()
-        val escalationPendingIntent = PendingIntent.getBroadcast(
+        val esc1RequestCode = "escalation1_${medicineId}_$time".hashCode()
+        val esc1PendingIntent = PendingIntent.getBroadcast(
             context,
-            escalationRequestCode,
-            escalationIntent,
+            esc1RequestCode,
+            esc1Intent,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             } else {
                 PendingIntent.FLAG_UPDATE_CURRENT
             }
         )
-        alarmManager.cancel(escalationPendingIntent)
-        escalationPendingIntent.cancel()
+        alarmManager.cancel(esc1PendingIntent)
+        esc1PendingIntent.cancel()
 
-        // Auto-MISSED iptal
-        val autoMissedIntent = Intent(context, NotificationActionReceiver::class.java).apply {
-            action = "ACTION_AUTO_MISSED"
+        // Escalation 2 iptal
+        val esc2Intent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = "ACTION_ESCALATION_2"
         }
-        val autoMissedRequestCode = "auto_missed_${medicineId}_$time".hashCode()
-        val autoMissedPendingIntent = PendingIntent.getBroadcast(
+        val esc2RequestCode = "escalation2_${medicineId}_$time".hashCode()
+        val esc2PendingIntent = PendingIntent.getBroadcast(
             context,
-            autoMissedRequestCode,
-            autoMissedIntent,
+            esc2RequestCode,
+            esc2Intent,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             } else {
                 PendingIntent.FLAG_UPDATE_CURRENT
             }
         )
-        alarmManager.cancel(autoMissedPendingIntent)
-        autoMissedPendingIntent.cancel()
+        alarmManager.cancel(esc2PendingIntent)
+        esc2PendingIntent.cancel()
 
-        android.util.Log.d("NotificationActionReceiver", "🚫 Escalation ve Auto-MISSED iptal edildi: $medicineId - $time")
+        // Escalation 3 iptal
+        val esc3Intent = Intent(context, NotificationActionReceiver::class.java).apply {
+            action = "ACTION_ESCALATION_3"
+        }
+        val esc3RequestCode = "escalation3_${medicineId}_$time".hashCode()
+        val esc3PendingIntent = PendingIntent.getBroadcast(
+            context,
+            esc3RequestCode,
+            esc3Intent,
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            } else {
+                PendingIntent.FLAG_UPDATE_CURRENT
+            }
+        )
+        alarmManager.cancel(esc3PendingIntent)
+        esc3PendingIntent.cancel()
+
+        android.util.Log.d("NotificationActionReceiver", "🚫 Tüm escalation alarmları iptal edildi: $medicineId - $time")
     }
 
     override fun toString(): String = "NotificationActionReceiver - Dozi Bildirim İşleyici"
