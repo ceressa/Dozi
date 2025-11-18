@@ -49,6 +49,12 @@ class ReminderScheduler {
                 return
             }
 
+            // 📅 Bitiş tarihi kontrolü
+            if (medicine.endDate != null && medicine.endDate < System.currentTimeMillis()) {
+                Log.d(TAG, "⏱️ Bitiş tarihi geçmiş: ${medicine.name}. Hatırlatma planlanmıyor.")
+                return
+            }
+
             // ✅ Exact alarm izni kontrolü (Android 12+)
             if (!PermissionHandler.hasExactAlarmPermission(context)) {
                 Log.w(TAG, "⚠️ SCHEDULE_EXACT_ALARM izni yok! ${medicine.name} için alarmlar kurulamıyor.")
@@ -148,6 +154,12 @@ class ReminderScheduler {
                             add(Calendar.DAY_OF_MONTH, daysToAdd)
                         }
                     }
+                }
+
+                // 📅 Bitiş tarihi kontrolü: Alarm zamanı endDate'den sonraysa kurma
+                if (medicine.endDate != null && calendar.timeInMillis > medicine.endDate) {
+                    Log.d(TAG, "⏱️ ${medicine.name} - $time için alarm zamanı bitiş tarihinden sonra (${calendar.time}). Alarm kurulmadı.")
+                    return
                 }
 
                 // Alarm kur (her zaman tek seferlik)
