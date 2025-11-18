@@ -438,6 +438,33 @@ class MedicationLogRepository(
     }
 
     /**
+     * Belirli bir ilaç için belirli bir zamandan sonraki logları getir
+     * EscalationManager ve SmartReminderHelper tarafından kullanılır
+     */
+    suspend fun getLogsForMedicine(medicineId: String, startTime: Long): List<MedicationLog> {
+        val userId = currentUserId ?: return emptyList()
+
+        return try {
+            val startTimestamp = Timestamp(Date(startTime))
+
+            val snapshot = db.collection("medication_logs")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("medicineId", medicineId)
+                .whereGreaterThanOrEqualTo("scheduledTime", startTimestamp)
+                .orderBy("scheduledTime", Query.Direction.DESCENDING)
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(MedicationLog::class.java)?.copy(id = doc.id)
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Error getting logs for medicine $medicineId from $startTime", e)
+            emptyList()
+        }
+    }
+
+    /**
      * Badinin ilaç geçmişini getir (buddy permission kontrolü yapılmalı)
      */
     suspend fun getBuddyMedicationLogs(buddyUserId: String): List<MedicationLog> {
