@@ -5,6 +5,7 @@ import android.widget.Toast
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
@@ -83,6 +84,99 @@ fun SettingsScreen(
                     .padding(16.dp),
                 verticalArrangement = Arrangement.spacedBy(16.dp)
             ) {
+                // Profil Ayarları
+                SettingsSection(title = "Profil") {
+                    var showNameDialog by remember { mutableStateOf(false) }
+                    var currentName by remember { mutableStateOf(userData?.name ?: "") }
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                            modifier = Modifier.weight(1f)
+                        ) {
+                            Icon(
+                                Icons.Default.Person,
+                                contentDescription = null,
+                                tint = DoziTurquoise,
+                                modifier = Modifier.size(24.dp)
+                            )
+                            Column {
+                                Text(
+                                    text = "İsim",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                Text(
+                                    text = currentName.ifEmpty { "İsim belirtilmemiş" },
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
+                            }
+                        }
+                        IconButton(onClick = { showNameDialog = true }) {
+                            Icon(
+                                Icons.Default.Edit,
+                                contentDescription = "İsmi Düzenle",
+                                tint = DoziTurquoise
+                            )
+                        }
+                    }
+
+                    if (showNameDialog) {
+                        var newName by remember { mutableStateOf(currentName) }
+                        AlertDialog(
+                            onDismissRequest = { showNameDialog = false },
+                            title = { Text("İsminizi Girin") },
+                            text = {
+                                OutlinedTextField(
+                                    value = newName,
+                                    onValueChange = { newName = it },
+                                    label = { Text("İsim") },
+                                    singleLine = true,
+                                    colors = OutlinedTextFieldDefaults.colors(
+                                        focusedBorderColor = DoziTurquoise,
+                                        unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f)
+                                    )
+                                )
+                            },
+                            confirmButton = {
+                                Button(
+                                    onClick = {
+                                        if (newName.isNotBlank()) {
+                                            scope.launch {
+                                                try {
+                                                    userRepository.updateUserField("name", newName)
+                                                    currentName = newName
+                                                    Toast.makeText(context, "İsim güncellendi", Toast.LENGTH_SHORT).show()
+                                                    showNameDialog = false
+                                                } catch (e: Exception) {
+                                                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+                                                }
+                                            }
+                                        }
+                                    },
+                                    colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise)
+                                ) {
+                                    Text("Kaydet")
+                                }
+                            },
+                            dismissButton = {
+                                TextButton(onClick = { showNameDialog = false }) {
+                                    Text("İptal")
+                                }
+                            }
+                        )
+                    }
+                }
+
                 // Tema Ayarı
                 SettingsSection(title = "Görünüm") {
                     var selectedTheme by remember { mutableStateOf(userData?.theme ?: "system") }
@@ -193,6 +287,32 @@ fun SettingsScreen(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
+                    var importantNotificationsEnabled by remember { mutableStateOf(userData?.importantNotificationsEnabled ?: true) }
+
+                    SettingsSwitch(
+                        label = "Önemli Bildirimler",
+                        description = "1 saat sonraki kritik hatırlatmalar (Sessizde bile çalar)",
+                        icon = Icons.Default.PriorityHigh,
+                        checked = importantNotificationsEnabled,
+                        onCheckedChange = { isEnabled ->
+                            importantNotificationsEnabled = isEnabled
+                            scope.launch {
+                                try {
+                                    userRepository.updateUserField("importantNotificationsEnabled", isEnabled)
+                                    Toast.makeText(
+                                        context,
+                                        if (isEnabled) "Önemli bildirimler açık" else "Önemli bildirimler kapalı",
+                                        Toast.LENGTH_SHORT
+                                    ).show()
+                                } catch (e: Exception) {
+                                    Toast.makeText(context, "Hata: ${e.message}", Toast.LENGTH_SHORT).show()
+                                }
+                            }
+                        }
+                    )
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
                     // 🔔 Test Bildirimi Butonu
                     TestNotificationButton()
                 }
@@ -271,84 +391,110 @@ fun SettingsScreen(
                     }
                 }
 
-                // 🧪 Test / Geliştirici Ayarları
-                SettingsSection(title = "🧪 Test Alanı") {
-                    // Aile Paketi Test Butonu
-                    OutlinedButton(
-                        onClick = {
-                            com.bardino.dozi.core.utils.FamilyPlanTestHelper.createTestFamilyPlan(context) { invitationCode ->
-                                Toast.makeText(
-                                    context,
-                                    "✅ Aile paketi aktif!\n🎟️ Davet kodu: $invitationCode",
-                                    Toast.LENGTH_LONG
-                                ).show()
-                            }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = DoziTurquoise.copy(alpha = 0.1f)
-                        )
-                    ) {
-                        Icon(Icons.Default.GroupAdd, contentDescription = null, tint = DoziTurquoise)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Aile Paketi Oluştur (Test)")
-                    }
+                // 👨‍👩‍👧‍👦 Aile Paketi
+                SettingsSection(title = "👨‍👩‍👧‍👦 Aile Paketi") {
+                    // Aile paketi durumu göster
+                    val isInFamilyPlan = userData?.isInFamilyPlan() == true
+                    val isFamilyOrganizer = userData?.isFamilyOrganizer() == true
 
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Aile Paketi Bilgi Butonu
-                    OutlinedButton(
-                        onClick = {
-                            com.bardino.dozi.core.utils.FamilyPlanTestHelper.showFamilyPlanInfo(context)
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.outlinedButtonColors(
-                            containerColor = DoziBlue.copy(alpha = 0.1f)
-                        )
-                    ) {
-                        Icon(Icons.Default.Info, contentDescription = null, tint = DoziBlue)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Aile Paketi Bilgisi")
-                    }
-
-                    Spacer(modifier = Modifier.height(8.dp))
-
-                    // Davet Kodu ile Katıl
-                    var invitationCode by remember { mutableStateOf("") }
-                    OutlinedTextField(
-                        value = invitationCode,
-                        onValueChange = { invitationCode = it.uppercase() },
-                        label = { Text("Davet Kodu") },
-                        leadingIcon = {
-                            Icon(Icons.Default.VpnKey, contentDescription = null, tint = DoziTurquoise)
-                        },
-                        trailingIcon = {
-                            if (invitationCode.length == 6) {
-                                IconButton(
-                                    onClick = {
-                                        com.bardino.dozi.core.utils.FamilyPlanTestHelper.joinWithCode(context, invitationCode)
-                                        invitationCode = ""
-                                    }
+                    if (isInFamilyPlan) {
+                        // Aile paketinde ise bilgi göster
+                        Surface(
+                            color = DoziTurquoise.copy(alpha = 0.1f),
+                            shape = RoundedCornerShape(12.dp),
+                            modifier = Modifier.fillMaxWidth()
+                        ) {
+                            Column(
+                                modifier = Modifier.padding(16.dp),
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
                                 ) {
-                                    Icon(Icons.Default.Check, contentDescription = "Katıl", tint = DoziTurquoise)
+                                    Icon(
+                                        Icons.Default.CheckCircle,
+                                        contentDescription = null,
+                                        tint = DoziTurquoise
+                                    )
+                                    Text(
+                                        text = if (isFamilyOrganizer) "Aile Paketi Yöneticisi" else "Aile Paketi Üyesi",
+                                        style = MaterialTheme.typography.titleSmall,
+                                        fontWeight = FontWeight.Bold,
+                                        color = DoziTurquoise
+                                    )
                                 }
+                                Text(
+                                    text = "Aile paketi aktif. Premium özelliklerden faydalanıyorsunuz.",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                                )
                             }
-                        },
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = DoziTurquoise,
-                            unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f)
-                        ),
-                        placeholder = { Text("ABC123") }
-                    )
+                        }
 
-                    Spacer(modifier = Modifier.height(4.dp))
-                    Text(
-                        text = "6 haneli davet kodunu girerek aile paketine katılabilirsiniz",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        modifier = Modifier.padding(horizontal = 4.dp)
-                    )
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Aile paketi bilgisi butonu
+                        OutlinedButton(
+                            onClick = {
+                                com.bardino.dozi.core.utils.FamilyPlanTestHelper.showFamilyPlanInfo(context)
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                containerColor = DoziBlue.copy(alpha = 0.1f)
+                            )
+                        ) {
+                            Icon(Icons.Default.Info, contentDescription = null, tint = DoziBlue)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Aile Paketi Bilgileri")
+                        }
+                    } else {
+                        // Aile paketinde değilse katılma seçenekleri göster
+                        Text(
+                            text = "Aile paketi ile 6 kişiye kadar premium özelliklerden faydalanabilirsiniz.",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        )
+
+                        Spacer(modifier = Modifier.height(12.dp))
+
+                        // Davet Kodu ile Katıl
+                        var invitationCode by remember { mutableStateOf("") }
+                        OutlinedTextField(
+                            value = invitationCode,
+                            onValueChange = { invitationCode = it.uppercase() },
+                            label = { Text("Davet Kodu") },
+                            leadingIcon = {
+                                Icon(Icons.Default.VpnKey, contentDescription = null, tint = DoziTurquoise)
+                            },
+                            trailingIcon = {
+                                if (invitationCode.length == 6) {
+                                    IconButton(
+                                        onClick = {
+                                            com.bardino.dozi.core.utils.FamilyPlanTestHelper.joinWithCode(context, invitationCode)
+                                            invitationCode = ""
+                                        }
+                                    ) {
+                                        Icon(Icons.Default.Check, contentDescription = "Katıl", tint = DoziTurquoise)
+                                    }
+                                }
+                            },
+                            modifier = Modifier.fillMaxWidth(),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = DoziTurquoise,
+                                unfocusedBorderColor = Color.Gray.copy(alpha = 0.3f)
+                            ),
+                            placeholder = { Text("ABC123") }
+                        )
+
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            text = "6 haneli davet kodunu girerek aile paketine katılabilirsiniz",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            modifier = Modifier.padding(horizontal = 4.dp)
+                        )
+                    }
                 }
             }
         }

@@ -102,17 +102,22 @@ fun shouldMedicineShowOnDate(medicine: Medicine, date: LocalDate): Boolean {
 
         "Haftada bir" -> {
             // Başlangıç tarihinin haftanın günü ile aynı günlerde al
-            return startLocalDate.dayOfWeek == date.dayOfWeek
+            // ANCAK: Başlangıç gününden itibaren tam hafta geçtiyse göster
+            if (date.isBefore(startLocalDate)) return false
+            val daysSinceStart = ChronoUnit.DAYS.between(startLocalDate, date)
+            return startLocalDate.dayOfWeek == date.dayOfWeek && daysSinceStart % 7 == 0L
         }
 
         "15 günde bir" -> {
             // Her 15 günde bir: gün 0, 15, 30, 45, ...
+            if (date.isBefore(startLocalDate)) return false
             val daysSinceStart = ChronoUnit.DAYS.between(startLocalDate, date)
             return daysSinceStart % 15 == 0L
         }
 
         "Ayda bir" -> {
             // Her 30 günde bir: gün 0, 30, 60, 90, ...
+            if (date.isBefore(startLocalDate)) return false
             val daysSinceStart = ChronoUnit.DAYS.between(startLocalDate, date)
             return daysSinceStart % 30 == 0L
         }
