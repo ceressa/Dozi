@@ -125,6 +125,7 @@ fun AddReminderScreen(
     var xValue by remember { mutableStateOf(2) }
     var selectedDates by remember { mutableStateOf<List<String>>(emptyList()) }
     var startDate by remember { mutableStateOf(System.currentTimeMillis()) } // Başlangıç tarihi
+    var endDate by remember { mutableStateOf<Long?>(null) } // Bitiş tarihi (opsiyonel)
     var showError by remember { mutableStateOf(false) }
     var showSuccess by remember { mutableStateOf(false) }
     val storedMedicines = remember {
@@ -329,10 +330,12 @@ fun AddReminderScreen(
                             xValue = xValue,
                             selectedDates = selectedDates,
                             startDate = startDate,
+                            endDate = endDate,
                             onSelect = { frequency = it },
                             onXChange = { xValue = it },
                             onDatesChange = { selectedDates = it },
                             onStartDateChange = { startDate = it },
+                            onEndDateChange = { endDate = it },
                             context = context
                         )
 
@@ -392,6 +395,7 @@ fun AddReminderScreen(
                                     xValue = xValue,
                                     selectedDates = selectedDates,
                                     startDate = startDate,
+                                    endDate = endDate,
                                     onSuccess = {
                                         if (soundEnabled) playSuccessSound(context)
                                         showSuccess = true
@@ -427,6 +431,7 @@ fun AddReminderScreen(
                 frequency = "Her gün"
                 selectedDates = emptyList()
                 startDate = System.currentTimeMillis()
+                endDate = null
                 selectedTimes = listOf(TimeEntry("08:00"))
             },
             onFinish = {
@@ -1163,10 +1168,12 @@ private fun FrequencyStep(
     xValue: Int,
     selectedDates: List<String>,
     startDate: Long,
+    endDate: Long?,
     onSelect: (String) -> Unit,
     onXChange: (Int) -> Unit,
     onDatesChange: (List<String>) -> Unit,
     onStartDateChange: (Long) -> Unit,
+    onEndDateChange: (Long?) -> Unit,
     context: Context
 ) {
     val options = listOf(
@@ -1198,10 +1205,12 @@ private fun FrequencyStep(
                     xValue = xValue,
                     selectedDates = selectedDates,
                     startDate = startDate,
+                    endDate = endDate,
                     onSelect = { onSelect(option) },
                     onXChange = onXChange,
                     onDatesChange = onDatesChange,
                     onStartDateChange = onStartDateChange,
+                    onEndDateChange = onEndDateChange,
                     context = context
                 )
             }
@@ -1216,10 +1225,12 @@ private fun FrequencyOptionCard(
     xValue: Int,
     selectedDates: List<String>,
     startDate: Long,
+    endDate: Long?,
     onSelect: () -> Unit,
     onXChange: (Int) -> Unit,
     onDatesChange: (List<String>) -> Unit,
     onStartDateChange: (Long) -> Unit,
+    onEndDateChange: (Long?) -> Unit,
     context: Context
 ) {
     Card(
@@ -1320,6 +1331,55 @@ private fun FrequencyOptionCard(
                         fontWeight = FontWeight.Bold,
                         color = DoziTurquoise
                     )
+                }
+
+                // Bitiş tarihi seçici (opsiyonel)
+                Spacer(Modifier.height(12.dp))
+
+                Text(
+                    text = "📅 Bitiş Tarihi (İsteğe Bağlı)",
+                    style = MaterialTheme.typography.labelLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = DoziCoral
+                )
+                Spacer(Modifier.height(8.dp))
+
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = {
+                            showEndDatePicker(context, startDate, endDate) { newEndDate ->
+                                onEndDateChange(newEndDate)
+                            }
+                        },
+                        modifier = Modifier.weight(1f),
+                        border = BorderStroke(2.dp, DoziCoral),
+                        colors = ButtonDefaults.outlinedButtonColors(contentColor = DoziCoral)
+                    ) {
+                        Icon(Icons.Default.EventAvailable, contentDescription = null, tint = DoziCoral)
+                        Spacer(Modifier.width(8.dp))
+                        val formatter = SimpleDateFormat("dd MMM yyyy", Locale("tr", "TR"))
+                        Text(
+                            if (endDate != null) formatter.format(Date(endDate)) else "Tarih Seç",
+                            fontWeight = FontWeight.Bold,
+                            color = DoziCoral
+                        )
+                    }
+
+                    // Temizle butonu
+                    if (endDate != null) {
+                        IconButton(
+                            onClick = { onEndDateChange(null) },
+                            colors = IconButtonDefaults.iconButtonColors(
+                                containerColor = ErrorRed.copy(alpha = 0.1f),
+                                contentColor = ErrorRed
+                            )
+                        ) {
+                            Icon(Icons.Default.Clear, contentDescription = "Temizle")
+                        }
+                    }
                 }
             }
 
@@ -1433,6 +1493,30 @@ private fun showStartDatePicker(context: Context, currentStartDate: Long, onDate
 
     // Bugünden önceki tarihleri seçilemez yap
     picker.datePicker.minDate = today.timeInMillis
+    picker.show()
+}
+
+private fun showEndDatePicker(context: Context, startDate: Long, currentEndDate: Long?, onDateSelected: (Long) -> Unit) {
+    val calendar = Calendar.getInstance().apply {
+        timeInMillis = currentEndDate ?: startDate
+    }
+
+    val picker = DatePickerDialog(
+        context,
+        { _, year, month, day ->
+            val selectedDate = Calendar.getInstance().apply {
+                set(year, month, day, 23, 59, 59)
+                set(Calendar.MILLISECOND, 999)
+            }
+            onDateSelected(selectedDate.timeInMillis)
+        },
+        calendar.get(Calendar.YEAR),
+        calendar.get(Calendar.MONTH),
+        calendar.get(Calendar.DAY_OF_MONTH)
+    )
+
+    // Başlangıç tarihinden önceki tarihleri seçilemez yap
+    picker.datePicker.minDate = startDate
     picker.show()
 }
 
@@ -2223,6 +2307,7 @@ private fun saveMedicinesToFirestore(
     xValue: Int,
     selectedDates: List<String>,
     startDate: Long,
+    endDate: Long?,
     onSuccess: () -> Unit,
     onError: () -> Unit
 ) {
@@ -2297,6 +2382,9 @@ private fun saveMedicinesToFirestore(
                     // 🔥 FIX: startDate'i güncelle
                     medicineRepository.updateMedicineField(existingMedicine.id, "startDate", startDate)
 
+                    // 🔥 FIX: endDate'i güncelle
+                    medicineRepository.updateMedicineField(existingMedicine.id, "endDate", endDate)
+
                     // 🔥 FIX: reminderEnabled'ı true yap (hatırlatma eklendi)
                     medicineRepository.updateMedicineField(existingMedicine.id, "reminderEnabled", true)
 
@@ -2333,7 +2421,7 @@ private fun saveMedicinesToFirestore(
                     frequency = frequency,
                     frequencyValue = calculatedFrequencyValue,
                     startDate = startDate,
-                    endDate = null,
+                    endDate = endDate,
                     stockCount = 0,
                     boxSize = 0,
                     notes = buildNotesFromTimes(selectedTimes, frequency, xValue),
