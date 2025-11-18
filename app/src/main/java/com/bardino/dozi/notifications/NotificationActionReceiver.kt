@@ -551,6 +551,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     /**
      * 🔴 Escalation Level 3: 60 dakika sonra hatırlat (IMPORTANT)
+     * Sadece kullanıcı ayarı açıksa planlanır
      */
     private fun scheduleEscalation3(
         context: Context,
@@ -560,37 +561,53 @@ class NotificationActionReceiver : BroadcastReceiver() {
         time: String,
         scheduledTime: Long
     ) {
-        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
-        val escalationTime = System.currentTimeMillis() + (60 * 60 * 1000) // 60 dakika sonra
+        // Kullanıcı ayarını kontrol et
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
+                val user = userRepository.getUserData()
 
-        val intent = Intent(context, NotificationActionReceiver::class.java).apply {
-            action = "ACTION_ESCALATION_3"
-            putExtra(NotificationHelper.EXTRA_MEDICINE_ID, medicineId)
-            putExtra(NotificationHelper.EXTRA_MEDICINE, medicineName)
-            putExtra(NotificationHelper.EXTRA_DOSAGE, dosage)
-            putExtra(NotificationHelper.EXTRA_TIME, time)
-            putExtra(NotificationHelper.EXTRA_SCHEDULED_TIME, scheduledTime)
-        }
+                // Önemli bildirimler kapalıysa Level 3'ü planlama
+                if (user?.importantNotificationsEnabled == false) {
+                    android.util.Log.d("NotificationActionReceiver", "⚙️ Önemli bildirimler kapalı, Level 3 planlanmadı: $medicineName")
+                    return@launch
+                }
 
-        val requestCode = "escalation3_${medicineId}_$time".hashCode()
-        val pendingIntent = PendingIntent.getBroadcast(
-            context,
-            requestCode,
-            intent,
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            } else {
-                PendingIntent.FLAG_UPDATE_CURRENT
+                val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+                val escalationTime = System.currentTimeMillis() + (60 * 60 * 1000) // 60 dakika sonra
+
+                val intent = Intent(context, NotificationActionReceiver::class.java).apply {
+                    action = "ACTION_ESCALATION_3"
+                    putExtra(NotificationHelper.EXTRA_MEDICINE_ID, medicineId)
+                    putExtra(NotificationHelper.EXTRA_MEDICINE, medicineName)
+                    putExtra(NotificationHelper.EXTRA_DOSAGE, dosage)
+                    putExtra(NotificationHelper.EXTRA_TIME, time)
+                    putExtra(NotificationHelper.EXTRA_SCHEDULED_TIME, scheduledTime)
+                }
+
+                val requestCode = "escalation3_${medicineId}_$time".hashCode()
+                val pendingIntent = PendingIntent.getBroadcast(
+                    context,
+                    requestCode,
+                    intent,
+                    if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                        PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                    } else {
+                        PendingIntent.FLAG_UPDATE_CURRENT
+                    }
+                )
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
+                } else {
+                    alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
+                }
+
+                android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 planlandı: $medicineName - 60 dk sonra")
+            } catch (e: Exception) {
+                android.util.Log.e("NotificationActionReceiver", "❌ Level 3 planlanırken hata", e)
             }
-        )
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            alarmManager.setExactAndAllowWhileIdle(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
-        } else {
-            alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
         }
-
-        android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 planlandı: $medicineName - 60 dk sonra")
     }
 
     /**
