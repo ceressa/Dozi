@@ -29,6 +29,7 @@ class BadiRepository(
 
     /**
      * Kullanıcının badilerini real-time olarak dinle
+     * ACTIVE ve PAUSED badileri gösterir, REMOVED olanları hariç tutar
      */
     fun getBadisFlow(): Flow<List<BadiWithUser>> = callbackFlow {
         val userId = currentUserId ?: run {
@@ -43,7 +44,6 @@ class BadiRepository(
 
         val listener = db.collection("buddies")
             .whereEqualTo("userId", userId)
-            .whereEqualTo("status", BadiStatus.ACTIVE.name)
             .addSnapshotListener { snapshot, error ->
                 if (error != null) {
                     android.util.Log.e("BadiRepository", "getBadisFlow: Error", error)
@@ -51,10 +51,18 @@ class BadiRepository(
                     return@addSnapshotListener
                 }
 
+                // Client-side filtreleme: REMOVED olanları hariç tut
                 val badis = snapshot?.documents?.mapNotNull { doc ->
                     val badi = doc.toObject(Badi::class.java)?.copy(id = doc.id)
-                    android.util.Log.d("BadiRepository", "getBadisFlow: Found badi record - id=${doc.id}, userId=${badi?.userId}, buddyUserId=${badi?.buddyUserId}")
-                    badi
+                    android.util.Log.d("BadiRepository", "getBadisFlow: Found badi record - id=${doc.id}, userId=${badi?.userId}, buddyUserId=${badi?.buddyUserId}, status=${badi?.status}")
+
+                    // REMOVED olanları filtrele
+                    if (badi?.status == BadiStatus.REMOVED) {
+                        android.util.Log.d("BadiRepository", "getBadisFlow: Filtering out REMOVED badi ${doc.id}")
+                        null
+                    } else {
+                        badi
+                    }
                 } ?: emptyList()
 
                 android.util.Log.d("BadiRepository", "getBadisFlow: Total ${badis.size} badi records found")
@@ -158,6 +166,24 @@ class BadiRepository(
             db.collection("buddies")
                 .document(badiId)
                 .update("nickname", nickname)
+                .await()
+            Result.success(Unit)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Badi durumunu güncelle (ACTIVE, PAUSED, REMOVED)
+     */
+    suspend fun updateBadiStatus(
+        badiId: String,
+        status: BadiStatus
+    ): Result<Unit> {
+        return try {
+            db.collection("buddies")
+                .document(badiId)
+                .update("status", status.name)
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -481,15 +507,20 @@ class BadiRepository(
         return try {
             android.util.Log.d("BadiRepository", "cleanupDuplicateBadis: Starting cleanup for user $userId")
 
-            // Kullanıcının tüm badi kayıtlarını al
+            // Kullanıcının tüm aktif badi kayıtlarını al (ACTIVE ve PAUSED)
             val badisSnapshot = db.collection("buddies")
                 .whereEqualTo("userId", userId)
-                .whereEqualTo("status", BadiStatus.ACTIVE.name)
                 .get()
                 .await()
 
+            // REMOVED olanları filtrele
+            val activeDocs = badisSnapshot.documents.filter { doc ->
+                val status = doc.toObject(Badi::class.java)?.status
+                status != BadiStatus.REMOVED
+            }
+
             // buddyUserId'ye göre grupla
-            val grouped = badisSnapshot.documents.groupBy { doc ->
+            val grouped = activeDocs.groupBy { doc ->
                 doc.toObject(Badi::class.java)?.buddyUserId ?: ""
             }
 
