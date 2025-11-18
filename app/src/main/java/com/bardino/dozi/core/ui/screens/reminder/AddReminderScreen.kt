@@ -396,6 +396,7 @@ fun AddReminderScreen(
                                     selectedDates = selectedDates,
                                     startDate = startDate,
                                     endDate = endDate,
+                                    medicineId = medicineId,
                                     onSuccess = {
                                         if (soundEnabled) playSuccessSound(context)
                                         showSuccess = true
@@ -2308,6 +2309,7 @@ private fun saveMedicinesToFirestore(
     selectedDates: List<String>,
     startDate: Long,
     endDate: Long?,
+    medicineId: String? = null,
     onSuccess: () -> Unit,
     onError: () -> Unit
 ) {
@@ -2353,19 +2355,30 @@ private fun saveMedicinesToFirestore(
                 medicineEntry.dosageType
             }
 
-            // 🔍 Aynı isimde ilaç var mı kontrol et
-            val existingMedicines = medicineRepository.getAllMedicines()
-            val existingMedicine = existingMedicines.find {
-                it.name.equals(medicineEntry.name, ignoreCase = true)
+            // 🔍 Edit mode: medicineId ile direkt ilacı al, yoksa isimle ara
+            val existingMedicine = if (medicineId != null) {
+                medicineRepository.getMedicineById(medicineId)
+            } else {
+                val existingMedicines = medicineRepository.getAllMedicines()
+                existingMedicines.find {
+                    it.name.equals(medicineEntry.name, ignoreCase = true)
+                }
             }
 
             val savedMedicine = if (existingMedicine != null) {
-                // ✅ Mevcut ilacı güncelle - times listesine yeni saatleri ekle
-                val mergedTimes = (existingMedicine.times + times).distinct().sorted()
+                // ✅ Mevcut ilacı güncelle
+                // Edit mode: saatleri REPLACE et, aksi halde MERGE et
+                val updatedTimes = if (medicineId != null) {
+                    // Edit mode: Eski saatleri sil, yeni saatleri kullan
+                    times
+                } else {
+                    // Yeni hatırlatma ekleme: Saatleri birleştir
+                    (existingMedicine.times + times).distinct().sorted()
+                }
 
                 try {
-                    // Times, reminderName ve notes'u güncelle
-                    medicineRepository.updateMedicineField(existingMedicine.id, "times", mergedTimes)
+                    // Times'ı güncelle
+                    medicineRepository.updateMedicineField(existingMedicine.id, "times", updatedTimes)
 
                     // ReminderName güncelleme (eğer yeni bir isim verildiyse)
                     if (medicineEntry.reminderName.isNotEmpty()) {
@@ -2388,18 +2401,24 @@ private fun saveMedicinesToFirestore(
                     // 🔥 FIX: reminderEnabled'ı true yap (hatırlatma eklendi)
                     medicineRepository.updateMedicineField(existingMedicine.id, "reminderEnabled", true)
 
-                    // Notes'u birleştir
+                    // Notes'u güncelle - Edit mode'da REPLACE, yoksa MERGE
                     val newNotes = buildNotesFromTimes(selectedTimes, frequency, xValue)
-                    val mergedNotes = if (existingMedicine.notes.isNotEmpty() && newNotes.isNotEmpty()) {
-                        "${existingMedicine.notes} | $newNotes"
-                    } else if (newNotes.isNotEmpty()) {
+                    val updatedNotes = if (medicineId != null) {
+                        // Edit mode: Notları değiştir
                         newNotes
                     } else {
-                        existingMedicine.notes
+                        // Yeni hatırlatma: Notları birleştir
+                        if (existingMedicine.notes.isNotEmpty() && newNotes.isNotEmpty()) {
+                            "${existingMedicine.notes} | $newNotes"
+                        } else if (newNotes.isNotEmpty()) {
+                            newNotes
+                        } else {
+                            existingMedicine.notes
+                        }
                     }
-                    medicineRepository.updateMedicineField(existingMedicine.id, "notes", mergedNotes)
+                    medicineRepository.updateMedicineField(existingMedicine.id, "notes", updatedNotes)
 
-                    android.util.Log.d("AddReminderScreen", "✅ Mevcut ilaç güncellendi: ${existingMedicine.name} - Sıklık: ${existingMedicine.frequency} -> $frequency (${calculatedFrequencyValue}), Saatler: ${existingMedicine.times} -> $mergedTimes")
+                    android.util.Log.d("AddReminderScreen", "✅ Mevcut ilaç güncellendi: ${existingMedicine.name} - Sıklık: ${existingMedicine.frequency} -> $frequency (${calculatedFrequencyValue}), Saatler: ${existingMedicine.times} -> $updatedTimes")
 
                     // Güncellenmiş Medicine'i al
                     medicineRepository.getMedicineById(existingMedicine.id)
