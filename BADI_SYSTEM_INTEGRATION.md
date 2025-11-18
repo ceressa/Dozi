@@ -122,8 +122,10 @@ fun NavGraph(
             )
         ) { backStackEntry ->
             val buddyId = backStackEntry.arguments?.getString("buddyId") ?: return@composable
-            // TODO: BuddyDetailScreen henüz oluşturulmadı
-            // BuddyDetailScreen(buddyId, navController::popBackStack)
+            BadiDetailScreen(
+                badiId = buddyId,
+                onNavigateBack = { navController.popBackStack() }
+            )
         }
 
         composable(

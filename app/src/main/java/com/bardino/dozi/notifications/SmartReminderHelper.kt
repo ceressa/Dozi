@@ -4,6 +4,7 @@ import android.content.Context
 import android.util.Log
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.model.MedicationStatus
+import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.concurrent.TimeUnit
@@ -61,10 +62,25 @@ object SmartReminderHelper {
                 }
             }
 
-            // Firestore'da pattern yoksa, SharedPreferences'tan son erteleme süresini oku
+            // Firestore'da pattern yoksa, SharedPreferences'tan sofistike pattern verilerini oku
             val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
+
+            // Öncelik sırası: mode (en çok kullanılan) > ortalama > son erteleme
+            val modeSnoozeMinutes = prefs.getInt("mode_snooze_minutes_$medicineId", -1)
+            val avgSnoozeMinutes = prefs.getInt("avg_snooze_minutes_$medicineId", -1)
             val lastSnoozeMinutes = prefs.getInt("last_snooze_minutes_$medicineId", -1)
 
+            // En çok kullanılan erteleme süresi varsa onu öner
+            if (modeSnoozeMinutes > 0) {
+                return@withContext (modeSnoozeMinutes to "Genellikle $modeSnoozeMinutes dk erteliyorsunuz")
+            }
+
+            // Ortalama varsa onu öner
+            if (avgSnoozeMinutes > 0) {
+                return@withContext (avgSnoozeMinutes to "Ortalama $avgSnoozeMinutes dk erteliyorsunuz")
+            }
+
+            // Son erteleme varsa onu öner
             if (lastSnoozeMinutes > 0) {
                 return@withContext (lastSnoozeMinutes to "Geçen seferde $lastSnoozeMinutes dk ertelemiştiniz")
             }
@@ -163,19 +179,45 @@ object SmartReminderHelper {
     ) = withContext(Dispatchers.IO) {
         try {
             val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
+            val gson = Gson()
 
-            // Son erteleme süresini kaydet
+            // Son 5 erteleme süresini array olarak sakla (circular buffer)
+            val snoozeHistoryKey = "snooze_history_$medicineId"
+            val snoozeHistoryJson = prefs.getString(snoozeHistoryKey, "[]")
+            val snoozeHistory = gson.fromJson(snoozeHistoryJson, Array<Int>::class.java)?.toMutableList() ?: mutableListOf()
+
+            // Yeni erteleme süresini ekle
+            snoozeHistory.add(snoozeMinutes)
+
+            // En fazla 5 örnek tut (en eski kaydı sil)
+            if (snoozeHistory.size > 5) {
+                snoozeHistory.removeAt(0)
+            }
+
+            // Ortalama erteleme süresini hesapla
+            val avgSnooze = if (snoozeHistory.isNotEmpty()) {
+                snoozeHistory.average().toInt()
+            } else {
+                snoozeMinutes
+            }
+
+            // En çok kullanılan erteleme süresini bul (mode)
+            val modeSnooze = snoozeHistory
+                .groupingBy { it }
+                .eachCount()
+                .maxByOrNull { it.value }
+                ?.key ?: snoozeMinutes
+
+            // Verileri kaydet
             prefs.edit()
                 .putInt("last_snooze_minutes_$medicineId", snoozeMinutes)
                 .putLong("last_snooze_timestamp_$medicineId", System.currentTimeMillis())
+                .putString(snoozeHistoryKey, gson.toJson(snoozeHistory))
+                .putInt("avg_snooze_minutes_$medicineId", avgSnooze)
+                .putInt("mode_snooze_minutes_$medicineId", modeSnooze)
                 .apply()
 
-            // TODO: İleride daha sofistike pattern tanıma için:
-            // - Son 5 erteleme süresini array olarak sakla
-            // - Ortalama erteleme süresini hesapla
-            // - En çok kullanılan erteleme süresini bul (mode)
-
-            Log.d(TAG, "✅ Snooze pattern kaydedildi: $medicineId -> $snoozeMinutes dk")
+            Log.d(TAG, "✅ Snooze pattern kaydedildi: $medicineId -> son: $snoozeMinutes dk, ortalama: $avgSnooze dk, en çok: $modeSnooze dk")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error recording snooze pattern", e)
         }
@@ -239,7 +281,9 @@ object SmartReminderHelper {
     ): List<Pair<Int, String>> = withContext(Dispatchers.IO) {
         try {
             val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
-            val lastSnoozeMinutes = prefs.getInt("last_snooze_minutes_$medicineId", -1)
+
+            // En çok kullanılan erteleme süresini al (mode)
+            val modeSnoozeMinutes = prefs.getInt("mode_snooze_minutes_$medicineId", -1)
 
             val defaultTimes = listOf(
                 10 to "10 dakika",
@@ -248,10 +292,10 @@ object SmartReminderHelper {
                 60 to "1 saat"
             )
 
-            // Eğer kullanıcı daha önce erteleme yaptıysa, o süreyi ⭐ ile işaretle
-            if (lastSnoozeMinutes > 0) {
+            // Eğer kullanıcının en çok kullandığı erteleme süresi varsa, o süreyi ⭐ ile işaretle
+            if (modeSnoozeMinutes > 0) {
                 return@withContext defaultTimes.map { (minutes, text) ->
-                    if (minutes == lastSnoozeMinutes) {
+                    if (minutes == modeSnoozeMinutes) {
                         minutes to "$text ⭐"
                     } else {
                         minutes to text
