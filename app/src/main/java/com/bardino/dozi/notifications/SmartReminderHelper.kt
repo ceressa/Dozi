@@ -41,8 +41,27 @@ object SmartReminderHelper {
             )
 
             // Son 14 gün içinde bu ilaç için alınan/ertelenen logları al
-            // TODO: MedicationLogRepository'de getLogsByMedicineId() metodu eklenecek
-            // Şimdilik SharedPreferences'tan son erteleme süresini oku
+            val startTime = System.currentTimeMillis() - (ANALYSIS_DAYS * 24 * 60 * 60 * 1000L)
+            val logs = logRepository.getLogsForMedicine(medicineId, startTime)
+            val snoozedLogs = logs.filter { it.status == MedicationStatus.SNOOZED }
+
+            // Eğer yeterli örnek varsa, pattern analizi yap
+            if (snoozedLogs.size >= MIN_SAMPLES) {
+                // En çok kullanılan erteleme süresini bul
+                // Not: Şu an notes'tan parse ediyoruz, ileride daha iyi bir yöntem olabilir
+                val snoozeMinutes = snoozedLogs.mapNotNull { log ->
+                    log.notes?.let { note ->
+                        val regex = """Snoozed for (\d+) minutes""".toRegex()
+                        regex.find(note)?.groupValues?.get(1)?.toIntOrNull()
+                    }
+                }.groupingBy { it }.eachCount().maxByOrNull { it.value }?.key
+
+                if (snoozeMinutes != null) {
+                    return@withContext (snoozeMinutes to "Genellikle $snoozeMinutes dk erteliyorsunuz")
+                }
+            }
+
+            // Firestore'da pattern yoksa, SharedPreferences'tan son erteleme süresini oku
             val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
             val lastSnoozeMinutes = prefs.getInt("last_snooze_minutes_$medicineId", -1)
 
@@ -78,12 +97,38 @@ object SmartReminderHelper {
                 com.google.firebase.firestore.FirebaseFirestore.getInstance()
             )
 
-            // TODO: Son N hatırlatmayı analiz et
-            // - scheduledTime vs takenAt farkını hesapla
-            // - Ortalama gecikme hesapla
-            // - Eğer sürekli aynı gecikme varsa öneri sun
+            // Son N hatırlatmayı analiz et
+            val startTime = System.currentTimeMillis() - (ANALYSIS_DAYS * 24 * 60 * 60 * 1000L)
+            val logs = logRepository.getLogsForMedicine(medicineId, startTime)
+            val takenLogs = logs.filter { it.status == MedicationStatus.TAKEN && it.takenAt != null && it.scheduledTime != null }
 
-            // Şimdilik SharedPreferences'tan son alma gecikmesini oku
+            // Eğer yeterli örnek varsa, gecikme analizi yap
+            if (takenLogs.size >= MIN_SAMPLES) {
+                // scheduledTime vs takenAt farkını hesapla
+                val delays = takenLogs.mapNotNull { log ->
+                    val scheduled = log.scheduledTime?.toDate()?.time ?: return@mapNotNull null
+                    val taken = log.takenAt?.toDate()?.time ?: return@mapNotNull null
+                    val delayMinutes = TimeUnit.MILLISECONDS.toMinutes(taken - scheduled)
+                    if (delayMinutes > 0) delayMinutes.toInt() else null
+                }
+
+                // Ortalama gecikme hesapla
+                if (delays.isNotEmpty()) {
+                    val avgDelayMinutes = delays.average().toInt()
+
+                    if (avgDelayMinutes >= 30) {
+                        // Yeni saat hesapla
+                        val (hour, minute) = scheduledTimeStr.split(":").map { it.toInt() }
+                        val newHour = (hour + avgDelayMinutes / 60) % 24
+                        val newMinute = (minute + avgDelayMinutes % 60) % 60
+                        val newTime = String.format("%02d:%02d", newHour, newMinute)
+
+                        return@withContext (newTime to "Bu ilacı genellikle $newTime'de alıyorsunuz. Hatırlatma zamanını değiştirmek ister misiniz?")
+                    }
+                }
+            }
+
+            // Firestore'da pattern yoksa, SharedPreferences'tan son alma gecikmesini oku
             val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
             val avgDelayMinutes = prefs.getInt("avg_delay_minutes_$medicineId", -1)
 
