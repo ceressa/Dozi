@@ -125,6 +125,9 @@ dependencies {
     // 🔑 Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.1.0")
 
+    // 💳 Google Play Billing
+    implementation("com.android.billingclient:billing-ktx:6.2.1")
+
     // 🖼️ Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
 
