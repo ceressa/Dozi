@@ -54,6 +54,9 @@ data class User(
     // 🧠 Smart reminder (akıllı hatırlatma önerileri)
     val smartReminderEnabled: Boolean = false,   // Akıllı erteleme önerileri aktif mi? (default: kapalı)
 
+    // 🔴 Important notifications (kritik hatırlatmalar - DND bypass)
+    val importantNotificationsEnabled: Boolean = true,  // Önemli bildirimler aktif mi? (1 saat sonraki escalation)
+
     // 🎵 Bildirim sesi özelleştirme (Premium özellik)
     val customSoundUri: String? = null,          // Özel bildirim sesi URI
     val customSoundName: String = "Varsayılan",  // Özel ses adı
