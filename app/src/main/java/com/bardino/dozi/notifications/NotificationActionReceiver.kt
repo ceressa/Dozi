@@ -57,23 +57,39 @@ class NotificationActionReceiver : BroadcastReceiver() {
             "ACTION_SNOOZE_TRIGGER" -> {
                 // ⏰ Erteleme süresi doldu, yeni bildirim göster + escalation/auto-missed planla
                 if (hasNotificationPermission(context)) {
-                    NotificationHelper.showMedicationNotification(
-                        context = context,
-                        medicineName = med,
-                        medicineId = medicineId,
-                        dosage = dosage,
-                        time = time,
-                        scheduledTime = scheduledTime
-                    )
+                    // 📅 Medicine bilgisini al ve endDate kontrolü yap
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val medicineRepository = com.bardino.dozi.core.data.repository.MedicineRepository()
+                            val medicine = medicineRepository.getMedicineById(medicineId)
 
-                    // ⏰ Escalation sistemi: 10dk, 30dk, 60dk
-                    if (medicineId.isNotEmpty()) {
-                        scheduleEscalation1(context, medicineId, med, dosage, time, scheduledTime) // 10 dk
-                        scheduleEscalation2(context, medicineId, med, dosage, time, scheduledTime) // 30 dk
-                        scheduleEscalation3(context, medicineId, med, dosage, time, scheduledTime) // 60 dk
+                            // Bitiş tarihi kontrolü
+                            if (medicine?.endDate != null && medicine.endDate < System.currentTimeMillis()) {
+                                android.util.Log.d("NotificationActionReceiver", "⏱️ Bitiş tarihi geçmiş: $med. Erteleme bildirimi gösterilmiyor.")
+                                return@launch
+                            }
+
+                            NotificationHelper.showMedicationNotification(
+                                context = context,
+                                medicineName = med,
+                                medicineId = medicineId,
+                                dosage = dosage,
+                                time = time,
+                                scheduledTime = scheduledTime
+                            )
+
+                            // ⏰ Escalation sistemi: 10dk, 30dk, 60dk (endDate geçmemişse)
+                            if (medicineId.isNotEmpty() && (medicine?.endDate == null || medicine.endDate > System.currentTimeMillis())) {
+                                scheduleEscalation1(context, medicineId, med, dosage, time, scheduledTime) // 10 dk
+                                scheduleEscalation2(context, medicineId, med, dosage, time, scheduledTime) // 30 dk
+                                scheduleEscalation3(context, medicineId, med, dosage, time, scheduledTime) // 60 dk
+                            }
+
+                            android.util.Log.d("NotificationActionReceiver", "⏰ Erteleme sonrası bildirim + escalation/auto-missed planlandı: $med")
+                        } catch (e: Exception) {
+                            android.util.Log.e("NotificationActionReceiver", "❌ Erteleme tetiklemesi işlenirken hata", e)
+                        }
                     }
-
-                    android.util.Log.d("NotificationActionReceiver", "⏰ Erteleme sonrası bildirim + escalation/auto-missed planlandı: $med")
                 }
             }
             ReminderScheduler.ACTION_REMINDER_TRIGGER -> {
@@ -404,15 +420,23 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     }
 
                     // 🔄 Sonraki alarmı planla (frequency'ye göre)
+                    // 📅 Bitiş tarihi kontrolü: endDate geçmişse sonraki alarmı planlama
                     if (medicine.reminderEnabled) {
-                        ReminderScheduler.scheduleReminders(context, medicine, isRescheduling = true)
-                        android.util.Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı: $medicineName (frequency: ${medicine.frequency})")
+                        if (medicine.endDate != null && medicine.endDate < System.currentTimeMillis()) {
+                            android.util.Log.d("NotificationActionReceiver", "⏱️ Bitiş tarihi geçmiş: $medicineName. Sonraki alarm planlanmıyor.")
+                        } else {
+                            ReminderScheduler.scheduleReminders(context, medicine, isRescheduling = true)
+                            android.util.Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı: $medicineName (frequency: ${medicine.frequency})")
+                        }
                     }
 
                     // ⏰ Escalation sistemi: 10dk, 30dk, 60dk
-                    scheduleEscalation1(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
-                    scheduleEscalation2(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
-                    scheduleEscalation3(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+                    // 📅 Bitiş tarihi kontrolü: endDate geçmişse escalation da planlanmasın
+                    if (medicine.endDate == null || medicine.endDate > System.currentTimeMillis()) {
+                        scheduleEscalation1(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+                        scheduleEscalation2(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+                        scheduleEscalation3(context, medicineId, medicineName, medicine.dosage + " " + medicine.unit, time, scheduledTime)
+                    }
                 }
             } catch (e: Exception) {
                 android.util.Log.e("NotificationActionReceiver", "❌ Hatırlatma işlenirken hata", e)
