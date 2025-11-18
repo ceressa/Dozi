@@ -48,16 +48,23 @@
         android:enableOnBackInvokedCallback="true"
         tools:targetApi="34">
 
-        <!-- 🚀 Ana Aktivite -->
+        <!-- 💧 Splash Ekranı (Video) -->
         <activity
-            android:name=".MainActivity"
+            android:name=".SplashActivity"
             android:exported="true"
-            android:launchMode="singleTop"
-            android:theme="@style/Theme.DoziApp">
+            android:theme="@android:style/Theme.Black.NoTitleBar.Fullscreen">
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+        </activity>
+
+        <!-- 🚀 Ana Aktivite -->
+        <activity
+            android:name=".MainActivity"
+            android:exported="false"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.DoziApp">
         </activity>
 
         <!-- ⏰ Erteleme Dialog Activity -->
