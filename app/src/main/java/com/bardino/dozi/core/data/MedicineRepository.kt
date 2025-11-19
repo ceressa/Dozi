@@ -26,15 +26,30 @@ object MedicineRepository {
         get() = cachedIlaclar
 
     // ✅ Tek seferlik JSON yükleme
-    fun initialize(context: Context) {
-        if (initialized) return  // zaten yüklendiyse tekrar yükleme
+    fun initialize(context: Context, forceReload: Boolean = false) {
+        if (initialized && !forceReload) {
+            android.util.Log.d("MedicineRepository", "Already initialized, skipping...")
+            // Ama cache boşsa, reload et
+            if (cachedIlaclar.isNullOrEmpty()) {
+                android.util.Log.w("MedicineRepository", "Cache is empty despite initialization, forcing reload...")
+                initialized = false
+            } else {
+                return  // zaten yüklendiyse ve cache doluysa tekrar yükleme
+            }
+        }
         initialized = true
 
         try {
+            android.util.Log.d("MedicineRepository", "Starting to initialize ilaclar.json...")
             val json = context.assets.open("ilaclar.json").bufferedReader().use { it.readText() }
+            android.util.Log.d("MedicineRepository", "JSON file read successfully, length: ${json.length}")
+
             val type = object : TypeToken<List<Map<String, Any>>>() {}.type
             val raw = gson.fromJson<List<Map<String, Any>>>(json, type)
+            android.util.Log.d("MedicineRepository", "JSON parsed, raw size: ${raw?.size}")
+
             val dataSection = raw.firstOrNull { it["type"] == "table" }?.get("data") as? List<Map<String, Any>>
+            android.util.Log.d("MedicineRepository", "Data section extracted, size: ${dataSection?.size}")
 
             cachedIlaclar = dataSection?.map {
                 Ilac(
@@ -46,7 +61,10 @@ object MedicineRepository {
                     Description = it["Description"]?.toString()
                 )
             } ?: emptyList()
+
+            android.util.Log.d("MedicineRepository", "✅ Initialize successful! Loaded ${cachedIlaclar?.size ?: 0} medicines")
         } catch (e: Exception) {
+            android.util.Log.e("MedicineRepository", "❌ Error initializing ilaclar.json: ${e.message}", e)
             cachedIlaclar = emptyList()
         }
     }

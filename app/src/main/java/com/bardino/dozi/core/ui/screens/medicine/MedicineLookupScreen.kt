@@ -75,6 +75,21 @@ fun MedicineLookupScreen(
             // İlaç eklendi, onboarding'e geri dön
             onNavigateBack()
         }
+
+        // Cache durumunu kontrol et
+        if (!com.bardino.dozi.core.data.MedicineRepository.isInitialized()) {
+            android.util.Log.w("MedicineLookupScreen", "⚠️ Medicine repository not initialized on screen load!")
+            com.bardino.dozi.core.data.MedicineRepository.initialize(context)
+        } else {
+            val cacheSize = com.bardino.dozi.core.data.MedicineRepository.ilaclarCache?.size ?: 0
+            android.util.Log.d("MedicineLookupScreen", "✅ Medicine cache loaded: $cacheSize medicines")
+
+            if (cacheSize == 0) {
+                android.util.Log.e("MedicineLookupScreen", "❌ Medicine cache is empty! Reinitializing...")
+                // Force reinitialize
+                com.bardino.dozi.core.data.MedicineRepository.initialize(context)
+            }
+        }
     }
 
     // ✅ Barkod Tarayıcı
@@ -153,7 +168,15 @@ fun MedicineLookupScreen(
         if (searchMode == "text" && query.length >= 2) {
             isSearching = true
             delay(700)
+
+            // Önce initialize kontrolü yap
+            if (!com.bardino.dozi.core.data.MedicineRepository.isInitialized()) {
+                android.util.Log.w("MedicineLookupScreen", "Repository not initialized, initializing now...")
+                com.bardino.dozi.core.data.MedicineRepository.initialize(context)
+            }
+
             results = IlacJsonRepository.search(context, query)
+            android.util.Log.d("MedicineLookupScreen", "Search completed for '$query': ${results.size} results")
             isSearching = false
         } else if (query.isEmpty()) {
             results = emptyList()
@@ -323,21 +346,38 @@ fun MedicineLookupScreen(
                         }
                     }
 
-                    query.isNotBlank() -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Icon(
-                            Icons.Default.SearchOff,
-                            null,
-                            tint = MediumGray,
-                            modifier = Modifier.size(56.dp)
-                        )
-                        Spacer(Modifier.height(8.dp))
-                        Text("Sonuç bulunamadı", color = MaterialTheme.colorScheme.onSurfaceVariant)
-                        Text(
-                            "Farklı bir arama terimi deneyin veya barkod okutun",
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 12.sp,
-                            textAlign = TextAlign.Center
-                        )
+                    query.isNotBlank() -> {
+                        // Cache durumunu kontrol et
+                        val cacheSize = com.bardino.dozi.core.data.MedicineRepository.ilaclarCache?.size ?: 0
+
+                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                            Icon(
+                                Icons.Default.SearchOff,
+                                null,
+                                tint = MediumGray,
+                                modifier = Modifier.size(56.dp)
+                            )
+                            Spacer(Modifier.height(8.dp))
+
+                            if (cacheSize == 0) {
+                                Text("İlaç veritabanı yüklenemedi", color = MaterialTheme.colorScheme.error)
+                                Spacer(Modifier.height(4.dp))
+                                Text(
+                                    "Lütfen uygulamayı yeniden başlatın",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            } else {
+                                Text("Sonuç bulunamadı", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                Text(
+                                    "Farklı bir arama terimi deneyin veya barkod okutun",
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    fontSize = 12.sp,
+                                    textAlign = TextAlign.Center
+                                )
+                            }
+                        }
                     }
 
                     else -> Column(horizontalAlignment = Alignment.CenterHorizontally) {
