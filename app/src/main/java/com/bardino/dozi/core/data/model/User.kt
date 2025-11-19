@@ -8,7 +8,7 @@ data class User(
     val email: String = "",
     val photoUrl: String = "",
     val createdAt: Long = 0L,
-    val planType: String = "free", // "free", "trial", "weekly", "monthly", "yearly", "lifetime"
+    val planType: String = "free", // "free", "trial", "weekly", "monthly", "yearly", "monthly_family", "yearly_family", "lifetime"
     val timezone: String = "Europe/Istanbul",
     val language: String = "tr",
     val vibration: Boolean = true,
@@ -93,8 +93,10 @@ data class User(
             "weekly" -> PremiumPlanType.WEEKLY
             "monthly" -> PremiumPlanType.MONTHLY
             "yearly" -> PremiumPlanType.YEARLY
+            "monthly_family" -> PremiumPlanType.MONTHLY_FAMILY
+            "yearly_family" -> PremiumPlanType.YEARLY_FAMILY
+            "family_premium" -> PremiumPlanType.YEARLY_FAMILY // Backward compatibility
             "lifetime" -> PremiumPlanType.LIFETIME
-            "family_premium" -> PremiumPlanType.FAMILY_PREMIUM
             else -> PremiumPlanType.FREE
         }
     }
