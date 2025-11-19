@@ -433,6 +433,14 @@ class HomeViewModel @Inject constructor(
             // 🏆 Achievement kontrolü
             checkAchievementsAfterMedicineTaken()
 
+            // 🚫 Escalation alarmlarını iptal et
+            cancelEscalationAlarms(context, medicine.id, time)
+
+            // 🚫 Tüm bildirimleri iptal et (notification drawer'dan temizle)
+            com.bardino.dozi.notifications.NotificationHelper.cancelAllNotificationsForMedicine(
+                context, medicine.id, time
+            )
+
             // Success popup göster
             _uiState.update { it.copy(showSuccessPopup = true) }
 
@@ -486,6 +494,14 @@ class HomeViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Error logging medication skipped", e)
             }
+
+            // 🚫 Escalation alarmlarını iptal et
+            cancelEscalationAlarms(context, medicine.id, time)
+
+            // 🚫 Tüm bildirimleri iptal et (notification drawer'dan temizle)
+            com.bardino.dozi.notifications.NotificationHelper.cancelAllNotificationsForMedicine(
+                context, medicine.id, time
+            )
 
             // Listeyi güncelle
             delay(100)
@@ -656,6 +672,45 @@ class HomeViewModel @Inject constructor(
         val prefs = context.getSharedPreferences("stock_warnings", Context.MODE_PRIVATE)
         prefs.edit().remove("last_warning_$medicineId").apply()
         Log.d(TAG, "🔄 Stok uyarısı manuel olarak sıfırlandı: $medicineId")
+    }
+
+    /**
+     * 🚫 Escalation alarmlarını iptal et (ilaç alındığında)
+     */
+    private fun cancelEscalationAlarms(context: Context, medicineId: String, time: String) {
+        try {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as android.app.AlarmManager
+
+            // Escalation 1, 2, 3 alarmlarını iptal et
+            listOf(
+                Triple("ACTION_ESCALATION_1", "escalation1", 1),
+                Triple("ACTION_ESCALATION_2", "escalation2", 2),
+                Triple("ACTION_ESCALATION_3", "escalation3", 3)
+            ).forEach { (action, escalationType, level) ->
+                val intent = android.content.Intent(context, Class.forName("com.bardino.dozi.notifications.NotificationActionReceiver")).apply {
+                    this.action = action
+                }
+                val requestCode = "${escalationType}_${medicineId}_$time".hashCode()
+                val pendingIntent = android.app.PendingIntent.getBroadcast(
+                    context,
+                    requestCode,
+                    intent,
+                    if (android.os.Build.VERSION.SDK_INT >= android.os.Build.VERSION_CODES.S) {
+                        android.app.PendingIntent.FLAG_NO_CREATE or android.app.PendingIntent.FLAG_IMMUTABLE
+                    } else {
+                        android.app.PendingIntent.FLAG_NO_CREATE
+                    }
+                )
+                if (pendingIntent != null) {
+                    alarmManager.cancel(pendingIntent)
+                    pendingIntent.cancel()
+                    Log.d(TAG, "✅ Escalation Level $level iptal edildi: $medicineId")
+                }
+            }
+            Log.d(TAG, "🚫 Tüm escalation alarmları iptal edildi (HomeViewModel): $medicineId - $time")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Escalation alarmları iptal edilirken hata", e)
+        }
     }
 
     /**

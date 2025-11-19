@@ -27,6 +27,36 @@ object NotificationHelper {
     const val NOTIF_ID_ESCALATION_2 = 2027  // 30 dk sonraki bildirim
     const val NOTIF_ID_ESCALATION_3 = 2028  // 60 dk sonraki bildirim (important)
 
+    /**
+     * İlaç ve zamana özel unique notification ID oluştur
+     * Bu sayede aynı ilacın farklı zamanlardaki bildirimleri farklı ID'lere sahip olur
+     */
+    fun getNotificationId(medicineId: String, time: String, escalationLevel: Int = 0): Int {
+        val baseId = "${medicineId}_${time}_$escalationLevel".hashCode()
+        // Pozitif ID'ye çevir (Android negatif ID'leri kabul etmiyor)
+        return if (baseId < 0) -baseId else baseId
+    }
+
+    /**
+     * Aynı ilaca ait TÜM bildirimleri iptal et
+     */
+    fun cancelAllNotificationsForMedicine(context: Context, medicineId: String, time: String) {
+        val nm = NotificationManagerCompat.from(context)
+
+        // Eski sabit ID'leri iptal et (backward compatibility)
+        nm.cancel(NOTIF_ID)
+        nm.cancel(NOTIF_ID_ESCALATION_1)
+        nm.cancel(NOTIF_ID_ESCALATION_2)
+        nm.cancel(NOTIF_ID_ESCALATION_3)
+
+        // Yeni unique ID'leri iptal et
+        for (level in 0..3) {
+            val notifId = getNotificationId(medicineId, time, level)
+            nm.cancel(notifId)
+            Log.d("NotificationHelper", "✅ Bildirim iptal edildi: ID=$notifId (medicineId=$medicineId, time=$time, level=$level)")
+        }
+    }
+
     // Action keys
     const val ACTION_TAKEN = "ACTION_TAKEN"
     const val ACTION_SNOOZE = "ACTION_SNOOZE"
