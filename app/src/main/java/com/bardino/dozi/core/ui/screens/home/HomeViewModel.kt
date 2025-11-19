@@ -600,25 +600,62 @@ class HomeViewModel @Inject constructor(
      */
     /**
      * Stok uyarılarını kontrol et (Extension fonksiyonlar kullan)
+     * 24 saat içinde aynı ilaç için tekrar bildirim göndermez
      */
     private fun checkStockWarnings(context: Context, medicine: Medicine) {
+        val prefs = context.getSharedPreferences("stock_warnings", Context.MODE_PRIVATE)
+        val lastWarningKey = "last_warning_${medicine.id}"
+        val lastWarningTime = prefs.getLong(lastWarningKey, 0)
+        val currentTime = System.currentTimeMillis()
+        val twentyFourHours = 24 * 60 * 60 * 1000L
+
+        // Stok yeterli seviyedeyse, uyarı timestamp'ini temizle
+        if (!medicine.isStockLow() && !medicine.isStockCritical() && !medicine.isStockEmpty()) {
+            if (lastWarningTime > 0) {
+                prefs.edit().remove(lastWarningKey).apply()
+                Log.d(TAG, "✅ Stok yeterli seviyede, uyarı sıfırlandı: ${medicine.name}")
+            }
+            return
+        }
+
+        // Son 24 saat içinde bildirim gönderildiyse, tekrar gönderme
+        if (currentTime - lastWarningTime < twentyFourHours) {
+            Log.d(TAG, "⏱️ Stok uyarısı son 24 saat içinde gönderildi, atlanıyor: ${medicine.name}")
+            return
+        }
+
         when {
             medicine.isStockEmpty() -> {
                 // 🚨 Stok bitti
                 showOutOfStockNotification(context, medicine)
                 Log.w(TAG, "⚠️ STOK BİTTİ: ${medicine.name}")
+                // Son uyarı zamanını kaydet
+                prefs.edit().putLong(lastWarningKey, currentTime).apply()
             }
             medicine.isStockCritical() -> {
                 // 🔴 Kritik seviye (3 gün kaldı)
                 showLowStockNotification(context, medicine)
                 Log.w(TAG, "🔴 KRİTİK STOK: ${medicine.name} - ${medicine.daysRemainingInStock()} gün kaldı")
+                // Son uyarı zamanını kaydet
+                prefs.edit().putLong(lastWarningKey, currentTime).apply()
             }
             medicine.isStockLow() -> {
                 // 🟡 Düşük stok (threshold'a göre)
                 showLowStockNotification(context, medicine)
                 Log.w(TAG, "🟡 DÜŞÜK STOK: ${medicine.name} - ${medicine.daysRemainingInStock()} gün kaldı (${medicine.stockCount} doz)")
+                // Son uyarı zamanını kaydet
+                prefs.edit().putLong(lastWarningKey, currentTime).apply()
             }
         }
+    }
+
+    /**
+     * Stok uyarısını manuel olarak sıfırla (stok eklendiğinde kullan)
+     */
+    fun resetStockWarning(medicineId: String) {
+        val prefs = context.getSharedPreferences("stock_warnings", Context.MODE_PRIVATE)
+        prefs.edit().remove("last_warning_$medicineId").apply()
+        Log.d(TAG, "🔄 Stok uyarısı manuel olarak sıfırlandı: $medicineId")
     }
 
     /**
