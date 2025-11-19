@@ -18,9 +18,11 @@ data class User(
 
     // 🌟 Premium (Dozi Ekstra) bilgileri
     @get:PropertyName("isPremium")
+    @set:PropertyName("isPremium")
     val isPremium: Boolean = false,              // Premium aktif mi?
 
     @get:PropertyName("isTrial")
+    @set:PropertyName("isTrial")
     val isTrial: Boolean = false,                // Deneme sürümü mü?
 
     val premiumExpiryDate: Long = 0L,            // Premium bitiş tarihi (timestamp)
@@ -28,6 +30,7 @@ data class User(
 
     // 🚫 Ban sistemi
     @get:PropertyName("isBanned")
+    @set:PropertyName("isBanned")
     val isBanned: Boolean = false,               // Kullanıcı banlandı mı?
 
     val banReason: String? = null,               // Ban nedeni
