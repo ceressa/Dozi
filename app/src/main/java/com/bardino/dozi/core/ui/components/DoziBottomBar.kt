@@ -36,6 +36,7 @@ sealed class MoreMenuItem(
     val label: String,
     val description: String
 ) {
+    object Reminders : MoreMenuItem("reminder_list", Icons.Default.Notifications, "Hatırlatmalar", "Hatırlatma ayarlarını yönet")
     object Stats : MoreMenuItem("stats", Icons.Default.BarChart, "İstatistikler", "İlaç takip istatistikleri")
     object Badis : MoreMenuItem("badi_list", Icons.Default.People, "Badi", "Arkadaşlarınla birlikte takip et")
 }
@@ -75,7 +76,7 @@ fun DoziBottomBar(
         ) {
             mainItems.forEach { item ->
                 val selected = when (item) {
-                    is BottomNavItem.More -> currentRoute in listOf("stats", "badi_list")
+                    is BottomNavItem.More -> currentRoute in listOf("stats", "badi_list", "reminder_list")
                     else -> currentRoute == item.route
                 }
 
@@ -117,6 +118,12 @@ fun DoziBottomBar(
                                     if (currentRoute != item.route) {
                                         onNavigate(item.route)
                                     }
+                                }
+                            }
+                            is BottomNavItem.Home -> {
+                                // Ana Sayfa'ya her zaman navigate et
+                                if (currentRoute != item.route) {
+                                    onNavigate(item.route)
                                 }
                             }
                             else -> {
@@ -225,12 +232,13 @@ private fun MoreMenuBottomSheet(
             Spacer(modifier = Modifier.height(16.dp))
 
             val menuItems = listOf(
+                MoreMenuItem.Reminders,
                 MoreMenuItem.Stats,
                 MoreMenuItem.Badis
             )
 
             menuItems.forEach { item ->
-                val requiresLogin = item is MoreMenuItem.Badis
+                val requiresLogin = item is MoreMenuItem.Badis || item is MoreMenuItem.Reminders
                 val isSelected = currentRoute == item.route
 
                 MoreMenuItemCard(
