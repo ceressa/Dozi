@@ -17,8 +17,14 @@ data class Medicine(
     val frequencyValue: Int = 1,                // X value for "Her X günde bir"
     val startDate: Long = 0L,                   // Timestamp
     val endDate: Long? = null,                  // Null = sürekli kullanım
-    val stockCount: Int = 0,
-    val boxSize: Int = 0,
+
+    // 📦 Stok Takip Sistemi
+    val stockCount: Int = 0,                    // Kalan ilaç sayısı
+    val boxSize: Int = 0,                       // Bir kutudaki ilaç sayısı
+    val stockWarningThreshold: Int = 7,         // Kaç günlük kaldığında uyarı verilsin
+    val lastRestockDate: Long? = null,          // Son stok yenileme tarihi
+    val autoDecrementEnabled: Boolean = true,   // Aldım dendiğinde otomatik azalsın mı?
+
     val notes: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
@@ -65,4 +71,101 @@ enum class MedicineColor(val displayName: String, val hexColor: String, val emoj
     ORANGE("Turuncu", "#FF9800", "🧡"),   // Şeker ilaçları
     PINK("Pembe", "#E91E63", "💗"),       // Hormon
     BROWN("Kahverengi", "#795548", "🤎")  // Diğer
+}
+
+// 📦 Stock Management Extensions
+/**
+ * Günlük kullanım miktarını hesapla
+ */
+fun Medicine.dailyUsage(): Double {
+    if (times.isEmpty()) return 0.0
+    val dosageAmount = dosage.toDoubleOrNull() ?: 1.0
+    
+    return when (frequency) {
+        "Her gün" -> dosageAmount * times.size
+        "Gün aşırı" -> (dosageAmount * times.size) / 2.0
+        "Haftada bir" -> (dosageAmount * times.size) / 7.0
+        "Her X günde bir" -> (dosageAmount * times.size) / frequencyValue.toDouble()
+        else -> dosageAmount * times.size // Default: her gün
+    }
+}
+
+/**
+ * Stokta kaç gün kaldığını hesapla
+ */
+fun Medicine.daysRemainingInStock(): Int {
+    if (stockCount <= 0) return 0
+    val daily = dailyUsage()
+    if (daily <= 0) return Int.MAX_VALUE
+    
+    return (stockCount / daily).toInt()
+}
+
+/**
+ * Stok azaldı mı? (threshold'a göre)
+ */
+fun Medicine.isStockLow(): Boolean {
+    return daysRemainingInStock() <= stockWarningThreshold
+}
+
+/**
+ * Stok bitmek üzere mi?
+ */
+fun Medicine.isStockCritical(): Boolean {
+    return stockCount > 0 && daysRemainingInStock() <= 3
+}
+
+/**
+ * Stok tamamen bitti mi?
+ */
+fun Medicine.isStockEmpty(): Boolean {
+    return stockCount <= 0
+}
+
+/**
+ * Stok uyarı mesajı
+ */
+fun Medicine.getStockWarningMessage(): String? {
+    return when {
+        isStockEmpty() -> "⚠️ $name stoğu bitti! Yenilemeyi unutma."
+        isStockCritical() -> "🔴 $name stoğu ${daysRemainingInStock()} gün sonra bitecek!"
+        isStockLow() -> "🟡 $name stoğu ${daysRemainingInStock()} gün sonra bitecek."
+        else -> null
+    }
+}
+
+/**
+ * Stok seviyesi rengi
+ */
+fun Medicine.getStockLevelColor(): String {
+    return when {
+        isStockEmpty() -> "#F44336" // Red
+        isStockCritical() -> "#FF5722" // Deep Orange
+        isStockLow() -> "#FF9800" // Orange
+        else -> "#4CAF50" // Green
+    }
+}
+
+/**
+ * Stoğu azalt ve yeni Medicine döndür
+ */
+fun Medicine.decrementStock(amount: Double = dosage.toDoubleOrNull() ?: 1.0): Medicine {
+    if (!autoDecrementEnabled || stockCount <= 0) return this
+    
+    val newCount = (stockCount - amount.toInt()).coerceAtLeast(0)
+    return this.copy(
+        stockCount = newCount,
+        updatedAt = System.currentTimeMillis()
+    )
+}
+
+/**
+ * Stoğu artır (yeni kutu ekleme)
+ */
+fun Medicine.addStock(amount: Int): Medicine {
+    return this.copy(
+        stockCount = stockCount + amount,
+        lastRestockDate = System.currentTimeMillis(),
+        updatedAt = System.currentTimeMillis()
+    )
 }

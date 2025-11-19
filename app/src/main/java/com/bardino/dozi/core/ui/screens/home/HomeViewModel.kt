@@ -409,15 +409,15 @@ class HomeViewModel @Inject constructor(
                 Log.e(TAG, "❌ Error logging medication taken", e)
             }
 
-            // Stok azalt (eğer stok > 0 ise)
-            if (medicine.stockCount > 0) {
+            // 📦 Stok azalt (extension function kullan)
+            if (medicine.autoDecrementEnabled && medicine.stockCount > 0) {
                 try {
-                    val newStockCount = medicine.stockCount - 1
-                    medicineRepository.updateMedicineField(medicine.id, "stockCount", newStockCount)
-                    Log.d(TAG, "Stock decreased: ${medicine.name} -> $newStockCount")
+                    val updatedMedicine = medicine.decrementStock()
+                    medicineRepository.updateMedicineField(medicine.id, "stockCount", updatedMedicine.stockCount)
+                    Log.d(TAG, "📦 Stock decreased: ${medicine.name} -> ${updatedMedicine.stockCount} (${updatedMedicine.daysRemainingInStock()} days remaining)")
 
                     // ⚠️ Stok uyarıları kontrol et
-                    checkStockWarnings(context, medicine.copy(stockCount = newStockCount))
+                    checkStockWarnings(context, updatedMedicine)
                 } catch (e: Exception) {
                     Log.e(TAG, "Failed to decrease stock", e)
                 }
@@ -591,19 +591,25 @@ class HomeViewModel @Inject constructor(
     /**
      * Stok uyarılarını kontrol et
      */
+    /**
+     * Stok uyarılarını kontrol et (Extension fonksiyonlar kullan)
+     */
     private fun checkStockWarnings(context: Context, medicine: Medicine) {
-        val LOW_STOCK_THRESHOLD = 5
-
         when {
-            medicine.stockCount == 0 -> {
+            medicine.isStockEmpty() -> {
                 // 🚨 Stok bitti
                 showOutOfStockNotification(context, medicine)
                 Log.w(TAG, "⚠️ STOK BİTTİ: ${medicine.name}")
             }
-            medicine.stockCount <= LOW_STOCK_THRESHOLD -> {
-                // ⚠️ Düşük stok
+            medicine.isStockCritical() -> {
+                // 🔴 Kritik seviye (3 gün kaldı)
                 showLowStockNotification(context, medicine)
-                Log.w(TAG, "⚠️ DÜŞÜK STOK: ${medicine.name} - ${medicine.stockCount} doz kaldı")
+                Log.w(TAG, "🔴 KRİTİK STOK: ${medicine.name} - ${medicine.daysRemainingInStock()} gün kaldı")
+            }
+            medicine.isStockLow() -> {
+                // 🟡 Düşük stok (threshold'a göre)
+                showLowStockNotification(context, medicine)
+                Log.w(TAG, "🟡 DÜŞÜK STOK: ${medicine.name} - ${medicine.daysRemainingInStock()} gün kaldı (${medicine.stockCount} doz)")
             }
         }
     }
