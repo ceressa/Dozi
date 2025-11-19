@@ -144,16 +144,10 @@ enum class AchievementType(
 }
 
 /**
- * 📊 Kullanıcı İstatistikleri (Rozet hesaplaması için)
+ * Note: UserStats model is defined in UserStats.kt
+ * Fields used for achievements:
+ * - currentStreak: Int
+ * - longestStreak: Int
+ * - totalMedicationsTaken: Int (total doses)
+ * - achievements: List<String>
  */
-data class UserStats(
-    val userId: String = "",
-    val currentStreak: Int = 0,
-    val longestStreak: Int = 0,
-    val totalDosesTaken: Int = 0,
-    val totalMedicines: Int = 0,
-    val perfectWeeks: Int = 0,
-    val perfectMonths: Int = 0,
-    @ServerTimestamp
-    val lastUpdated: Timestamp? = null
-)

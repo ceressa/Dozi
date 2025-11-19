@@ -6,8 +6,10 @@ import androidx.annotation.RequiresApi
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.model.UserStats
+import com.bardino.dozi.core.data.model.Achievement
 import com.bardino.dozi.core.data.repository.UserStatsRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
+import com.bardino.dozi.core.data.repository.AchievementRepository
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -24,6 +26,7 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
     data class StatsUiState(
         val stats: UserStats? = null,
         val weeklyLogs: List<DayLog> = emptyList(),
+        val achievements: List<Achievement> = emptyList(),
         val isLoading: Boolean = true
     )
 
@@ -32,6 +35,7 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
 
     private val userStatsRepository = UserStatsRepository()
     private val medicationLogRepository = MedicationLogRepository(application)
+    private val achievementRepository = AchievementRepository()
 
     init {
         loadStats()
@@ -47,10 +51,14 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
             // Haftalık gerçek veriyi Firestore'dan çek
             val weeklyLogs = loadWeeklyLogs()
 
+            // 🏆 Başarıları yükle
+            val achievements = achievementRepository.getAllAchievements()
+
             _uiState.update {
                 it.copy(
                     stats = stats,
                     weeklyLogs = weeklyLogs,
+                    achievements = achievements,
                     isLoading = false
                 )
             }

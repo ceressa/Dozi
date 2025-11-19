@@ -11,6 +11,8 @@ import com.bardino.dozi.core.data.model.User
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.UserRepository
+import com.bardino.dozi.core.data.repository.AchievementRepository
+import com.bardino.dozi.core.data.repository.UserStatsRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -34,7 +36,9 @@ class HomeViewModel @Inject constructor(
     @ApplicationContext private val context: Context,
     private val medicineRepository: MedicineRepository,
     private val medicationLogRepository: MedicationLogRepository,
-    private val userRepository: UserRepository
+    private val userRepository: UserRepository,
+    private val achievementRepository: AchievementRepository,
+    private val userStatsRepository: UserStatsRepository
 ) : ViewModel() {
 
     companion object {
@@ -426,6 +430,9 @@ class HomeViewModel @Inject constructor(
                 showOutOfStockNotification(context, medicine)
             }
 
+            // 🏆 Achievement kontrolü
+            checkAchievementsAfterMedicineTaken()
+
             // Success popup göster
             _uiState.update { it.copy(showSuccessPopup = true) }
 
@@ -646,6 +653,46 @@ class HomeViewModel @Inject constructor(
             method.invoke(null, context, medicine.name)
         } catch (e: Exception) {
             Log.e(TAG, "Failed to show out of stock notification", e)
+        }
+    }
+
+    /**
+     * 🏆 İlaç alındıktan sonra başarıları kontrol et
+     */
+    private fun checkAchievementsAfterMedicineTaken() {
+        viewModelScope.launch {
+            try {
+                // UserStats'ı getir
+                val userStats = userStatsRepository.getUserStats() ?: return@launch
+
+                // Tüm ilaçları ve logları al
+                val allMedicines = medicineRepository.getAllMedicines()
+                val totalMedicines = allMedicines.size
+
+                Log.d(TAG, "🏆 Checking achievements: streak=${userStats.currentStreak}, totalDoses=${userStats.totalMedicationsTaken}, medicines=$totalMedicines")
+
+                // 🔥 Streak achievements
+                achievementRepository.checkStreakAchievements(userStats.currentStreak)
+
+                // 🏅 First step achievements
+                achievementRepository.checkFirstStepAchievements(
+                    hasMedicine = totalMedicines > 0,
+                    hasTakenDose = userStats.totalMedicationsTaken > 0
+                )
+
+                // 📚 Medicine collector achievements
+                achievementRepository.checkMedicineCollectorAchievements(totalMedicines)
+
+                // 💯 Total doses achievements
+                achievementRepository.checkTotalDosesAchievements(userStats.totalMedicationsTaken)
+
+                // 🎯 Perfect compliance achievements (TODO: calculate consecutive perfect days)
+                // achievementRepository.checkPerfectComplianceAchievements(consecutivePerfectDays)
+
+                Log.d(TAG, "✅ Achievement check completed")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Error checking achievements", e)
+            }
         }
     }
 }

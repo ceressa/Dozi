@@ -85,7 +85,7 @@ fun StatsScreen(
                     WeeklySummaryCard(weeklyData = uiState.weeklyLogs)
 
                     // 🏆 Başarımlar
-                    AchievementsCard(stats = uiState.stats)
+                    AchievementsCard(achievements = uiState.achievements)
 
                     // 📈 Uyumluluk Oranı
                     ComplianceCard(stats = uiState.stats)
@@ -300,8 +300,9 @@ private fun WeeklyDayRow(day: DayLog) {
 }
 
 @Composable
-private fun AchievementsCard(stats: UserStats?) {
-    val unlockedAchievements = stats?.achievements ?: emptyList()
+private fun AchievementsCard(achievements: List<com.bardino.dozi.core.data.model.Achievement>) {
+    val unlockedCount = achievements.count { it.isUnlocked }
+    val totalCount = achievements.size
 
     Card(
         modifier = Modifier.fillMaxWidth(),
@@ -313,48 +314,91 @@ private fun AchievementsCard(stats: UserStats?) {
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
-            Text(
-                "🏆 Başarımlar",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    "🏆 Başarımlar",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+                Text(
+                    "$unlockedCount/$totalCount",
+                    style = MaterialTheme.typography.titleMedium,
+                    fontWeight = FontWeight.Bold,
+                    color = DoziTurquoise
+                )
+            }
 
             Spacer(Modifier.height(8.dp))
 
-            if (Achievements.ALL.isEmpty()) {
-                // Hiç başarım yoksa
+            if (achievements.isEmpty()) {
+                // Hiç başarım yoksa (yükleniyor veya hata)
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
                         .padding(vertical = 24.dp),
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
+                    CircularProgressIndicator(color = DoziTurquoise, modifier = Modifier.size(48.dp))
+                    Spacer(Modifier.height(12.dp))
                     Text(
-                        "🎯",
-                        style = MaterialTheme.typography.displayMedium
-                    )
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Yakında eklenecek!",
-                        style = MaterialTheme.typography.bodyLarge,
-                        fontWeight = FontWeight.Medium,
+                        "Başarımlar yükleniyor...",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant
                     )
                 }
             } else {
-                // Tüm başarımları göster (kilitli/açık)
-                Achievements.ALL.forEach { achievement ->
-                    val isUnlocked = achievement.id in unlockedAchievements
-                    AchievementItem(
-                        title = achievement.title,
-                        description = achievement.description,
-                        icon = achievement.icon,
-                        isUnlocked = isUnlocked
-                    )
+                // Kategorilere göre grupla
+                val streakAchievements = achievements.filter {
+                    it.type.name.startsWith("STREAK_")
+                }
+                val perfectAchievements = achievements.filter {
+                    it.type.name.startsWith("PERFECT_")
+                }
+                val firstStepAchievements = achievements.filter {
+                    it.type.name.startsWith("FIRST_")
+                }
+                val collectorAchievements = achievements.filter {
+                    it.type.name.startsWith("MEDICINE_COLLECTOR")
+                }
+                val doseAchievements = achievements.filter {
+                    it.type.name.startsWith("TOTAL_DOSES")
                 }
 
-                if (unlockedAchievements.isEmpty()) {
+                // 🔥 Streak Başarıları
+                if (streakAchievements.isNotEmpty()) {
+                    AchievementCategory("🔥 Streak Başarıları", streakAchievements)
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                // 🎯 Mükemmel Uyum
+                if (perfectAchievements.isNotEmpty()) {
+                    AchievementCategory("🎯 Mükemmel Uyum", perfectAchievements)
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                // 🏅 İlk Adımlar
+                if (firstStepAchievements.isNotEmpty()) {
+                    AchievementCategory("🏅 İlk Adımlar", firstStepAchievements)
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                // 📚 Koleksiyoncu
+                if (collectorAchievements.isNotEmpty()) {
+                    AchievementCategory("📚 Koleksiyoncu", collectorAchievements)
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                // 💯 Toplam Doz
+                if (doseAchievements.isNotEmpty()) {
+                    AchievementCategory("💯 Toplam Doz", doseAchievements)
+                }
+
+                if (unlockedCount == 0) {
                     Spacer(Modifier.height(8.dp))
                     Text(
                         "💪 Düzenli ilaç kullanımını sürdürerek başarım kazanabilirsin!",
@@ -362,6 +406,126 @@ private fun AchievementsCard(stats: UserStats?) {
                         color = DoziTurquoise,
                         textAlign = TextAlign.Center,
                         modifier = Modifier.fillMaxWidth()
+                    )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun AchievementCategory(
+    title: String,
+    achievements: List<com.bardino.dozi.core.data.model.Achievement>
+) {
+    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+        Text(
+            title,
+            style = MaterialTheme.typography.titleSmall,
+            fontWeight = FontWeight.SemiBold,
+            color = MaterialTheme.colorScheme.onSurfaceVariant
+        )
+        achievements.forEach { achievement ->
+            AchievementItemWithProgress(achievement)
+        }
+    }
+}
+
+@Composable
+private fun AchievementItemWithProgress(achievement: com.bardino.dozi.core.data.model.Achievement) {
+    val progressPercentage = achievement.type.getProgressPercentage(achievement.progress)
+    val color = try {
+        Color(android.graphics.Color.parseColor(achievement.type.color))
+    } catch (e: Exception) {
+        DoziTurquoise
+    }
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        color = if (achievement.isUnlocked) color.copy(alpha = 0.1f) else Gray200.copy(alpha = 0.3f),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(12.dp),
+            verticalArrangement = Arrangement.spacedBy(8.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(12.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Emoji Icon
+                Text(
+                    achievement.type.emoji,
+                    style = MaterialTheme.typography.headlineMedium,
+                    modifier = Modifier
+                        .size(48.dp)
+                        .clip(CircleShape)
+                        .background(if (achievement.isUnlocked) color.copy(alpha = 0.2f) else Gray200.copy(alpha = 0.5f))
+                        .wrapContentSize(Alignment.Center),
+                    fontSize = 24.sp
+                )
+
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        achievement.type.displayName,
+                        style = MaterialTheme.typography.titleSmall,
+                        fontWeight = FontWeight.Bold,
+                        color = if (achievement.isUnlocked) MaterialTheme.colorScheme.onSurface else MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+                    Text(
+                        achievement.type.description,
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        fontSize = 12.sp
+                    )
+                }
+
+                if (achievement.isUnlocked) {
+                    Icon(
+                        Icons.Default.CheckCircle,
+                        contentDescription = "Unlocked",
+                        tint = SuccessGreen,
+                        modifier = Modifier.size(24.dp)
+                    )
+                } else {
+                    Icon(
+                        Icons.Default.Lock,
+                        contentDescription = "Locked",
+                        tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                        modifier = Modifier.size(20.dp)
+                    )
+                }
+            }
+
+            // Progress Bar
+            if (!achievement.isUnlocked && achievement.target > 0) {
+                Column(verticalArrangement = Arrangement.spacedBy(4.dp)) {
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Text(
+                            "${achievement.progress} / ${achievement.target}",
+                            style = MaterialTheme.typography.labelSmall,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            fontSize = 11.sp
+                        )
+                        Text(
+                            "${progressPercentage.toInt()}%",
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = color,
+                            fontSize = 11.sp
+                        )
+                    }
+                    LinearProgressIndicator(
+                        progress = progressPercentage / 100f,
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(6.dp)
+                            .clip(RoundedCornerShape(3.dp)),
+                        color = color,
+                        trackColor = Gray200.copy(alpha = 0.3f)
                     )
                 }
             }
