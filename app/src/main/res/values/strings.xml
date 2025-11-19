@@ -10,4 +10,8 @@
     <!-- 🔔 Firebase Cloud Messaging -->
     <string name="default_notification_channel_id">dozi_med_channel</string>
 
+    <!-- 🔲 Widget -->
+    <string name="widget_description">Sıradaki ilaç hatırlatmalarınızı görün ve hızlıca işaretleyin</string>
+    <string name="widget_name">Dozi Hatırlatma</string>
+
 </resources>
