@@ -42,79 +42,9 @@ data class UserStats(
 )
 
 /**
- * 🏆 Achievement (başarı rozeti)
+ * Note: Achievement model is defined in Achievement.kt
+ * This file only contains UserStats and ComplianceTrend models
  */
-data class Achievement(
-    val id: String,                      // "first_week", "30_days", etc.
-    val title: String,                   // "İlk Hafta"
-    val description: String,             // "7 gün üst üste ilaç aldın!"
-    val icon: String,                    // "🏅", "🎖️", "👑"
-    val requirement: AchievementRequirement,
-    val unlockedAt: Timestamp? = null    // Null = henüz kazanılmadı
-)
-
-/**
- * Achievement gereksinimleri
- */
-sealed class AchievementRequirement {
-    data class StreakDays(val days: Int) : AchievementRequirement()
-    data class TotalMedications(val count: Int) : AchievementRequirement()
-    data class ComplianceRate(val rate: Float) : AchievementRequirement() // 0-100
-    data class ConsecutivePerfectDays(val days: Int) : AchievementRequirement()
-}
-
-/**
- * Predefined achievements
- */
-object Achievements {
-    val FIRST_WEEK = Achievement(
-        id = "first_week",
-        title = "İlk Hafta",
-        description = "7 gün üst üste ilaçlarını aldın!",
-        icon = "🏅",
-        requirement = AchievementRequirement.StreakDays(7)
-    )
-
-    val THIRTY_DAYS = Achievement(
-        id = "30_days",
-        title = "Bir Ay",
-        description = "30 gün üst üste düzenli kullanım!",
-        icon = "🎖️",
-        requirement = AchievementRequirement.StreakDays(30)
-    )
-
-    val PERFECT_MONTH = Achievement(
-        id = "perfect_month",
-        title = "Mükemmel Ay",
-        description = "Bir ay boyunca %100 uyumluluk!",
-        icon = "👑",
-        requirement = AchievementRequirement.ComplianceRate(100f)
-    )
-
-    val HUNDRED_MEDS = Achievement(
-        id = "hundred_meds",
-        title = "Yüzlük Kulüp",
-        description = "100 ilaç aldın!",
-        icon = "💯",
-        requirement = AchievementRequirement.TotalMedications(100)
-    )
-
-    val YEAR_STREAK = Achievement(
-        id = "year_streak",
-        title = "Bir Yıl",
-        description = "365 gün üst üste! İnanılmaz!",
-        icon = "🏆",
-        requirement = AchievementRequirement.StreakDays(365)
-    )
-
-    val ALL = listOf(
-        FIRST_WEEK,
-        THIRTY_DAYS,
-        PERFECT_MONTH,
-        HUNDRED_MEDS,
-        YEAR_STREAK
-    )
-}
 
 /**
  * 📊 Uyumluluk trend verisi (grafikler için)
