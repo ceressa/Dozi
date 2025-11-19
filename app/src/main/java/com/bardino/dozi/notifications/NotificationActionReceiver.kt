@@ -163,10 +163,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
             putString("last_medicine", medicineName)
         }
 
-        nm.cancel(NotificationHelper.NOTIF_ID)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_1)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_2)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_3)
+        // 🚫 Aynı ilaca ait TÜM bildirimleri iptal et
+        NotificationHelper.cancelAllNotificationsForMedicine(context, medicineId, time)
 
         // ✅ MedicationLog'a kaydet
         if (medicineId.isNotEmpty()) {
@@ -219,10 +217,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
             putLong("last_skip_time", System.currentTimeMillis())
         }
 
-        nm.cancel(NotificationHelper.NOTIF_ID)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_1)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_2)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_3)
+        // 🚫 Aynı ilaca ait TÜM bildirimleri iptal et
+        NotificationHelper.cancelAllNotificationsForMedicine(context, medicineId, time)
 
         // ✅ MedicationLog'a kaydet
         if (medicineId.isNotEmpty()) {
@@ -262,10 +258,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
         scheduledTime: Long,
         nm: NotificationManagerCompat
     ) {
-        nm.cancel(NotificationHelper.NOTIF_ID)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_1)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_2)
-        nm.cancel(NotificationHelper.NOTIF_ID_ESCALATION_3)
+        // 🚫 Aynı ilaca ait TÜM bildirimleri iptal et
+        NotificationHelper.cancelAllNotificationsForMedicine(context, medicineId, time)
 
         // ✅ MedicationLog'a kaydet (SNOOZED)
         if (medicineId.isNotEmpty()) {

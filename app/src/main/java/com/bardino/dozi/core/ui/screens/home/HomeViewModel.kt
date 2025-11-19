@@ -436,6 +436,11 @@ class HomeViewModel @Inject constructor(
             // 🚫 Escalation alarmlarını iptal et
             cancelEscalationAlarms(context, medicine.id, time)
 
+            // 🚫 Tüm bildirimleri iptal et (notification drawer'dan temizle)
+            com.bardino.dozi.notifications.NotificationHelper.cancelAllNotificationsForMedicine(
+                context, medicine.id, time
+            )
+
             // Success popup göster
             _uiState.update { it.copy(showSuccessPopup = true) }
 
@@ -492,6 +497,11 @@ class HomeViewModel @Inject constructor(
 
             // 🚫 Escalation alarmlarını iptal et
             cancelEscalationAlarms(context, medicine.id, time)
+
+            // 🚫 Tüm bildirimleri iptal et (notification drawer'dan temizle)
+            com.bardino.dozi.notifications.NotificationHelper.cancelAllNotificationsForMedicine(
+                context, medicine.id, time
+            )
 
             // Listeyi güncelle
             delay(100)
