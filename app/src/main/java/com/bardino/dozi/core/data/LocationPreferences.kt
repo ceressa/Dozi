@@ -1,8 +1,12 @@
 package com.bardino.dozi.core.data
 
 import android.content.Context
+import com.bardino.dozi.core.data.repository.UserPreferencesRepository
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 
 data class SavedLocation(
     val id: String,
@@ -23,6 +27,16 @@ object LocationPreferences {
         prefs.edit()
             .putString(KEY_LOCATIONS, json)
             .apply()
+
+        // ✅ Firebase'e senkronize et
+        CoroutineScope(Dispatchers.IO).launch {
+            try {
+                val userPrefsRepo = UserPreferencesRepository(context)
+                userPrefsRepo.syncLocations(json)
+            } catch (e: Exception) {
+                android.util.Log.e("LocationPreferences", "❌ Konumlar Firebase'e senkronize edilemedi", e)
+            }
+        }
     }
 
     fun getLocations(context: Context): List<SavedLocation> {

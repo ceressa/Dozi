@@ -26,11 +26,13 @@ import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.bardino.dozi.MainActivity
 import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import java.util.Calendar
 
 /**
  * Dozi Hatırlatma Widget'ı
@@ -419,11 +421,38 @@ class TakeMedicineAction : ActionCallback {
         val dosage = parameters[ActionParamKeys.DOSAGE] ?: return
         val time = parameters[ActionParamKeys.TIME] ?: return
 
-        // SharedPreferences'a kaydet (offline support)
+        // Scheduled time'ı hesapla
+        val scheduledTime = parseTimeToMillis(time)
+
+        // MedicationLogRepository ile Firebase'e senkronize et (offline-first)
+        val repository = MedicationLogRepository(context)
+        withContext(Dispatchers.IO) {
+            repository.logMedicationTaken(
+                medicineId = medicineId,
+                medicineName = medicineName,
+                dosage = dosage,
+                scheduledTime = scheduledTime
+            )
+        }
+
+        // SharedPreferences'a da kaydet (backward compatibility)
         saveMedicineStatus(context, medicineId, time, "taken")
 
         // Widget'ı güncelle
         ReminderWidgetUpdater.updateWidgets(context)
+    }
+
+    private fun parseTimeToMillis(time: String): Long {
+        val parts = time.split(":")
+        val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+        val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+
+        return Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
     }
 
     private fun saveMedicineStatus(context: Context, medicineId: String, time: String, status: String) {
@@ -449,11 +478,39 @@ class SkipMedicineAction : ActionCallback {
         val dosage = parameters[ActionParamKeys.DOSAGE] ?: return
         val time = parameters[ActionParamKeys.TIME] ?: return
 
-        // SharedPreferences'a kaydet
+        // Scheduled time'ı hesapla
+        val scheduledTime = parseTimeToMillis(time)
+
+        // MedicationLogRepository ile Firebase'e senkronize et (offline-first)
+        val repository = MedicationLogRepository(context)
+        withContext(Dispatchers.IO) {
+            repository.logMedicationSkipped(
+                medicineId = medicineId,
+                medicineName = medicineName,
+                dosage = dosage,
+                scheduledTime = scheduledTime,
+                reason = "Widget'tan atlandı"
+            )
+        }
+
+        // SharedPreferences'a da kaydet (backward compatibility)
         saveMedicineStatus(context, medicineId, time, "skipped")
 
         // Widget'ı güncelle
         ReminderWidgetUpdater.updateWidgets(context)
+    }
+
+    private fun parseTimeToMillis(time: String): Long {
+        val parts = time.split(":")
+        val hour = parts.getOrNull(0)?.toIntOrNull() ?: 0
+        val minute = parts.getOrNull(1)?.toIntOrNull() ?: 0
+
+        return Calendar.getInstance().apply {
+            set(Calendar.HOUR_OF_DAY, hour)
+            set(Calendar.MINUTE, minute)
+            set(Calendar.SECOND, 0)
+            set(Calendar.MILLISECOND, 0)
+        }.timeInMillis
     }
 
     private fun saveMedicineStatus(context: Context, medicineId: String, time: String, status: String) {
