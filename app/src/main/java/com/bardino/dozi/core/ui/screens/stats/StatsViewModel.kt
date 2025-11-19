@@ -33,9 +33,9 @@ class StatsViewModel(application: Application) : AndroidViewModel(application) {
     private val _uiState = MutableStateFlow(StatsUiState())
     val uiState: StateFlow<StatsUiState> = _uiState.asStateFlow()
 
-    private val userStatsRepository = UserStatsRepository()
-    private val medicationLogRepository = MedicationLogRepository(application)
     private val achievementRepository = AchievementRepository()
+    private val medicationLogRepository = MedicationLogRepository(application)
+    private val userStatsRepository = UserStatsRepository(achievementRepository)
 
     init {
         loadStats()
