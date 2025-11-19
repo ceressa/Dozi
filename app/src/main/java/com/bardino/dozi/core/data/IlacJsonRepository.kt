@@ -10,21 +10,28 @@ object IlacJsonRepository {
      * burada ilaclar.json tekrar okunmaz.
      */
     fun search(context: Context, query: String): List<IlacSearchResult> {
+        android.util.Log.d("IlacJsonRepository", "Search called with query: '$query'")
+
         // Eğer cache henüz hazır değilse, güvenlik için initialize et
         if (!MedicineRepository.isInitialized()) {
+            android.util.Log.d("IlacJsonRepository", "Cache not initialized, initializing now...")
             MedicineRepository.initialize(context)
         }
 
         val clean = query.trim().lowercase()
         val ilaclar = MedicineRepository.ilaclarCache ?: emptyList()
+        android.util.Log.d("IlacJsonRepository", "Cache size: ${ilaclar.size}, searching for: '$clean'")
 
-        return ilaclar
+        val results = ilaclar
             .filter {
                 it.Product_Name?.lowercase()?.contains(clean) == true ||
                         it.Active_Ingredient?.lowercase()?.contains(clean) == true
             }
             .take(50) // 💡 sadece ilk 50 sonucu getir
             .map { IlacSearchResult(it) }
+
+        android.util.Log.d("IlacJsonRepository", "Search results: ${results.size} medicines found")
+        return results
     }
 
     fun searchByBarcode(context: Context, barcode: String): Ilac? {
