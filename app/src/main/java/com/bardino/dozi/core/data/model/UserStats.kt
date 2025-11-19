@@ -23,6 +23,10 @@ data class UserStats(
     val totalMedicationsSkipped: Int = 0, // Toplam atlanan ilaç sayısı
     val complianceRate: Float = 0f,       // Uyumluluk oranı (0-100)
 
+    // 💊 İlaç koleksiyonu
+    val totalMedicines: Int = 0,          // Kullanıcının eklediği toplam ilaç sayısı
+    val totalDosesTaken: Int = 0,         // Toplam alınan doz sayısı (totalMedicationsTaken ile aynı)
+
     // 🏆 Achievement rozetleri
     val achievements: List<String> = emptyList(), // Kazanılan achievement ID'leri
 

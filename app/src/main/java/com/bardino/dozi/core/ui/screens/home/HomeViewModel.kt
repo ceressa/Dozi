@@ -8,6 +8,11 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.User
+import com.bardino.dozi.core.data.model.decrementStock
+import com.bardino.dozi.core.data.model.daysRemainingInStock
+import com.bardino.dozi.core.data.model.isStockLow
+import com.bardino.dozi.core.data.model.isStockCritical
+import com.bardino.dozi.core.data.model.isStockEmpty
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.UserRepository
