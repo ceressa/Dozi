@@ -17,8 +17,14 @@ data class Medicine(
     val frequencyValue: Int = 1,                // X value for "Her X günde bir"
     val startDate: Long = 0L,                   // Timestamp
     val endDate: Long? = null,                  // Null = sürekli kullanım
-    val stockCount: Int = 0,
-    val boxSize: Int = 0,
+
+    // 📦 Stok Takip Sistemi
+    val stockCount: Int = 0,                    // Kalan ilaç sayısı
+    val boxSize: Int = 0,                       // Bir kutudaki ilaç sayısı
+    val stockWarningThreshold: Int = 7,         // Kaç günlük kaldığında uyarı verilsin
+    val lastRestockDate: Long? = null,          // Son stok yenileme tarihi
+    val autoDecrementEnabled: Boolean = true,   // Aldım dendiğinde otomatik azalsın mı?
+
     val notes: String = "",
     val createdAt: Long = System.currentTimeMillis(),
     val updatedAt: Long = System.currentTimeMillis(),
