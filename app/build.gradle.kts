@@ -7,6 +7,19 @@ plugins {
     id("kotlin-parcelize")
 }
 
+// 📊 Git commit sayısını al (her commit otomatik artış)
+fun getGitCommitCount(): Int {
+    return try {
+        val process = Runtime.getRuntime().exec("git rev-list --count HEAD")
+        process.waitFor()
+        val output = process.inputStream.bufferedReader().readText().trim()
+        output.toIntOrNull() ?: 1
+    } catch (e: Exception) {
+        println("⚠️ Git commit sayısı alınamadı, varsayılan değer kullanılıyor: ${e.message}")
+        1 // Fallback değer
+    }
+}
+
 android {
     namespace = "com.bardino.dozi"
     compileSdk = 35
@@ -15,7 +28,7 @@ android {
         applicationId = "com.bardino.dozi"
         minSdk = 24
         targetSdk = 35
-        versionCode = 1
+        versionCode = getGitCommitCount() // 🚀 Her commit otomatik artış
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
