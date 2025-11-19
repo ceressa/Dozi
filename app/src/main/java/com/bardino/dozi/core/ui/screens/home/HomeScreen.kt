@@ -375,6 +375,7 @@ fun HomeScreen(
                         CompactStreakCard(
                             context = context,
                             medicines = uiState.todaysMedicines,
+                            onNavigateToStats = { navController.navigate(Screen.Stats.route) },
                             modifier = Modifier.weight(1f)
                         )
 
@@ -2683,6 +2684,7 @@ private fun BadiPromotionCard(
 private fun CompactStreakCard(
     context: Context,
     medicines: List<Medicine>,
+    onNavigateToStats: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     val today = getCurrentDateString()
@@ -2696,10 +2698,30 @@ private fun CompactStreakCard(
     val prefs = context.getSharedPreferences("dozi_streak", Context.MODE_PRIVATE)
     val currentStreak = prefs.getInt("current_streak", 0)
 
+    // Streak seviyesine göre emoji
+    val streakEmoji = when {
+        currentStreak == 0 -> "💧"
+        currentStreak in 1..6 -> "🔥"
+        currentStreak in 7..29 -> "🔥🔥"
+        currentStreak in 30..99 -> "💪"
+        currentStreak in 100..364 -> "🌟"
+        else -> "👑" // 365+ gün
+    }
+
+    val streakTitle = when {
+        currentStreak == 0 -> "Başla"
+        currentStreak in 1..6 -> "Streak"
+        currentStreak in 7..29 -> "Güçlü"
+        currentStreak in 30..99 -> "Harika"
+        currentStreak in 100..364 -> "Efsane"
+        else -> "Kral"
+    }
+
     Card(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 12.dp),
+            .padding(horizontal = 12.dp)
+            .clickable { onNavigateToStats() },
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
@@ -2717,7 +2739,7 @@ private fun CompactStreakCard(
             verticalArrangement = Arrangement.spacedBy(6.dp)
         ) {
             Text(
-                text = "🔥",
+                text = streakEmoji,
                 style = MaterialTheme.typography.headlineMedium
             )
             Text(
@@ -2727,7 +2749,7 @@ private fun CompactStreakCard(
                 color = DoziRed
             )
             Text(
-                text = "Streak",
+                text = streakTitle,
                 style = MaterialTheme.typography.bodySmall,
                 color = TextSecondary
             )
