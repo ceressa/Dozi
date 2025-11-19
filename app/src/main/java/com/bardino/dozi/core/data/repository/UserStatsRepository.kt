@@ -9,11 +9,16 @@ import kotlinx.coroutines.tasks.await
 import java.time.LocalDate
 import java.time.ZoneId
 import java.util.Date
+import javax.inject.Inject
+import javax.inject.Singleton
 
 /**
  * UserStats Repository - Kullanıcı istatistikleri ve gamification
  */
-class UserStatsRepository {
+@Singleton
+class UserStatsRepository @Inject constructor(
+    private val achievementRepository: AchievementRepository
+) {
     private val firestore = FirebaseFirestore.getInstance()
     private val auth = FirebaseAuth.getInstance()
     private val TAG = "UserStatsRepository"
@@ -103,8 +108,8 @@ class UserStatsRepository {
 
             Log.d(TAG, "Streak updated: $newStreak days")
 
-            // Achievement kontrolü
-            checkAndUnlockAchievements(newStreak, stats)
+            // Achievement kontrolü (AchievementRepository'ye delege et)
+            achievementRepository.checkStreakAchievements(newStreak)
 
         } catch (e: Exception) {
             Log.e(TAG, "Error updating streak", e)
@@ -135,66 +140,9 @@ class UserStatsRepository {
     }
 
     /**
-     * Achievement kontrolü ve kilidi açma
+     * Note: Achievement kontrolleri artık AchievementRepository tarafından yapılıyor.
+     * Bu repository sadece UserStats verilerini yönetir.
      */
-    private suspend fun checkAndUnlockAchievements(currentStreak: Int, stats: UserStats) {
-        try {
-            val userId = auth.currentUser?.uid ?: return
-            val unlockedAchievements = stats.achievements.toMutableList()
-
-            Achievements.ALL.forEach { achievement ->
-                if (achievement.id !in unlockedAchievements) {
-                    val unlocked = when (val req = achievement.requirement) {
-                        is AchievementRequirement.StreakDays -> currentStreak >= req.days
-                        is AchievementRequirement.TotalMedications -> stats.totalMedicationsTaken >= req.count
-                        is AchievementRequirement.ComplianceRate -> stats.complianceRate >= req.rate
-                        is AchievementRequirement.ConsecutivePerfectDays -> currentStreak >= req.days
-                    }
-
-                    if (unlocked) {
-                        unlockedAchievements.add(achievement.id)
-                        Log.d(TAG, "Achievement unlocked: ${achievement.title}")
-
-                        // Bildirim gönder (opsiyonel, NotificationRepository ile)
-                        sendAchievementNotification(achievement)
-                    }
-                }
-            }
-
-            // Güncelle
-            if (unlockedAchievements.size > stats.achievements.size) {
-                firestore.collection("user_stats")
-                    .document(userId)
-                    .update("achievements", unlockedAchievements)
-                    .await()
-            }
-        } catch (e: Exception) {
-            Log.e(TAG, "Error checking achievements", e)
-        }
-    }
-
-    /**
-     * Achievement bildirimi gönder
-     */
-    private suspend fun sendAchievementNotification(achievement: Achievement) {
-        try {
-            val userId = auth.currentUser?.uid ?: return
-            val notification = DoziNotification(
-                userId = userId,
-                type = NotificationType.SYSTEM,
-                title = "🏆 Başarı Kazandın!",
-                body = "${achievement.icon} ${achievement.title}: ${achievement.description}",
-                isRead = false,
-                createdAt = Timestamp.now()
-            )
-
-            firestore.collection("notifications")
-                .add(notification)
-                .await()
-        } catch (e: Exception) {
-            Log.e(TAG, "Error sending achievement notification", e)
-        }
-    }
 
     /**
      * Uyumluluk oranını hesapla ve güncelle
@@ -208,7 +156,7 @@ class UserStatsRepository {
             var totalScheduled = 0
             var totalTaken = 0
 
-            last30Days.forEach { date ->
+            for (date in last30Days) {
                 val logs = medicationLogRepository.getMedicationLogsForDate(date)
                 totalScheduled += logs.size
                 totalTaken += logs.count { it.status == MedicationStatus.TAKEN }
@@ -237,6 +185,12 @@ class UserStatsRepository {
     suspend fun onMedicationTaken(medicationLogRepository: MedicationLogRepository) {
         updateStreak(medicationLogRepository)
         updateComplianceRate(medicationLogRepository)
+
+        // Tüm achievement'ları kontrol et
+        val stats = getUserStats()
+        if (stats != null) {
+            achievementRepository.checkAllAchievements(stats)
+        }
     }
 
     /**
