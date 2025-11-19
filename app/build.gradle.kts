@@ -7,7 +7,27 @@ plugins {
     id("kotlin-parcelize")
 }
 
-// 📊 Git commit sayısını al (her commit otomatik artış)
+// 🎯 Profesyonel Versiyonlama Sistemi
+// ────────────────────────────────────────────────────────────────
+// Semantic Versioning: MAJOR.MINOR.PATCH[-STAGE][+BUILD]
+// Örnek: 0.1.0-beta+241
+
+object AppVersion {
+    const val MAJOR = 0          // Breaking changes
+    const val MINOR = 1          // New features, backwards compatible
+    const val PATCH = 0          // Bug fixes
+
+    // 📋 Test Aşamaları:
+    // "alpha"      -> Internal Testing (Dahili Test)
+    // "beta"       -> Closed Testing (Kapalı Test) ✅ Şu an buradasınız
+    // "rc"         -> Open Testing (Açık Test / Release Candidate)
+    // "production" -> Production (Canlı Yayın)
+    const val RELEASE_STAGE = "beta"  // 🔵 Kapalı Test
+
+    const val INCLUDE_BUILD_NUMBER = true  // APK isminde build numarası göster
+}
+
+// 📊 Git commit sayısını al (versionCode için)
 fun getGitCommitCount(): Int {
     return try {
         val process = Runtime.getRuntime().exec("git rev-list --count HEAD")
@@ -16,8 +36,23 @@ fun getGitCommitCount(): Int {
         output.toIntOrNull() ?: 1
     } catch (e: Exception) {
         println("⚠️ Git commit sayısı alınamadı, varsayılan değer kullanılıyor: ${e.message}")
-        1 // Fallback değer
+        1
     }
+}
+
+// 🏷️ Version Name oluştur (Semantic Versioning)
+fun getVersionName(): String {
+    val baseVersion = "${AppVersion.MAJOR}.${AppVersion.MINOR}.${AppVersion.PATCH}"
+    val stageSuffix = when (AppVersion.RELEASE_STAGE) {
+        "production" -> ""
+        else -> "-${AppVersion.RELEASE_STAGE}"
+    }
+    val buildSuffix = if (AppVersion.INCLUDE_BUILD_NUMBER && AppVersion.RELEASE_STAGE != "production") {
+        ".${getGitCommitCount()}"
+    } else {
+        ""
+    }
+    return "$baseVersion$stageSuffix$buildSuffix"
 }
 
 android {
@@ -28,18 +63,21 @@ android {
         applicationId = "com.bardino.dozi"
         minSdk = 24
         targetSdk = 35
-        versionCode = getGitCommitCount() // 🚀 Her commit otomatik artış
-        versionName = "1.0"
+        versionCode = getGitCommitCount()  // Build number (her commit +1)
+        versionName = getVersionName()      // Semantic version (0.1.0-beta.241)
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
 
-    // 📦 APK dosya ismi
+    // 📦 APK dosya ismi (Profesyonel format)
+    // Örnek: Dozi_v0.1.0-beta.241_Release_build-241.apk
     android.applicationVariants.all {
         outputs.all {
-            val appName = "DoziApp"
+            val appName = "Dozi"
+            val version = defaultConfig.versionName
+            val buildNumber = defaultConfig.versionCode
             val variantName = name.replaceFirstChar { it.uppercase() }
-            val newName = "${appName}_${variantName}_v${defaultConfig.versionName}.apk"
+            val newName = "${appName}_v${version}_${variantName}_build-${buildNumber}.apk"
             val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
             outputImpl.outputFileName = newName
         }
