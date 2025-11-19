@@ -85,7 +85,8 @@ android {
 
     buildTypes {
         release {
-            isMinifyEnabled = false
+            isMinifyEnabled = true
+            isShrinkResources = true
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -176,6 +177,9 @@ dependencies {
     // 🔑 Google Sign-In
     implementation("com.google.android.gms:play-services-auth:21.1.0")
 
+    // 💳 Google Play Billing
+    implementation("com.android.billingclient:billing-ktx:6.2.1")
+
     // 🖼️ Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
 
@@ -185,9 +189,19 @@ dependencies {
 
     // 🧪 Test
     testImplementation("junit:junit:4.13.2")
+    testImplementation("org.jetbrains.kotlinx:kotlinx-coroutines-test:1.7.3")
+    testImplementation("io.mockk:mockk:1.13.8")
+    testImplementation("app.cash.turbine:turbine:1.0.0")
+    testImplementation("com.google.dagger:hilt-android-testing:2.51.1")
+    kspTest("com.google.dagger:hilt-android-compiler:2.51.1")
+    testImplementation("androidx.arch.core:core-testing:2.2.0") // LiveData instant executor
+
     androidTestImplementation("androidx.test.ext:junit:1.1.5")
     androidTestImplementation("androidx.test.espresso:espresso-core:3.5.1")
     androidTestImplementation(composeBom)
     androidTestImplementation("androidx.compose.ui:ui-test-junit4")
+    androidTestImplementation("com.google.dagger:hilt-android-testing:2.51.1")
+    kspAndroidTest("com.google.dagger:hilt-android-compiler:2.51.1")
+    androidTestImplementation("io.mockk:mockk-android:1.13.8")
     debugImplementation("androidx.compose.ui:ui-test-manifest")
 }

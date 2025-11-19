@@ -309,6 +309,12 @@ fun HomeScreen(
                         onNavigateToStats = { navController.navigate(Screen.Stats.route) }
                     )
                     Spacer(Modifier.height(12.dp))
+
+                    // 👥 Badi Promotion Card
+                    BadiPromotionCard(
+                        onNavigateToBadi = { navController.navigate(Screen.BadiList.route) }
+                    )
+                    Spacer(Modifier.height(12.dp))
                 }
 
                 HorizontalCalendar(
@@ -2564,6 +2570,87 @@ private fun MultiMedicineCard(
                         }
                     }
                 }
+            }
+        }
+    }
+}
+
+// 👥 Badi Promotion Card - Kullanıcıları Badi özelliğine yönlendirir
+@Composable
+private fun BadiPromotionCard(
+    onNavigateToBadi: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp)
+            .clickable { onNavigateToBadi() },
+        shape = RoundedCornerShape(20.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.horizontalGradient(
+                        listOf(DoziTurquoise.copy(alpha = 0.15f), DoziPurple.copy(alpha = 0.15f))
+                    )
+                )
+                .padding(16.dp)
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Icon
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(
+                            brush = Brush.linearGradient(listOf(DoziTurquoise, DoziPurple)),
+                            shape = RoundedCornerShape(16.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.People,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                // Text content
+                Column(
+                    modifier = Modifier.weight(1f),
+                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = "Badi ile Birlikte Takip Et",
+                        style = MaterialTheme.typography.titleMedium.copy(
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 17.sp
+                        ),
+                        color = Color(0xFF1A237E)
+                    )
+                    Text(
+                        text = "Sevdiklerinle ilaç takibini paylaş, onlar da senin için hatırlatsın!",
+                        style = MaterialTheme.typography.bodySmall.copy(fontSize = 13.sp),
+                        color = Color(0xFF546E7A),
+                        lineHeight = 16.sp
+                    )
+                }
+
+                // Arrow icon
+                Icon(
+                    imageVector = Icons.Default.ChevronRight,
+                    contentDescription = null,
+                    tint = DoziTurquoise,
+                    modifier = Modifier.size(28.dp)
+                )
             }
         }
     }
