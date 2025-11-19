@@ -57,17 +57,17 @@ enum class PremiumPlanType(
     val productId: String
 ) {
     FREE("Ücretsiz", 0, "0", ""),
-    TRIAL("Deneme", 7, "0", "dozi_trial"),
-    WEEKLY("Haftalık", 7, "24.99", "dozi_weekly"),
-    MONTHLY("Aylık", 30, "69.99", "dozi_monthly"),
-    YEARLY("Yıllık", 365, "599.99", "dozi_yearly"),
-    FAMILY_PREMIUM("Aile Paketi", 30, "149.99", "dozi_family_monthly"), // 4 kişiye kadar
-    FAMILY_YEARLY("Aile Paketi (Yıllık)", 365, "1299.99", "dozi_family_yearly"),
-    LIFETIME("Ömür Boyu", Int.MAX_VALUE, "1999.99", "dozi_lifetime");
+    TRIAL("7 Gün Deneme", 7, "0", "dozi_trial"),
+    WEEKLY("Haftalık", 7, "49.99", "dozi_weekly_premium"),
+    MONTHLY("Aylık", 30, "149.99", "dozi_monthly_premium"),
+    YEARLY("Yıllık", 365, "999.99", "dozi_yearly_premium"),
+    MONTHLY_FAMILY("Aylık Aile", 30, "249.99", "dozi_monthly_family_premium"), // 4 kişiye kadar
+    YEARLY_FAMILY("Yıllık Aile", 365, "1999.99", "dozi_yearly_family_premium"),
+    LIFETIME("Ömür Boyu", Int.MAX_VALUE, "2999.99", "dozi_lifetime");
 
     fun isPremium(): Boolean = this != FREE
 
-    fun isFamilyPlan(): Boolean = this == FAMILY_PREMIUM || this == FAMILY_YEARLY
+    fun isFamilyPlan(): Boolean = this == MONTHLY_FAMILY || this == YEARLY_FAMILY
 
     fun toTurkish(): String = displayName
 }
