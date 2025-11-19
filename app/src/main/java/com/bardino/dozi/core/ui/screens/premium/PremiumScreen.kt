@@ -481,10 +481,17 @@ private fun PremiumPlanCard(
                     )
                 )
 
-                // Dozi King - Radio buttonun altında
+                // Dozi Karakter - Her plan için farklı
                 Image(
                     painter = painterResource(
-                        id = if (isFamilyPlan) R.drawable.dozi_family else R.drawable.dozi_king
+                        id = when (plan.id) {
+                            "weekly" -> R.drawable.dozi_happy
+                            "monthly" -> R.drawable.dozi_ok
+                            "yearly" -> R.drawable.dozi_perfect
+                            "monthly_family" -> R.drawable.dozi_family
+                            "yearly_family" -> R.drawable.dozi_king
+                            else -> R.drawable.dozi_bravo
+                        }
                     ),
                     contentDescription = "Dozi",
                     modifier = Modifier.size(70.dp)
