@@ -42,6 +42,7 @@ import androidx.core.content.ContextCompat
 import com.bardino.dozi.R
 import com.bardino.dozi.core.data.LocationPreferences
 import com.bardino.dozi.core.data.SavedLocation
+import com.bardino.dozi.core.data.repository.LocationRepository
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.geofence.GeofenceReceiver
 import com.bardino.dozi.navigation.Screen
@@ -65,14 +66,31 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
     val context = LocalContext.current
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
+    val locationRepository = remember { LocationRepository() }
 
-    var places by remember { mutableStateOf(LocationPreferences.getLocations(context)) }
+    var places by remember { mutableStateOf<List<SavedLocation>>(emptyList()) }
     var toDelete by remember { mutableStateOf<SavedLocation?>(null) }
     var showMapPicker by remember { mutableStateOf(false) }
     var isVisible by remember { mutableStateOf(false) }
+    var isLoading by remember { mutableStateOf(true) }
     val markerState = remember { MarkerState() }
 
-    LaunchedEffect(Unit) { isVisible = true }
+    // 🔄 İlk yüklemede Firestore'dan konumları al ve migration yap
+    LaunchedEffect(Unit) {
+        isLoading = true
+        try {
+            // Önce local'den Firestore'a migration yap
+            locationRepository.migrateLocalLocationsToFirestore(context)
+
+            // Firestore'dan konumları al
+            places = locationRepository.getLocations()
+        } catch (e: Exception) {
+            snackbarHostState.showSnackbar("Konumlar yüklenirken hata oluştu")
+        } finally {
+            isLoading = false
+            isVisible = true
+        }
+    }
 
     // Konum izni
     val locationPermissionLauncher = rememberLauncherForActivityResult(
@@ -83,18 +101,9 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
         }
     }
 
-    // İlk girişte
+    // İlk girişte konum izni kontrolü
     LaunchedEffect(key1 = true) {
         delay(300)
-        if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
-            != PackageManager.PERMISSION_GRANTED
-        ) {
-            locationPermissionLauncher.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-        }
-    }
-
-
-    LaunchedEffect(Unit) {
         if (ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION)
             != PackageManager.PERMISSION_GRANTED
         ) {
@@ -198,7 +207,17 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
         snackbarHost = { SnackbarHost(snackbarHostState) },
         containerColor = MaterialTheme.colorScheme.background
     ) { padding ->
-        if (places.isEmpty()) {
+        if (isLoading) {
+            // 🔄 Yükleniyor göstergesi
+            Box(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding),
+                contentAlignment = Alignment.Center
+            ) {
+                CircularProgressIndicator(color = DoziCoral)
+            }
+        } else if (places.isEmpty()) {
             EmptyLocationsState(
                 onAddClick = { showMapPicker = true },
                 modifier = Modifier
@@ -293,11 +312,15 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
             confirmButton = {
                 Button(
                     onClick = {
-                        LocationPreferences.removeLocation(context, deleting.id)
-                        places = LocationPreferences.getLocations(context)
-                        toDelete = null
                         scope.launch {
-                            snackbarHostState.showSnackbar("${deleting.name} silindi")
+                            val result = locationRepository.removeLocation(deleting.id)
+                            if (result.isSuccess) {
+                                places = locationRepository.getLocations()
+                                snackbarHostState.showSnackbar("${deleting.name} silindi")
+                            } else {
+                                snackbarHostState.showSnackbar("Silme hatası: ${result.exceptionOrNull()?.message}")
+                            }
+                            toDelete = null
                         }
                     },
                     colors = ButtonDefaults.buttonColors(
@@ -335,23 +358,28 @@ fun LocationsScreen(onNavigateBack: () -> Unit) {
                     return@MapPickerSheet
                 }
 
-                // 🔹 Yeni konumu kaydet
-                val newPlace = SavedLocation(
-                    id = System.currentTimeMillis().toString(),
-                    name = pickedName.trim(),
-                    lat = pickedLatLng.latitude,
-                    lng = pickedLatLng.longitude,
-                    address = address
-                )
-                LocationPreferences.addLocation(context, newPlace)
-                places = LocationPreferences.getLocations(context)
-
-                // 🔹 Jeofence kur
-                addGeofence(context, newPlace.name, newPlace.lat, newPlace.lng)
-
-                showMapPicker = false
+                // 🔹 Yeni konumu Firestore'a kaydet
                 scope.launch {
-                    snackbarHostState.showSnackbar("📍 ${pickedName} kaydedildi ve etkinleştirildi")
+                    val newPlace = SavedLocation(
+                        id = System.currentTimeMillis().toString(),
+                        name = pickedName.trim(),
+                        lat = pickedLatLng.latitude,
+                        lng = pickedLatLng.longitude,
+                        address = address
+                    )
+
+                    val result = locationRepository.addLocation(newPlace)
+                    if (result.isSuccess) {
+                        places = locationRepository.getLocations()
+
+                        // 🔹 Jeofence kur
+                        addGeofence(context, newPlace.name, newPlace.lat, newPlace.lng)
+
+                        showMapPicker = false
+                        snackbarHostState.showSnackbar("📍 ${pickedName} kaydedildi ve etkinleştirildi")
+                    } else {
+                        snackbarHostState.showSnackbar("Kaydetme hatası: ${result.exceptionOrNull()?.message}")
+                    }
                 }
             }
         )
