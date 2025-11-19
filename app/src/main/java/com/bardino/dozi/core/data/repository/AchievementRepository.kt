@@ -141,7 +141,13 @@ class AchievementRepository @Inject constructor() {
 
                     if (isNowUnlocked) {
                         Log.d(TAG, "🎉 Achievement UNLOCKED: ${achievementType.displayName}")
-                        // TODO: Bildirim gönder
+                        // Bildirim gönder
+                        val unlockedAchievement = achievement.copy(
+                            isUnlocked = true,
+                            progress = currentProgress,
+                            unlockedAt = Timestamp.now()
+                        )
+                        sendAchievementUnlockedNotification(unlockedAchievement)
                     }
                 }
             }
