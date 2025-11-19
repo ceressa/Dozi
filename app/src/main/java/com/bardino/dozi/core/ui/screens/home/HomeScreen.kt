@@ -2674,6 +2674,7 @@ private fun BadiPromotionCard(
     }
 }
 
+
 /**
  * 🔥 Kompakt Streak Kartı - Yan yana kullanım için
  */
@@ -2685,11 +2686,9 @@ private fun CompactStreakCard(
     modifier: Modifier = Modifier
 ) {
     val today = getCurrentDateString()
-    val takenCount = medicines.count { medicine ->
-        medicine.times.any { time ->
-            medicine.takenDates.any { takenDate ->
-                takenDate.date == today && takenDate.time == time && takenDate.status == "taken"
-            }
+    val takenCount = medicines.sumOf { medicine ->
+        medicine.times.count { time ->
+            getMedicineStatus(context, medicine.id, today, time) == "taken"
         }
     }
     val totalDoses = medicines.sumOf { it.times.size }
