@@ -63,7 +63,10 @@ data class User(
 
     // 👨‍👩‍👧‍👦 Aile Paketi (Dozi Ekstra Aile)
     val familyPlanId: String? = null,            // Hangi aile planına ait (null ise yok)
-    val familyRole: String? = null               // "ORGANIZER" veya "MEMBER"
+    val familyRole: String? = null,              // "ORGANIZER" veya "MEMBER"
+
+    // 📍 Kayıtlı Konumlar (Firestore'da saklanıyor)
+    val locations: List<Map<String, Any>> = emptyList()  // Kayıtlı konumlar listesi
 ) {
     /**
      * Kullanıcının şu anda premium olup olmadığını kontrol eder
