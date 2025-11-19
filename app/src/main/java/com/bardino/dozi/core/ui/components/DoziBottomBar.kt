@@ -26,7 +26,7 @@ sealed class BottomNavItem(
 ) {
     object Home : BottomNavItem("home", Icons.Default.Home, "Ana Sayfa")
     object Medicines : BottomNavItem("medicine_list", Icons.Default.MedicalServices, "İlaçlarım")
-    object Reminders : BottomNavItem("reminder_list", Icons.Default.Notifications, "Hatırlatmalar")
+    object Profile : BottomNavItem("profile", Icons.Default.Person, "Profil")
     object More : BottomNavItem("more", Icons.Default.MoreHoriz, "Daha Fazla")
 }
 
@@ -38,13 +38,6 @@ sealed class MoreMenuItem(
 ) {
     object Stats : MoreMenuItem("stats", Icons.Default.BarChart, "İstatistikler", "İlaç takip istatistikleri")
     object Badis : MoreMenuItem("badi_list", Icons.Default.People, "Badi", "Arkadaşlarınla birlikte takip et")
-
-    class ProfileOrLogin(isLoggedIn: Boolean) : MoreMenuItem(
-        route = "profile",
-        icon = if (isLoggedIn) Icons.Default.Person else Icons.Default.Login,
-        label = if (isLoggedIn) "Profil" else "Giriş",
-        description = if (isLoggedIn) "Profil ayarları" else "Giriş yap veya kayıt ol"
-    )
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
@@ -70,7 +63,7 @@ fun DoziBottomBar(
     val mainItems = listOf(
         BottomNavItem.Home,
         BottomNavItem.Medicines,
-        BottomNavItem.Reminders,
+        BottomNavItem.Profile,
         BottomNavItem.More
     )
 
@@ -82,23 +75,27 @@ fun DoziBottomBar(
         ) {
             mainItems.forEach { item ->
                 val selected = when (item) {
-                    is BottomNavItem.More -> currentRoute in listOf("stats", "badi_list", "profile")
+                    is BottomNavItem.More -> currentRoute in listOf("stats", "badi_list")
                     else -> currentRoute == item.route
                 }
 
-                val requiresLogin = item is BottomNavItem.Medicines || item is BottomNavItem.Reminders
+                val requiresLogin = item is BottomNavItem.Medicines
+
+                // Profil için özel label ve icon
+                val displayLabel = if (item is BottomNavItem.Profile && !isLoggedIn) "Giriş" else item.label
+                val displayIcon = if (item is BottomNavItem.Profile && !isLoggedIn) Icons.Default.Login else item.icon
 
                 NavigationBarItem(
                     icon = {
                         Icon(
-                            item.icon,
-                            contentDescription = item.label,
+                            displayIcon,
+                            contentDescription = displayLabel,
                             modifier = Modifier.size(if (selected) 24.dp else 22.dp)
                         )
                     },
                     label = {
                         Text(
-                            item.label,
+                            displayLabel,
                             style = MaterialTheme.typography.labelSmall.copy(
                                 fontSize = 11.sp,
                                 lineHeight = 12.sp
@@ -112,6 +109,15 @@ fun DoziBottomBar(
                         when (item) {
                             is BottomNavItem.More -> {
                                 showMoreMenu = true
+                            }
+                            is BottomNavItem.Profile -> {
+                                if (!isLoggedIn) {
+                                    onLoginRequired()
+                                } else {
+                                    if (currentRoute != item.route) {
+                                        onNavigate(item.route)
+                                    }
+                                }
                             }
                             else -> {
                                 if (currentRoute != item.route) {
@@ -220,8 +226,7 @@ private fun MoreMenuBottomSheet(
 
             val menuItems = listOf(
                 MoreMenuItem.Stats,
-                MoreMenuItem.Badis,
-                MoreMenuItem.ProfileOrLogin(isLoggedIn)
+                MoreMenuItem.Badis
             )
 
             menuItems.forEach { item ->

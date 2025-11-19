@@ -46,7 +46,7 @@ fun PremiumScreen(
     onNavigateBack: () -> Unit,
     onPurchase: (PlanType) -> Unit
 ) {
-    var selectedPlan by remember { mutableStateOf("yearly") }
+    var selectedPlan by remember { mutableStateOf("monthly") }
 
     val plans = listOf(
         PremiumPlan(
@@ -76,18 +76,50 @@ fun PremiumScreen(
         ),
         PremiumPlan(
             id = "yearly",
-            title = "Yıllık Aile",
+            title = "Yıllık",
             price = "999₺",
             period = "yıl",
             badge = "EN AVANTAJLI",
             badgeColor = DoziTurquoise,
             features = listOf(
-                "3 kişilik aile paketi",
+                "Sınırsız ilaç ekleme",
+                "Bulut yedekleme",
+                "Sesli hatırlatıcılar",
+                "Öncelikli destek",
+                "%44 tasarruf"
+            )
+        ),
+        PremiumPlan(
+            id = "monthly_family",
+            title = "Aylık Aile",
+            price = "249₺",
+            period = "ay",
+            badge = "AİLE PAKETİ",
+            badgeColor = DoziPurple,
+            features = listOf(
+                "4 kişiye kadar",
                 "Sınırsız ilaç ekleme",
                 "Bulut yedekleme",
                 "Sesli hatırlatıcılar",
                 "Öncelikli destek",
                 "Aile takip sistemi"
+            )
+        ),
+        PremiumPlan(
+            id = "yearly_family",
+            title = "Yıllık Aile",
+            price = "1999₺",
+            period = "yıl",
+            badge = "EN AVANTAJLI AİLE",
+            badgeColor = DoziBlue,
+            features = listOf(
+                "4 kişiye kadar",
+                "Sınırsız ilaç ekleme",
+                "Bulut yedekleme",
+                "Sesli hatırlatıcılar",
+                "Öncelikli destek",
+                "Aile takip sistemi",
+                "%33 tasarruf"
             )
         )
     )
@@ -246,7 +278,9 @@ fun PremiumScreen(
                             "weekly" -> PlanType.WEEKLY
                             "monthly" -> PlanType.MONTHLY
                             "yearly" -> PlanType.YEARLY
-                            else -> PlanType.YEARLY
+                            "monthly_family" -> PlanType.MONTHLY_FAMILY
+                            "yearly_family" -> PlanType.YEARLY_FAMILY
+                            else -> PlanType.MONTHLY
                         }
                         onPurchase(planType)
                     },
@@ -279,25 +313,11 @@ fun PremiumScreen(
 
 @Composable
 private fun AnimatedDozi() {
-    val infiniteTransition = rememberInfiniteTransition(label = "dozi_anim")
-    val scale by infiniteTransition.animateFloat(
-        initialValue = 0.95f,
-        targetValue = 1.05f,
-        animationSpec = infiniteRepeatable(
-            animation = tween(2500, easing = EaseInOutSine),
-            repeatMode = RepeatMode.Reverse
-        ),
-        label = "scale"
-    )
+    // Sabit Dozi King - Nefes almayan versiyon
     Image(
         painter = painterResource(R.drawable.dozi_king),
         contentDescription = "Dozi Premium",
-        modifier = Modifier
-            .size(120.dp)
-            .graphicsLayer {
-                scaleX = scale
-                scaleY = scale
-            }
+        modifier = Modifier.size(120.dp)
     )
 }
 
@@ -344,16 +364,15 @@ private fun PremiumPlanCard(
     isSelected: Boolean,
     onClick: () -> Unit
 ) {
+    val isFamilyPlan = plan.id.contains("family")
+
     val backgroundColor = when {
-        plan.id == "yearly" && isSelected -> DoziTurquoise.copy(alpha = 0.15f)
-        plan.id == "yearly" -> DoziTurquoise.copy(alpha = 0.08f)
-        isSelected -> DoziBlue.copy(alpha = 0.15f)
+        isSelected -> plan.badgeColor.copy(alpha = 0.15f)
         else -> Gray100
     }
 
     val borderColor = when {
-        plan.id == "yearly" && isSelected -> DoziTurquoise
-        isSelected -> DoziBlue
+        isSelected -> plan.badgeColor
         else -> Color.Transparent
     }
 
@@ -370,115 +389,107 @@ private fun PremiumPlanCard(
             .clickable(onClick = onClick)
             .padding(16.dp)
     ) {
-        Column {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.Top
-            ) {
-                Column(modifier = Modifier.weight(1f)) {
-                    // Badge (opsiyonel)
-                    if (plan.badge != null) {
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(8.dp))
-                                .background(plan.badgeColor)
-                                .padding(horizontal = 8.dp, vertical = 4.dp)
-                        ) {
-                            Text(
-                                text = plan.badge,
-                                style = MaterialTheme.typography.labelSmall,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White,
-                                fontSize = 10.sp
-                            )
-                        }
-                        Spacer(Modifier.height(8.dp))
-                    }
-
-                    Text(
-                        text = plan.title,
-                        style = MaterialTheme.typography.titleLarge,
-                        fontWeight = FontWeight.Bold,
-                        color = TextPrimary
-                    )
-
-                    Spacer(Modifier.height(4.dp))
-
-                    Row(
-                        verticalAlignment = Alignment.Bottom,
-                        horizontalArrangement = Arrangement.spacedBy(4.dp)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.Top
+        ) {
+            // Sol kısım - Bilgiler ve Özellikler
+            Column(modifier = Modifier.weight(1f)) {
+                // Badge (opsiyonel)
+                if (plan.badge != null) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(8.dp))
+                            .background(plan.badgeColor)
+                            .padding(horizontal = 8.dp, vertical = 4.dp)
                     ) {
                         Text(
-                            text = plan.price,
-                            style = MaterialTheme.typography.headlineSmall,
-                            fontWeight = FontWeight.ExtraBold,
-                            color = if (plan.id == "yearly") DoziTurquoise else DoziBlue
+                            text = plan.badge,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White,
+                            fontSize = 10.sp
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
+
+                Text(
+                    text = plan.title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = TextPrimary
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                Row(
+                    verticalAlignment = Alignment.Bottom,
+                    horizontalArrangement = Arrangement.spacedBy(4.dp)
+                ) {
+                    Text(
+                        text = plan.price,
+                        style = MaterialTheme.typography.headlineSmall,
+                        fontWeight = FontWeight.ExtraBold,
+                        color = plan.badgeColor
+                    )
+                    Text(
+                        text = "/ ${plan.period}",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = TextSecondary
+                    )
+                }
+
+                Spacer(Modifier.height(12.dp))
+
+                // Özellikler
+                plan.features.forEach { feature ->
+                    Row(
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        modifier = Modifier.padding(vertical = 4.dp)
+                    ) {
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = SuccessGreen,
+                            modifier = Modifier.size(18.dp)
                         )
                         Text(
-                            text = "/ ${plan.period}",
+                            text = feature,
                             style = MaterialTheme.typography.bodyMedium,
-                            color = TextSecondary
+                            color = TextPrimary
                         )
                     }
                 }
-
-                // Aile paketi için özel görsel
-                if (plan.id == "yearly") {
-                    Image(
-                        painter = painterResource(id = R.drawable.dozi_family),
-                        contentDescription = "Aile Paketi",
-                        modifier = Modifier.size(80.dp)
-                    )
-                }
-
-                // Seçim göstergesi
-                if (plan.id != "yearly") {
-                    RadioButton(
-                        selected = isSelected,
-                        onClick = onClick,
-                        colors = RadioButtonDefaults.colors(
-                            selectedColor = DoziBlue,
-                            unselectedColor = TextSecondary
-                        )
-                    )
-                }
             }
 
-            Spacer(Modifier.height(12.dp))
+            Spacer(Modifier.width(12.dp))
 
-            // Özellikler
-            plan.features.forEach { feature ->
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp),
-                    modifier = Modifier.padding(vertical = 4.dp)
-                ) {
-                    Icon(
-                        Icons.Default.CheckCircle,
-                        contentDescription = null,
-                        tint = SuccessGreen,
-                        modifier = Modifier.size(18.dp)
+            // Sağ kısım - Dozi King Karakteri ve Radio Button
+            Column(
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(8.dp)
+            ) {
+                // Radio Button - En üstte
+                RadioButton(
+                    selected = isSelected,
+                    onClick = onClick,
+                    colors = RadioButtonDefaults.colors(
+                        selectedColor = plan.badgeColor,
+                        unselectedColor = TextSecondary
                     )
-                    Text(
-                        text = feature,
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = TextPrimary
-                    )
-                }
+                )
+
+                // Dozi King - Radio buttonun altında
+                Image(
+                    painter = painterResource(
+                        id = if (isFamilyPlan) R.drawable.dozi_family else R.drawable.dozi_king
+                    ),
+                    contentDescription = "Dozi",
+                    modifier = Modifier.size(70.dp)
+                )
             }
-        }
-
-        // Aile paketinde RadioButton sağ üstte
-        if (plan.id == "yearly") {
-            RadioButton(
-                selected = isSelected,
-                onClick = onClick,
-                colors = RadioButtonDefaults.colors(
-                    selectedColor = DoziTurquoise,
-                    unselectedColor = TextSecondary
-                ),
-                modifier = Modifier.align(Alignment.TopEnd)
-            )
         }
     }
 }
@@ -491,7 +502,8 @@ enum class PlanType(
 ) {
     WEEKLY("Haftalık", "49", "hafta"),
     MONTHLY("Aylık", "149", "ay"),
-    YEARLY("Yıllık Aile", "999", "yıl"),
-    FAMILY("Aile Paketi", "999", "yıl"),
-    LIFETIME("Ömür Boyu", "1999.99", "tek seferlik")
+    YEARLY("Yıllık", "999", "yıl"),
+    MONTHLY_FAMILY("Aylık Aile", "249", "ay"),
+    YEARLY_FAMILY("Yıllık Aile", "1999", "yıl"),
+    LIFETIME("Ömür Boyu", "2999", "tek seferlik")
 }

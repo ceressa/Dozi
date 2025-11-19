@@ -120,6 +120,8 @@ class PremiumRepository @Inject constructor(
                 PremiumPlanType.WEEKLY -> 7 * 24 * 60 * 60 * 1000L
                 PremiumPlanType.MONTHLY -> 30 * 24 * 60 * 60 * 1000L
                 PremiumPlanType.YEARLY -> 365 * 24 * 60 * 60 * 1000L
+                PremiumPlanType.MONTHLY_FAMILY -> 30 * 24 * 60 * 60 * 1000L
+                PremiumPlanType.YEARLY_FAMILY -> 365 * 24 * 60 * 60 * 1000L
                 PremiumPlanType.LIFETIME -> Long.MAX_VALUE - now
                 else -> 0L
             }

@@ -301,22 +301,6 @@ fun HomeScreen(
             ) {
                 Spacer(Modifier.height(12.dp))
 
-                // 🔥 Streak ve Günlük Özet Kartı
-                if (uiState.isLoggedIn) {
-                    StreakAndDailySummaryCard(
-                        context = context,
-                        medicines = uiState.todaysMedicines,
-                        onNavigateToStats = { navController.navigate(Screen.Stats.route) }
-                    )
-                    Spacer(Modifier.height(12.dp))
-
-                    // 👥 Badi Promotion Card
-                    BadiPromotionCard(
-                        onNavigateToBadi = { navController.navigate(Screen.BadiList.route) }
-                    )
-                    Spacer(Modifier.height(12.dp))
-                }
-
                 HorizontalCalendar(
                     selectedDate = selectedDate,
                     onDateSelected = { date ->
@@ -373,6 +357,31 @@ fun HomeScreen(
                             currentMedicineStatus = uiState.currentMedicineStatus,
                             nextMedicine = uiState.allUpcomingMedicines.firstOrNull(),
                             isLoggedIn = uiState.isLoggedIn
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+
+                // 🔥 Streak ve Badi Promotion - Yan yana daha küçük kartlar
+                if (uiState.isLoggedIn) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(horizontal = 4.dp),
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        // Streak Kartı - Kompakt
+                        CompactStreakCard(
+                            context = context,
+                            medicines = uiState.todaysMedicines,
+                            modifier = Modifier.weight(1f)
+                        )
+
+                        // Badi Promotion - Kompakt
+                        CompactBadiPromotionCard(
+                            onNavigateToBadi = { navController.navigate(Screen.BadiList.route) },
+                            modifier = Modifier.weight(1f)
                         )
                     }
                 }
@@ -507,14 +516,23 @@ private fun DoziHeader(firestoreUser: User?, isLoggedIn: Boolean) {
     var showEditNameDialog by remember { mutableStateOf(false) }
     val canEditName = firestoreUser?.name.isNullOrBlank()
 
-    // ✅ Animated gradient colors
+    // ✅ Günün saatine göre renk değişimi
+    val (baseGradientStart, baseGradientEnd) = remember(hour) {
+        when (hour) {
+            in 6..11 -> Pair(Color(0xFFFFB74D), Color(0xFFFF9800)) // Sabah: Turuncu tonları
+            in 12..17 -> Pair(DoziTurquoise, DoziBlue) // Öğlen: Turkuaz-Mavi
+            in 18..21 -> Pair(DoziCoral, DoziPurple) // Akşam: Mercan-Mor
+            else -> Pair(Color(0xFF5E35B1), Color(0xFF311B92)) // Gece: Koyu mor tonları
+        }
+    }
+
     val gradientStart by animateColorAsState(
-        targetValue = if (isPremium) Color(0xFFFFB300) else DoziTurquoise.copy(alpha = 0.95f),
+        targetValue = if (isPremium) Color(0xFFFFB300) else baseGradientStart,
         animationSpec = tween(800, easing = FastOutSlowInEasing),
         label = "gradientStart"
     )
     val gradientEnd by animateColorAsState(
-        targetValue = if (isPremium) Color(0xFFFF6F00) else DoziPurple.copy(alpha = 0.85f),
+        targetValue = if (isPremium) Color(0xFFFF6F00) else baseGradientEnd,
         animationSpec = tween(800, easing = FastOutSlowInEasing),
         label = "gradientEnd"
     )
@@ -600,8 +618,8 @@ private fun DoziHeader(firestoreUser: User?, isLoggedIn: Boolean) {
             }
 
             Image(
-                painter = painterResource(id = R.drawable.dozi_bravo),
-                contentDescription = "Dozi logosu",
+                painter = painterResource(id = R.drawable.dozi_brand),
+                contentDescription = "Dozi brand",
                 modifier = Modifier
                     .size(64.dp)
                     .offset(y = (-2).dp)
@@ -2652,6 +2670,119 @@ private fun BadiPromotionCard(
                     modifier = Modifier.size(28.dp)
                 )
             }
+        }
+    }
+}
+
+/**
+ * 🔥 Kompakt Streak Kartı - Yan yana kullanım için
+ */
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun CompactStreakCard(
+    context: Context,
+    medicines: List<Medicine>,
+    modifier: Modifier = Modifier
+) {
+    val today = getCurrentDateString()
+    val takenCount = medicines.count { medicine ->
+        medicine.times.any { time ->
+            medicine.takenDates.any { takenDate ->
+                takenDate.date == today && takenDate.time == time && takenDate.status == "taken"
+            }
+        }
+    }
+    val totalDoses = medicines.sumOf { it.times.size }
+
+    val prefs = context.getSharedPreferences("dozi_streak", Context.MODE_PRIVATE)
+    val currentStreak = prefs.getInt("current_streak", 0)
+
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp),
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(DoziRed.copy(alpha = 0.1f), DoziRed.copy(alpha = 0.05f))
+                    )
+                )
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Text(
+                text = "🔥",
+                style = MaterialTheme.typography.headlineMedium
+            )
+            Text(
+                text = "$currentStreak gün",
+                style = MaterialTheme.typography.titleLarge,
+                fontWeight = FontWeight.ExtraBold,
+                color = DoziRed
+            )
+            Text(
+                text = "Streak",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary
+            )
+        }
+    }
+}
+
+/**
+ * 👥 Kompakt Badi Promotion Kartı - Yan yana kullanım için
+ */
+@Composable
+private fun CompactBadiPromotionCard(
+    onNavigateToBadi: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(horizontal = 12.dp)
+            .clickable { onNavigateToBadi() },
+        shape = RoundedCornerShape(16.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        colors = CardDefaults.cardColors(containerColor = Color.White)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .background(
+                    Brush.verticalGradient(
+                        listOf(DoziTurquoise.copy(alpha = 0.1f), DoziPurple.copy(alpha = 0.05f))
+                    )
+                )
+                .padding(12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(6.dp)
+        ) {
+            Icon(
+                imageVector = Icons.Default.People,
+                contentDescription = null,
+                tint = DoziTurquoise,
+                modifier = Modifier.size(36.dp)
+            )
+            Text(
+                text = "Badi",
+                style = MaterialTheme.typography.titleMedium,
+                fontWeight = FontWeight.Bold,
+                color = DoziTurquoise
+            )
+            Text(
+                text = "Birlikte takip et",
+                style = MaterialTheme.typography.bodySmall,
+                color = TextSecondary,
+                textAlign = TextAlign.Center
+            )
         }
     }
 }

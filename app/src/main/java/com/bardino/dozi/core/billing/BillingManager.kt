@@ -42,6 +42,8 @@ class BillingManager @Inject constructor(
         // Product IDs - MUST match Google Play Console configuration
         const val PRODUCT_WEEKLY = "dozi_weekly_premium"
         const val PRODUCT_MONTHLY = "dozi_monthly_premium"
+        const val PRODUCT_YEARLY = "dozi_yearly_premium"
+        const val PRODUCT_MONTHLY_FAMILY = "dozi_monthly_family_premium"
         const val PRODUCT_YEARLY_FAMILY = "dozi_yearly_family_premium"
     }
 
@@ -112,6 +114,14 @@ class BillingManager @Inject constructor(
                         .build(),
                     QueryProductDetailsParams.Product.newBuilder()
                         .setProductId(PRODUCT_MONTHLY)
+                        .setProductType(BillingClient.ProductType.SUBS)
+                        .build(),
+                    QueryProductDetailsParams.Product.newBuilder()
+                        .setProductId(PRODUCT_YEARLY)
+                        .setProductType(BillingClient.ProductType.SUBS)
+                        .build(),
+                    QueryProductDetailsParams.Product.newBuilder()
+                        .setProductId(PRODUCT_MONTHLY_FAMILY)
                         .setProductType(BillingClient.ProductType.SUBS)
                         .build(),
                     QueryProductDetailsParams.Product.newBuilder()
