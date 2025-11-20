@@ -417,4 +417,57 @@ class MedicineRepository @Inject constructor() {
             else -> ""
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 📏 PLAN LİMİT KONTROL METODLARİ
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Toplam aktif time slot sayısını hesapla
+     * Her ilacın her hatırlatma saati 1 slot olarak sayılır
+     */
+    suspend fun getActiveTimeSlotCount(): Int {
+        val medicines = getAllMedicines()
+        return medicines
+            .filter { it.reminderEnabled }
+            .sumOf { it.times.size }
+    }
+
+    /**
+     * Belirli bir ilaç hariç time slot sayısını hesapla
+     * (Düzenleme modunda mevcut ilacın slotlarını çıkarmak için)
+     */
+    suspend fun getActiveTimeSlotCountExcluding(medicineId: String): Int {
+        val medicines = getAllMedicines()
+        return medicines
+            .filter { it.reminderEnabled && it.id != medicineId }
+            .sumOf { it.times.size }
+    }
+
+    /**
+     * Yeni time slotlar eklenebilir mi kontrol et
+     * @param newSlotCount Eklenmek istenen slot sayısı
+     * @param excludeMedicineId Düzenleme modunda mevcut ilacın ID'si (null ise yeni ekleme)
+     * @param limit Maksimum izin verilen slot sayısı (-1 = sınırsız)
+     */
+    suspend fun canAddTimeSlots(newSlotCount: Int, excludeMedicineId: String? = null, limit: Int): Boolean {
+        if (limit == -1) return true // Sınırsız
+
+        val currentCount = if (excludeMedicineId != null) {
+            getActiveTimeSlotCountExcluding(excludeMedicineId)
+        } else {
+            getActiveTimeSlotCount()
+        }
+
+        return (currentCount + newSlotCount) <= limit
+    }
+
+    /**
+     * Yeni ilaç eklenebilir mi kontrol et
+     * @param limit Maksimum izin verilen ilaç sayısı (-1 = sınırsız)
+     */
+    suspend fun canAddMedicine(limit: Int): Boolean {
+        if (limit == -1) return true // Sınırsız
+        return getMedicineCount() < limit
+    }
 }
