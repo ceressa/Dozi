@@ -32,6 +32,9 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.KeyboardType
@@ -100,6 +103,7 @@ fun AddReminderScreen(
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var selectedPlace by remember { mutableStateOf<String?>(null) }
 
     // 💎 Premium Manager için EntryPoint erişimi
@@ -141,11 +145,14 @@ fun AddReminderScreen(
     val isPreselectedMedicine = medicineId != null
 
     // Onboarding'den hatırlatma eklendikten sonra geri dönme kontrolü
-    LaunchedEffect(Unit) {
-        if (OnboardingPreferences.isInOnboarding(context) &&
-            OnboardingPreferences.getOnboardingStep(context) == "reminder_completed") {
-            // Hatırlatma eklendi, onboarding'e geri dön
-            onNavigateBack()
+    // Ekran her görünür olduğunda (back navigation dahil) state'i kontrol et
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            if (OnboardingPreferences.isInOnboarding(context) &&
+                OnboardingPreferences.getOnboardingStep(context) == "reminder_completed") {
+                // Hatırlatma eklendi, onboarding'e geri dön
+                onNavigateBack()
+            }
         }
     }
 
