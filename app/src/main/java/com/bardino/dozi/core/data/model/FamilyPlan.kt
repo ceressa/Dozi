@@ -8,7 +8,7 @@ import com.google.firebase.firestore.ServerTimestamp
  * Aile Paketi Modeli
  *
  * Ana hesap (organizer) bir aile planı oluşturur ve en fazla 3 kişiyi davet edebilir.
- * Tüm aile üyeleri premium özelliklerden yararlanır.
+ * Organizer dahil toplam 4 kişi premium özelliklerden yararlanır.
  */
 data class FamilyPlan(
     @DocumentId
@@ -21,7 +21,7 @@ data class FamilyPlan(
 
     // Plan Detayları
     val planType: String = "FAMILY_PREMIUM", // Aile premium planı
-    val maxMembers: Int = 3,                 // Maksimum 3 üye
+    val maxMembers: Int = 4,                 // Organizer dahil maksimum 4 kişi
     val currentMembers: List<String> = emptyList(), // Üye userId'leri
 
     // Davet Kodu
