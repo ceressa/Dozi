@@ -66,12 +66,12 @@ class DoziMessagingService : FirebaseMessagingService() {
                 }
             }
             "buddy_request" -> {
-                // Buddy isteği bildirimi - action butonları ile
+                // Badi isteği bildirimi - action butonları ile
                 val requestId = data["requestId"] ?: return
                 val fromUserName = data["fromUserName"] ?: "Biri"
 
                 if (hasNotificationPermission()) {
-                    NotificationHelper.showBuddyRequestNotification(
+                    NotificationHelper.showBadiRequestNotification(
                         context = this,
                         requestId = requestId,
                         fromUserName = fromUserName
@@ -80,32 +80,32 @@ class DoziMessagingService : FirebaseMessagingService() {
             }
             "buddy_medication_reminder" -> {
                 // Badinin ilaç hatırlatması
-                val buddyName = data["buddyName"] ?: "Badiniz"
+                val badiName = data["buddyName"] ?: "Badiniz"
                 val medicineName = data["medicineName"] ?: "ilaç"
                 val time = data["time"] ?: ""
                 handleNotificationMessage(
                     title = "💊 Badi İlaç Hatırlatması",
-                    body = "$buddyName - $medicineName alma zamanı ($time)",
+                    body = "$badiName - $medicineName alma zamanı ($time)",
                     type = "buddy_medication_reminder"
                 )
             }
             "medication_taken" -> {
                 // Badi ilacını aldı bildirimi
-                val buddyName = data["buddyName"] ?: "Badiniz"
+                val badiName = data["buddyName"] ?: "Badiniz"
                 val medicineName = data["medicineName"] ?: "ilacını"
                 handleNotificationMessage(
                     title = "✅ İlaç Alındı",
-                    body = "$buddyName $medicineName aldı",
+                    body = "$badiName $medicineName aldı",
                     type = "medication_taken"
                 )
             }
             "medication_missed" -> {
                 // Badi ilacını kaçırdı bildirimi
-                val buddyName = data["buddyName"] ?: "Badiniz"
+                val badiName = data["buddyName"] ?: "Badiniz"
                 val medicineName = data["medicineName"] ?: "ilacını"
                 handleNotificationMessage(
                     title = "⚠️ İlaç Kaçırıldı",
-                    body = "$buddyName $medicineName kaçırdı",
+                    body = "$badiName $medicineName kaçırdı",
                     type = "medication_missed"
                 )
             }
@@ -143,8 +143,8 @@ class DoziMessagingService : FirebaseMessagingService() {
 
         // Type'a göre navigation route belirle
         val navigationRoute = when (type) {
-            "buddy_request" -> "buddy_list"
-            "medication_taken", "medication_missed", "buddy_medication_reminder" -> "buddy_list"
+            "buddy_request" -> "badi_list"
+            "medication_taken", "medication_missed", "buddy_medication_reminder" -> "badi_list"
             else -> null
         }
 

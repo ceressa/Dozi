@@ -7,7 +7,7 @@ import android.graphics.Color
 import android.os.Build
 
 import androidx.compose.foundation.ExperimentalFoundationApi
-import com.bardino.dozi.core.common.Constants.BUDDY_CHANNEL_ID
+import com.bardino.dozi.core.common.Constants.BADI_CHANNEL_ID
 import com.bardino.dozi.core.common.Constants.REMINDER_CHANNEL_ID
 import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.sync.SyncWorker
@@ -66,13 +66,13 @@ class DoziApplication : Application() {
                 setShowBadge(true)
             }
 
-            // 👨‍👩‍👧‍👦 Aile Bildirimleri Kanalı
-            val buddyChannel = NotificationChannel(
-                BUDDY_CHANNEL_ID,
-                "Aile Bildirimleri",
+            // 👨‍👩‍👧‍👦 Badi Bildirimleri Kanalı
+            val badiChannel = NotificationChannel(
+                BADI_CHANNEL_ID,
+                "Badi Bildirimleri",
                 NotificationManager.IMPORTANCE_DEFAULT
             ).apply {
-                description = "Aile üyesi bildirimleri ve güncellemeleri"
+                description = "Badi bildirimleri ve güncellemeleri"
                 enableVibration(true)
                 setShowBadge(true)
             }
@@ -81,7 +81,7 @@ class DoziApplication : Application() {
             manager.createNotificationChannels(
                 listOf(
                     reminderChannel,
-                    buddyChannel
+                    badiChannel
                 )
             )
         }

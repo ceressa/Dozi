@@ -49,15 +49,15 @@ class NotificationActionReceiver : BroadcastReceiver() {
             NotificationHelper.ACTION_TAKEN -> handleTaken(context, med, medicineId, dosage, time, scheduledTime, prefs, nm)
             NotificationHelper.ACTION_SKIP -> handleSkip(context, med, medicineId, dosage, time, scheduledTime, prefs, nm)
             NotificationHelper.ACTION_SNOOZE -> handleSnooze(context, med, medicineId, dosage, time, scheduledTime, nm)
-            NotificationHelper.ACTION_BUDDY_ACCEPT -> {
+            NotificationHelper.ACTION_BADI_ACCEPT -> {
                 val requestId = intent.getStringExtra(NotificationHelper.EXTRA_REQUEST_ID) ?: return
                 val fromUserName = intent.getStringExtra(NotificationHelper.EXTRA_FROM_USER_NAME) ?: "Kullanıcı"
-                handleBuddyAccept(context, requestId, fromUserName, nm)
+                handleBadiAccept(context, requestId, fromUserName, nm)
             }
-            NotificationHelper.ACTION_BUDDY_REJECT -> {
+            NotificationHelper.ACTION_BADI_REJECT -> {
                 val requestId = intent.getStringExtra(NotificationHelper.EXTRA_REQUEST_ID) ?: return
                 val fromUserName = intent.getStringExtra(NotificationHelper.EXTRA_FROM_USER_NAME) ?: "Kullanıcı"
-                handleBuddyReject(context, requestId, fromUserName, nm)
+                handleBadiReject(context, requestId, fromUserName, nm)
             }
             "ACTION_SNOOZE_TRIGGER" -> {
                 // ⏰ Erteleme süresi doldu, yeni bildirim göster + escalation/auto-missed planla
@@ -149,7 +149,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     )
                     android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 bildirimi gösterildi: $med")
 
-                    // 🔥 FIX: İlacı MISSED olarak logla ve buddy'lere bildir
+                    // 🔥 FIX: İlacı MISSED olarak logla ve badilere bildir
                     if (medicineId.isNotEmpty()) {
                         CoroutineScope(Dispatchers.IO).launch {
                             try {
@@ -169,13 +169,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 )
                                 android.util.Log.d("NotificationActionReceiver", "❌ İlaç MISSED olarak loglandı: $med")
 
-                                // Kritik ilaç ise buddy'lere bildir
+                                // Kritik ilaç ise badilere bildir
                                 val medicineRepository = MedicineRepository()
                                 val medicine = medicineRepository.getMedicineById(medicineId)
                                 if (medicine != null) {
                                     val escalationManager = EscalationManager(context)
-                                    escalationManager.notifyBuddiesForSingleCriticalMedicine(medicine)
-                                    android.util.Log.d("NotificationActionReceiver", "🚨 Buddy bildirimi gönderildi: $med")
+                                    escalationManager.notifyBadisForSingleCriticalMedicine(medicine)
+                                    android.util.Log.d("NotificationActionReceiver", "🚨 Badi bildirimi gönderildi: $med")
                                 }
                             } catch (e: Exception) {
                                 android.util.Log.e("NotificationActionReceiver", "❌ MISSED loglama hatası: ${e.message}", e)
@@ -342,7 +342,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
     }
 
 
-    private fun handleBuddyAccept(
+    private fun handleBadiAccept(
         context: Context,
         requestId: String,
         fromUserName: String,
@@ -352,14 +352,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
         nm.cancel(requestId.hashCode())
 
         // Badi isteğini kabul et
-        val buddyRepository = BadiRepository()
+        val badiRepository = BadiRepository()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                buddyRepository.acceptBadiRequest(requestId)
+                badiRepository.acceptBadiRequest(requestId)
                     .onSuccess {
                         // Ana thread'de toast göster
                         CoroutineScope(Dispatchers.Main).launch {
-                            showToast(context, "✅ $fromUserName buddy olarak eklendi!")
+                            showToast(context, "✅ $fromUserName badi olarak eklendi!")
                         }
                     }
                     .onFailure { error ->
@@ -375,7 +375,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
         }
     }
 
-    private fun handleBuddyReject(
+    private fun handleBadiReject(
         context: Context,
         requestId: String,
         fromUserName: String,
@@ -385,13 +385,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
         nm.cancel(requestId.hashCode())
 
         // Badi isteğini reddet
-        val buddyRepository = BadiRepository()
+        val badiRepository = BadiRepository()
         CoroutineScope(Dispatchers.IO).launch {
             try {
-                buddyRepository.rejectBadiRequest(requestId)
+                badiRepository.rejectBadiRequest(requestId)
                     .onSuccess {
                         CoroutineScope(Dispatchers.Main).launch {
-                            showToast(context, "🚫 $fromUserName buddy isteği reddedildi")
+                            showToast(context, "🚫 $fromUserName badi isteği reddedildi")
                         }
                     }
                     .onFailure { error ->

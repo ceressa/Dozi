@@ -272,15 +272,16 @@ fun AddReminderScreen(
             )
         }
     ) { padding ->
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .clickable(
-                    indication = null,
-                    interactionSource = remember { MutableInteractionSource() }
-                ) { focusManager.clearFocus() }
-        ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(padding)
+                    .clickable(
+                        indication = null,
+                        interactionSource = remember { MutableInteractionSource() }
+                    ) { focusManager.clearFocus() }
+            ) {
             Column(
                 modifier = Modifier
                     .weight(1f)
@@ -388,7 +389,8 @@ fun AddReminderScreen(
                                     }
                                 }
 
-                                // Tüm ilaçları kaydet
+                                // 🔄 Loading göster ve ilaçları kaydet
+                                isLoading = true
                                 saveMedicinesToFirestore(
                                     context = context,
                                     medicines = medicines,
@@ -400,6 +402,7 @@ fun AddReminderScreen(
                                     endDate = endDate,
                                     medicineId = medicineId,
                                     onSuccess = {
+                                        isLoading = false
                                         if (soundEnabled) playSuccessSound(context)
                                         showSuccess = true
                                         // Onboarding state kontrolü
@@ -409,6 +412,7 @@ fun AddReminderScreen(
                                         }
                                     },
                                     onError = {
+                                        isLoading = false
                                         Toast.makeText(
                                             context,
                                             "❌ Hatırlatmalar kaydedilemedi",
@@ -420,6 +424,40 @@ fun AddReminderScreen(
                         }
                     }
                 )
+            }
+
+            // 🔄 Loading Overlay
+            if (isLoading) {
+                Box(
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .background(Color.Black.copy(alpha = 0.5f))
+                        .clickable(enabled = false) { },
+                    contentAlignment = Alignment.Center
+                ) {
+                    Card(
+                        colors = CardDefaults.cardColors(containerColor = Color.White),
+                        shape = MaterialTheme.shapes.large,
+                        elevation = CardDefaults.cardElevation(8.dp)
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(32.dp),
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp)
+                        ) {
+                            CircularProgressIndicator(
+                                color = DoziTurquoise,
+                                strokeWidth = 3.dp
+                            )
+                            Text(
+                                text = "Kaydediliyor...",
+                                style = MaterialTheme.typography.bodyLarge,
+                                fontWeight = FontWeight.Medium,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                        }
+                    }
+                }
             }
         }
     }
@@ -1999,9 +2037,18 @@ private fun SummaryStep(
                     Card(
                         modifier = Modifier.fillMaxWidth(),
                         colors = CardDefaults.cardColors(
-                            containerColor = DoziTurquoise.copy(alpha = 0.05f)
+                            containerColor = if (medicine.isCritical)
+                                Color(0xFFD32F2F).copy(alpha = 0.08f)
+                            else
+                                DoziTurquoise.copy(alpha = 0.05f)
                         ),
-                        border = BorderStroke(1.dp, DoziTurquoise.copy(alpha = 0.3f)),
+                        border = BorderStroke(
+                            1.dp,
+                            if (medicine.isCritical)
+                                Color(0xFFD32F2F).copy(alpha = 0.4f)
+                            else
+                                DoziTurquoise.copy(alpha = 0.3f)
+                        ),
                         shape = MaterialTheme.shapes.small,
                         elevation = CardDefaults.cardElevation(0.dp)
                     ) {
@@ -2012,14 +2059,48 @@ private fun SummaryStep(
                             verticalArrangement = Arrangement.spacedBy(8.dp)
                         ) {
                             // İlaç ismi - uzun isimleri ellipsize ile kes
-                            Text(
-                                text = "${index + 1}. ${medicine.name}",
-                                style = MaterialTheme.typography.bodyLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface,
-                                maxLines = 2,
-                                overflow = TextOverflow.Ellipsis
-                            )
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                horizontalArrangement = Arrangement.SpaceBetween,
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Text(
+                                    text = "${index + 1}. ${medicine.name}",
+                                    style = MaterialTheme.typography.bodyLarge,
+                                    fontWeight = FontWeight.Bold,
+                                    color = MaterialTheme.colorScheme.onSurface,
+                                    maxLines = 2,
+                                    overflow = TextOverflow.Ellipsis,
+                                    modifier = Modifier.weight(1f)
+                                )
+
+                                // 🚨 Kritik ilaç badge'i
+                                if (medicine.isCritical) {
+                                    Surface(
+                                        color = Color(0xFFD32F2F),
+                                        shape = MaterialTheme.shapes.extraSmall
+                                    ) {
+                                        Row(
+                                            modifier = Modifier.padding(horizontal = 8.dp, vertical = 4.dp),
+                                            horizontalArrangement = Arrangement.spacedBy(4.dp),
+                                            verticalAlignment = Alignment.CenterVertically
+                                        ) {
+                                            Icon(
+                                                Icons.Default.Warning,
+                                                contentDescription = null,
+                                                tint = Color.White,
+                                                modifier = Modifier.size(12.dp)
+                                            )
+                                            Text(
+                                                text = "KRİTİK",
+                                                style = MaterialTheme.typography.labelSmall,
+                                                color = Color.White,
+                                                fontWeight = FontWeight.Bold
+                                            )
+                                        }
+                                    }
+                                }
+                            }
 
                             // Dozaj bilgisi - yatay düzen
                             Row(
@@ -2029,17 +2110,20 @@ private fun SummaryStep(
                                 Icon(
                                     Icons.Default.LocalHospital,
                                     contentDescription = null,
-                                    tint = DoziTurquoise,
+                                    tint = if (medicine.isCritical) Color(0xFFD32F2F) else DoziTurquoise,
                                     modifier = Modifier.size(16.dp)
                                 )
                                 Surface(
-                                    color = DoziTurquoise.copy(alpha = 0.15f),
+                                    color = if (medicine.isCritical)
+                                        Color(0xFFD32F2F).copy(alpha = 0.15f)
+                                    else
+                                        DoziTurquoise.copy(alpha = 0.15f),
                                     shape = MaterialTheme.shapes.extraSmall
                                 ) {
                                     Text(
                                         text = "$dosageAmount ${medicine.unit}",
                                         style = MaterialTheme.typography.bodyMedium,
-                                        color = DoziTurquoise,
+                                        color = if (medicine.isCritical) Color(0xFFD32F2F) else DoziTurquoise,
                                         fontWeight = FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
                                     )

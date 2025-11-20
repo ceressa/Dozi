@@ -61,7 +61,7 @@ class EscalationManager(
 
             if (missedCriticalCount >= CRITICAL_MISSED_THRESHOLD) {
                 // 🚨 Escalate! Badilere bildirim gönder
-                notifyBuddiesAboutMissedCriticalMedicines(
+                notifyBadisAboutMissedCriticalMedicines(
                     userId,
                     missedCriticalCount,
                     criticalMedicines.map { it.name }
@@ -96,7 +96,7 @@ class EscalationManager(
     /**
      * Badilere kritik ilaç kaçırılması hakkında bildirim gönder
      */
-    private suspend fun notifyBuddiesAboutMissedCriticalMedicines(
+    private suspend fun notifyBadisAboutMissedCriticalMedicines(
         userId: String,
         missedCount: Int,
         medicineNames: List<String>
@@ -106,18 +106,18 @@ class EscalationManager(
             val badis = badiRepository.getBadisFlow().first()
 
             // Notification almak isteyen badileri filtrele
-            val notifiableBuddies = badis.filter {
+            val notifiableBadis = badis.filter {
                 it.badi.notificationPreferences.onMedicationMissed &&
                 it.badi.permissions.canReceiveNotifications
             }
 
-            if (notifiableBuddies.isEmpty()) {
+            if (notifiableBadis.isEmpty()) {
                 Log.d(TAG, "No badis to notify")
                 return
             }
 
             // Her badi için bildirim oluştur
-            for (badiWithUser in notifiableBuddies) {
+            for (badiWithUser in notifiableBadis) {
                 val notification = DoziNotification(
                     userId = badiWithUser.badi.buddyUserId,
                     type = NotificationType.CRITICAL_MEDICATION_MISSED,
@@ -133,10 +133,10 @@ class EscalationManager(
                 )
 
                 notificationRepository.createNotification(notification)
-                Log.d(TAG, "Escalation notification sent to buddy: ${badiWithUser.badi.buddyUserId}")
+                Log.d(TAG, "Escalation notification sent to badi: ${badiWithUser.badi.buddyUserId}")
             }
 
-            Log.d(TAG, "🚨 Escalation notifications sent to ${notifiableBuddies.size} badis")
+            Log.d(TAG, "🚨 Escalation notifications sent to ${notifiableBadis.size} badis")
         } catch (e: Exception) {
             Log.e(TAG, "Error notifying badis", e)
         }
@@ -145,7 +145,7 @@ class EscalationManager(
     /**
      * Tek bir kritik ilaç kaçırıldığında hemen badilere bildir
      */
-    suspend fun notifyBuddiesForSingleCriticalMedicine(medicine: Medicine) {
+    suspend fun notifyBadisForSingleCriticalMedicine(medicine: Medicine) {
         if (medicine.criticalityLevel != MedicineCriticality.CRITICAL) {
             return
         }
@@ -157,17 +157,17 @@ class EscalationManager(
             val badis = badiRepository.getBadisFlow().first()
 
             // Notification almak isteyen badileri filtrele
-            val notifiableBuddies = badis.filter {
+            val notifiableBadis = badis.filter {
                 it.badi.notificationPreferences.onMedicationMissed &&
                 it.badi.permissions.canReceiveNotifications
             }
 
-            if (notifiableBuddies.isEmpty()) {
+            if (notifiableBadis.isEmpty()) {
                 return
             }
 
             // Her badi için bildirim oluştur
-            for (badiWithUser in notifiableBuddies) {
+            for (badiWithUser in notifiableBadis) {
                 val notification = DoziNotification(
                     userId = badiWithUser.badi.buddyUserId,
                     type = NotificationType.MEDICATION_MISSED,
@@ -186,7 +186,7 @@ class EscalationManager(
                 notificationRepository.createNotification(notification)
             }
 
-            Log.d(TAG, "✅ Critical medicine missed notification sent to ${notifiableBuddies.size} badis")
+            Log.d(TAG, "✅ Critical medicine missed notification sent to ${notifiableBadis.size} badis")
         } catch (e: Exception) {
             Log.e(TAG, "Error notifying badis for single critical medicine", e)
         }

@@ -61,8 +61,8 @@ object NotificationHelper {
     const val ACTION_TAKEN = "ACTION_TAKEN"
     const val ACTION_SNOOZE = "ACTION_SNOOZE"
     const val ACTION_SKIP = "ACTION_SKIP"
-    const val ACTION_BUDDY_ACCEPT = "ACTION_BUDDY_ACCEPT"
-    const val ACTION_BUDDY_REJECT = "ACTION_BUDDY_REJECT"
+    const val ACTION_BADI_ACCEPT = "ACTION_BADI_ACCEPT"
+    const val ACTION_BADI_REJECT = "ACTION_BADI_REJECT"
     const val EXTRA_MEDICINE = "EXTRA_MEDICINE"
     const val EXTRA_MEDICINE_ID = "EXTRA_MEDICINE_ID"
     const val EXTRA_DOSAGE = "EXTRA_DOSAGE"
@@ -273,7 +273,7 @@ object NotificationHelper {
      * Badi request bildirimi göster (Kabul/Reddet butonları ile)
      */
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    fun showBuddyRequestNotification(
+    fun showBadiRequestNotification(
         context: Context,
         requestId: String,
         fromUserName: String
@@ -281,12 +281,12 @@ object NotificationHelper {
         createDoziChannel(context)
         val nm = NotificationManagerCompat.from(context)
 
-        // Bildirime tıklanınca buddy_list ekranına yönlendir
+        // Bildirime tıklanınca badi_list ekranına yönlendir
         val contentIntent = PendingIntent.getActivity(
             context, 0,
             Intent(context, MainActivity::class.java).apply {
                 addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
-                putExtra("navigation_route", "buddy_list")
+                putExtra("navigation_route", "badi_list")
             },
             PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
         )
@@ -296,7 +296,7 @@ object NotificationHelper {
             context,
             requestId.hashCode() + 1,
             Intent(context, NotificationActionReceiver::class.java).apply {
-                action = ACTION_BUDDY_ACCEPT
+                action = ACTION_BADI_ACCEPT
                 putExtra(EXTRA_REQUEST_ID, requestId)
                 putExtra(EXTRA_FROM_USER_NAME, fromUserName)
             },
@@ -308,7 +308,7 @@ object NotificationHelper {
             context,
             requestId.hashCode() + 2,
             Intent(context, NotificationActionReceiver::class.java).apply {
-                action = ACTION_BUDDY_REJECT
+                action = ACTION_BADI_REJECT
                 putExtra(EXTRA_REQUEST_ID, requestId)
                 putExtra(EXTRA_FROM_USER_NAME, fromUserName)
             },
@@ -319,10 +319,10 @@ object NotificationHelper {
             .setSmallIcon(R.drawable.ic_notification_pill)
             .setColor(Color.parseColor("#26C6DA"))
             .setContentTitle("🤝 Yeni Badi İsteği")
-            .setContentText("$fromUserName seni buddy olarak eklemek istiyor!")
+            .setContentText("$fromUserName seni badi olarak eklemek istiyor!")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("$fromUserName seni buddy olarak eklemek istiyor!\n\nBadileriniz ilaç hatırlatmalarınızı görebilir ve sizi destekleyebilir.")
+                    .bigText("$fromUserName seni badi olarak eklemek istiyor!\n\nBadileriniz ilaç hatırlatmalarınızı görebilir ve sizi destekleyebilir.")
             )
             .setAutoCancel(true)
             .setPriority(NotificationCompat.PRIORITY_HIGH)
