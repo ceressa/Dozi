@@ -10,16 +10,11 @@ plugins {
     id("kotlin-parcelize")
 }
 
-// Git commit sayısını versionCode olarak kullan
-fun getGitCommitCount(): Int {
-    return try {
-        val process = Runtime.getRuntime().exec("git rev-list --count HEAD")
-        process.waitFor()
-        val output = process.inputStream.bufferedReader().readText().trim()
-        output.toIntOrNull() ?: 1
-    } catch (e: Exception) {
-        1
-    }
+// Git commit sayısını versionCode olarak kullan (configuration cache compatible)
+val gitCommitCount: Provider<Int> = providers.exec {
+    commandLine("git", "rev-list", "--count", "HEAD")
+}.standardOutput.asText.map { output ->
+    output.trim().toIntOrNull() ?: 1
 }
 
 // local.properties oku
@@ -39,7 +34,7 @@ android {
         targetSdk = 35
 
         // Tek versionCode / Tek versionName
-        versionCode = getGitCommitCount()
+        versionCode = gitCommitCount.get()
         versionName = "1"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
