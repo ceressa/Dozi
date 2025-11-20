@@ -114,6 +114,11 @@ data class PremiumAnalytics(
     val ekstraYearlyUsers: Int = 0,
     val aileMonthlyUsers: Int = 0,
     val aileYearlyUsers: Int = 0,
+    // Billing period aggregates for analytics dashboard
+    val weeklyUsers: Int = 0,
+    val monthlyUsers: Int = 0,
+    val yearlyUsers: Int = 0,
+    val lifetimeUsers: Int = 0,
     val conversionRate: Float = 0f,
     val totalRevenue: Float = 0f,
     @ServerTimestamp
