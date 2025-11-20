@@ -317,7 +317,12 @@ fun ModernMedicineCard(
         onClick = onClick
     ) {
         Column {
-            // Üst renkli şerit
+            // Üst renkli şerit - İlacın rengini kullan
+            val medicineColor = try {
+                Color(android.graphics.Color.parseColor(medicine.color.hexColor))
+            } catch (e: Exception) {
+                DoziTurquoise
+            }
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -325,8 +330,8 @@ fun ModernMedicineCard(
                     .background(
                         brush = Brush.horizontalGradient(
                             listOf(
-                                DoziTurquoise.copy(alpha = 0.8f),
-                                DoziBlue.copy(alpha = 0.6f)
+                                medicineColor.copy(alpha = 0.8f),
+                                medicineColor.copy(alpha = 0.5f)
                             )
                         ),
                         shape = RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp)
