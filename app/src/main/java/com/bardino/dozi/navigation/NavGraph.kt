@@ -401,7 +401,8 @@ fun NavGraph(
             // ➕ Badi Ekle
             composable(Screen.AddBadi.route) {
                 AddBadiScreen(
-                    onNavigateBack = { navController.popBackStack() }
+                    onNavigateBack = { navController.popBackStack() },
+                    navController = navController
                 )
             }
 

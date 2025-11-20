@@ -24,7 +24,23 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.navigation.NavController
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import com.bardino.dozi.core.premium.PremiumManager
+import com.bardino.dozi.core.ui.components.PremiumLimitDialog
+import com.bardino.dozi.core.common.Constants
 import com.bardino.dozi.core.ui.viewmodel.BadiViewModel
+import com.bardino.dozi.navigation.Screen
+
+// EntryPoint for accessing PremiumManager in Composable
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AddBadiEntryPoint {
+    fun premiumManager(): PremiumManager
+}
 
 /**
  * Badi Ekleme Ekranı
@@ -34,10 +50,36 @@ import com.bardino.dozi.core.ui.viewmodel.BadiViewModel
 @Composable
 fun AddBadiScreen(
     onNavigateBack: () -> Unit,
+    navController: NavController,
     viewModel: BadiViewModel = hiltViewModel()
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val uiState by viewModel.uiState.collectAsState()
     val searchState by viewModel.searchState.collectAsState()
+
+    // 💎 Premium Manager için EntryPoint erişimi
+    val premiumManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AddBadiEntryPoint::class.java
+        ).premiumManager()
+    }
+
+    // 📊 Badi limit state'leri
+    var showLimitDialog by remember { mutableStateOf(false) }
+    var currentBadiCount by remember { mutableStateOf(0) }
+    var badiLimit by remember { mutableStateOf(0) }
+
+    // Limit bilgilerini yükle
+    LaunchedEffect(Unit) {
+        try {
+            currentBadiCount = viewModel.getBadiCount()
+            badiLimit = premiumManager.getBadiLimit()
+            android.util.Log.d("AddBadiScreen", "📊 Badi limits loaded - Current: $currentBadiCount, Limit: $badiLimit")
+        } catch (e: Exception) {
+            android.util.Log.e("AddBadiScreen", "Error loading badi limits", e)
+        }
+    }
 
     var selectedTab by remember { mutableStateOf(0) }
     var searchQuery by remember { mutableStateOf("") }
@@ -292,6 +334,12 @@ fun AddBadiScreen(
                             // İstek gönder butonu
                             Button(
                                 onClick = {
+                                    // 📊 Badi limit kontrolü
+                                    if (badiLimit != Constants.UNLIMITED && currentBadiCount >= badiLimit) {
+                                        showLimitDialog = true
+                                        return@Button
+                                    }
+
                                     viewModel.sendBadiRequest(
                                         user.uid,
                                         message.ifEmpty { null }
@@ -407,6 +455,22 @@ fun AddBadiScreen(
                 }
             }
         }
+    }
+
+    // 📊 Premium limit dialog'u
+    if (showLimitDialog) {
+        PremiumLimitDialog(
+            limitType = "Badi",
+            currentCount = currentBadiCount,
+            maxCount = badiLimit,
+            onUpgrade = {
+                showLimitDialog = false
+                navController.navigate(Screen.Premium.route)
+            },
+            onDismiss = {
+                showLimitDialog = false
+            }
+        )
     }
 
     // Kodumu göster dialog
