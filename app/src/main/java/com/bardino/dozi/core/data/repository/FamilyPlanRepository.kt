@@ -50,7 +50,7 @@ class FamilyPlanRepository(
                 organizerEmail = userEmail,
                 organizerName = userName,
                 planType = "FAMILY_PREMIUM",
-                maxMembers = 3,
+                maxMembers = com.bardino.dozi.core.common.Constants.AILE_MAX_MEMBERS,
                 currentMembers = emptyList(),
                 invitationCode = invitationCode,
                 status = FamilyPlanStatus.ACTIVE,
