@@ -403,9 +403,11 @@ service cloud.firestore {
       request.resource.data.toUserId == resource.data.toUserId &&
       request.resource.data.status in ['PENDING', 'ACCEPTED', 'REJECTED'];
 
-      // 🗑️ SİLME: Sadece istek gönderen kişi silebilir
-      allow delete: if isAuthenticated() &&
-                       resource.data.fromUserId == request.auth.uid;
+      // 🗑️ SİLME: Gönderen veya alan kişi silebilir
+      allow delete: if isAuthenticated() && (
+        resource.data.fromUserId == request.auth.uid ||
+        resource.data.toUserId == request.auth.uid
+      );
     }
 
 
