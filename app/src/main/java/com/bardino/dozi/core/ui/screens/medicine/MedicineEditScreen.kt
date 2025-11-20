@@ -308,6 +308,12 @@ fun MedicineEditScreen(
 
                             MedicineLookupRepository.saveLocalMedicine(context, updated)
 
+                            // Onboarding state kontrolü
+                            if (OnboardingPreferences.isInOnboarding(context) &&
+                                OnboardingPreferences.getOnboardingStep(context) == "medicine") {
+                                OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
+                            }
+
                             // 🔥 Firestore'a da kaydet (stockCount ile)
                             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                                 try {
@@ -318,14 +324,15 @@ fun MedicineEditScreen(
                                     if (existingMedicine != null) {
                                         // Mevcut ilacı güncelle, sadece stockCount'u değiştir
                                         val success = firestoreRepo.updateMedicineField(newId, "stockCount", stock.toInt())
-                                        if (success) {
-                                            android.util.Log.d("MedicineEditScreen", "✅ Firestore stockCount güncellendi: $newId -> ${stock.toInt()}")
-                                        } else {
-                                            android.util.Log.e("MedicineEditScreen", "❌ Firestore güncelleme başarısız: $newId")
-                                            // 🔥 FIX: Kullanıcıya hata göster
-                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                            if (success) {
+                                                android.util.Log.d("MedicineEditScreen", "✅ Firestore stockCount güncellendi: $newId -> ${stock.toInt()}")
+                                            } else {
+                                                android.util.Log.e("MedicineEditScreen", "❌ Firestore güncelleme başarısız: $newId")
                                                 Toast.makeText(context, "⚠️ İlaç yerel olarak kaydedildi ama sunucuya gönderilemedi", Toast.LENGTH_LONG).show()
                                             }
+                                            // Mevcut ilaç güncelleme - geri dön
+                                            onNavigateBack()
                                         }
                                     } else {
                                         // Yeni ilaç oluştur (temel bilgilerle)
@@ -336,38 +343,43 @@ fun MedicineEditScreen(
                                             boxSize = stock.toInt(),
                                             reminderEnabled = false
                                         )
-                                        val savedMedicine = firestoreRepo.addMedicine(firestoreMedicine)
-                                        if (savedMedicine != null) {
-                                            android.util.Log.d("MedicineEditScreen", "✅ Firestore'a yeni ilaç eklendi: ${name.trim()}")
-                                        } else {
-                                            android.util.Log.e("MedicineEditScreen", "❌ Firestore kayıt başarısız: ${name.trim()}")
-                                            // 🔥 FIX: Kullanıcıya hata göster
-                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                        val savedMedicineResult = firestoreRepo.addMedicine(firestoreMedicine)
+                                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                            if (savedMedicineResult != null) {
+                                                android.util.Log.d("MedicineEditScreen", "✅ Firestore'a yeni ilaç eklendi: ${name.trim()} with id: ${savedMedicineResult.id}")
+                                                // Yeni ilaç eklendiyse hatırlatma dialog'unu göster - Firestore ID kullan
+                                                if (medicineId == "new" && onNavigateToReminder != null) {
+                                                    savedMedicineId = savedMedicineResult.id  // Firestore'dan dönen ID'yi kullan
+                                                    showReminderDialog = true
+                                                } else {
+                                                    onNavigateBack()
+                                                }
+                                            } else {
+                                                android.util.Log.e("MedicineEditScreen", "❌ Firestore kayıt başarısız: ${name.trim()}")
                                                 Toast.makeText(context, "⚠️ İlaç yerel olarak kaydedildi ama sunucuya gönderilemedi", Toast.LENGTH_LONG).show()
+                                                // Firestore başarısız olsa da local ID ile devam et
+                                                if (medicineId == "new" && onNavigateToReminder != null) {
+                                                    savedMedicineId = newId
+                                                    showReminderDialog = true
+                                                } else {
+                                                    onNavigateBack()
+                                                }
                                             }
                                         }
                                     }
                                 } catch (e: Exception) {
                                     android.util.Log.e("MedicineEditScreen", "❌ Firestore kayıt hatası", e)
-                                    // 🔥 FIX: Kullanıcıya hata göster
                                     kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
                                         Toast.makeText(context, "⚠️ İlaç yerel olarak kaydedildi ama sunucu bağlantısı başarısız", Toast.LENGTH_LONG).show()
+                                        // Hata durumunda da local ID ile devam et
+                                        if (medicineId == "new" && onNavigateToReminder != null) {
+                                            savedMedicineId = newId
+                                            showReminderDialog = true
+                                        } else {
+                                            onNavigateBack()
+                                        }
                                     }
                                 }
-                            }
-
-                            // Onboarding state kontrolü
-                            if (OnboardingPreferences.isInOnboarding(context) &&
-                                OnboardingPreferences.getOnboardingStep(context) == "medicine") {
-                                OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
-                            }
-
-                            // Yeni ilaç eklendiyse hatırlatma dialog'unu göster
-                            if (medicineId == "new" && onNavigateToReminder != null) {
-                                savedMedicineId = newId
-                                showReminderDialog = true
-                            } else {
-                                onNavigateBack()
                             }
                         }
                     },
