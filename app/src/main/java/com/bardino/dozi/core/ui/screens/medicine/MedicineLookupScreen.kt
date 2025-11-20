@@ -350,16 +350,18 @@ fun MedicineLookupScreen(
                         // Cache durumunu kontrol et
                         val cacheSize = com.bardino.dozi.core.data.MedicineLookupRepository.ilaclarCache?.size ?: 0
 
-                        Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                            Icon(
-                                Icons.Default.SearchOff,
-                                null,
-                                tint = MediumGray,
-                                modifier = Modifier.size(56.dp)
-                            )
-                            Spacer(Modifier.height(8.dp))
-
+                        Column(
+                            horizontalAlignment = Alignment.CenterHorizontally,
+                            verticalArrangement = Arrangement.spacedBy(16.dp),
+                            modifier = Modifier.padding(horizontal = 24.dp)
+                        ) {
                             if (cacheSize == 0) {
+                                Icon(
+                                    Icons.Default.SearchOff,
+                                    null,
+                                    tint = MediumGray,
+                                    modifier = Modifier.size(56.dp)
+                                )
                                 Text("İlaç veritabanı yüklenemedi", color = MaterialTheme.colorScheme.error)
                                 Spacer(Modifier.height(4.dp))
                                 Text(
@@ -369,9 +371,62 @@ fun MedicineLookupScreen(
                                     textAlign = TextAlign.Center
                                 )
                             } else {
-                                Text("Sonuç bulunamadı", color = MaterialTheme.colorScheme.onSurfaceVariant)
+                                // Özel ilaç ekleme önerisi
+                                Surface(
+                                    modifier = Modifier.size(72.dp),
+                                    shape = MaterialTheme.shapes.extraLarge,
+                                    color = DoziCoral.copy(alpha = 0.15f)
+                                ) {
+                                    Box(contentAlignment = Alignment.Center) {
+                                        Icon(
+                                            Icons.Default.Add,
+                                            null,
+                                            tint = DoziCoral,
+                                            modifier = Modifier.size(36.dp)
+                                        )
+                                    }
+                                }
+
+                                Column(
+                                    horizontalAlignment = Alignment.CenterHorizontally,
+                                    verticalArrangement = Arrangement.spacedBy(4.dp)
+                                ) {
+                                    Text(
+                                        "\"$query\" bulunamadı",
+                                        fontWeight = FontWeight.Bold,
+                                        color = MaterialTheme.colorScheme.onSurface,
+                                        textAlign = TextAlign.Center
+                                    )
+                                    Text(
+                                        "Takviye, vitamin veya özel ilaç mı eklemek istiyorsun?",
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                        fontSize = 14.sp,
+                                        textAlign = TextAlign.Center
+                                    )
+                                }
+
+                                // Özel ilaç ekle butonu
+                                Button(
+                                    onClick = {
+                                        navController.navigate(Screen.CustomMedicineAdd.route)
+                                    },
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .height(52.dp),
+                                    shape = MaterialTheme.shapes.medium,
+                                    colors = ButtonDefaults.buttonColors(containerColor = DoziCoral)
+                                ) {
+                                    Icon(Icons.Default.Add, null, modifier = Modifier.size(20.dp))
+                                    Spacer(Modifier.width(8.dp))
+                                    Text(
+                                        "Özel İlaç Olarak Ekle",
+                                        fontWeight = FontWeight.Bold
+                                    )
+                                }
+
+                                // Ya da farklı arama önerisi
                                 Text(
-                                    "Farklı bir arama terimi deneyin veya barkod okutun",
+                                    "veya farklı bir arama terimi deneyin",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                     fontSize = 12.sp,
                                     textAlign = TextAlign.Center

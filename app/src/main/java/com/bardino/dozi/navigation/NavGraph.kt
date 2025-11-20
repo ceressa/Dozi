@@ -15,6 +15,7 @@ import androidx.navigation.navArgument
 import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.components.DoziBottomBar
 import com.bardino.dozi.core.ui.screens.home.HomeScreen
+import com.bardino.dozi.core.ui.screens.medicine.CustomMedicineAddScreen
 import com.bardino.dozi.core.ui.screens.medicine.MedicineDetailScreen
 import com.bardino.dozi.core.ui.screens.medicine.MedicineEditScreen
 import com.bardino.dozi.core.ui.screens.medicine.MedicineListScreen
@@ -248,6 +249,18 @@ fun NavGraph(
                 MedicineLookupScreen(
                     navController = navController,
                     onNavigateBack = { navController.popBackStack() }
+                )
+            }
+
+            // ✨ Özel İlaç Ekleme Ekranı
+            composable(Screen.CustomMedicineAdd.route) {
+                CustomMedicineAddScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToReminder = { savedMedicineId ->
+                        navController.navigate(Screen.EditReminder.createRoute(savedMedicineId)) {
+                            popUpTo(Screen.MedicineList.route)
+                        }
+                    }
                 )
             }
 
