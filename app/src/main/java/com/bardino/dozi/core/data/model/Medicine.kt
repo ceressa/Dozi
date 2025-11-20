@@ -47,7 +47,10 @@ data class Medicine(
     val color: MedicineColor = MedicineColor.BLUE , // İlaç renk kategorisi
 
     val selectedDays: List<String> = emptyList(),
-    val selectedDates: List<String> = emptyList()
+    val selectedDates: List<String> = emptyList(),
+
+    // 🎨 Özel ilaç desteği
+    val isCustom: Boolean = false                   // Kullanıcı tarafından eklenen özel ilaç mı?
 )
 
 /**

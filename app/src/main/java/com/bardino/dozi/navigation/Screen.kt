@@ -27,6 +27,7 @@ sealed class Screen(val route: String) {
     }
 
     object MedicineLookup : Screen("medicine_lookup")
+    object CustomMedicineAdd : Screen("custom_medicine_add")
     object ReminderList : Screen("reminder_list")
     object AddReminder : Screen("add_reminder")
     object EditReminder : Screen("edit_reminder/{medicineId}") {
