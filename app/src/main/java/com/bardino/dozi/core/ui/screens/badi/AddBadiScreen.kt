@@ -460,15 +460,17 @@ fun AddBadiScreen(
     // 📊 Premium limit dialog'u
     if (showLimitDialog) {
         PremiumLimitDialog(
-            limitType = "Badi",
+            title = "Badi Limitine Ulaştınız",
+            message = "Ücretsiz planda badi ekleyemezsiniz. Daha fazla badi eklemek için Dozi Ekstra'ya yükseltin.",
             currentCount = currentBadiCount,
             maxCount = badiLimit,
+            requiredPlan = "Dozi Ekstra",
+            onDismiss = {
+                showLimitDialog = false
+            },
             onUpgrade = {
                 showLimitDialog = false
                 navController.navigate(Screen.Premium.route)
-            },
-            onDismiss = {
-                showLimitDialog = false
             }
         )
     }

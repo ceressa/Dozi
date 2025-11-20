@@ -186,8 +186,8 @@ fun AddReminderScreen(
     var showError by remember { mutableStateOf(false) }
     var showSuccess by remember { mutableStateOf(false) }
     val storedMedicines = remember {
-        MedicineRepository
-            .loadMedicines(context).map { it.name }
+        MedicineLookupRepository
+            .loadLocalMedicines(context).map { it.name }
     }
     var selectedMedicineIndex by remember { mutableStateOf(-1) }
 
@@ -521,17 +521,23 @@ fun AddReminderScreen(
 
     // 📊 Premium limit dialog'u
     if (showLimitDialog) {
+        val issMedicineLimit = limitDialogType == "medicine"
         PremiumLimitDialog(
-            limitType = if (limitDialogType == "medicine") "İlaç" else "Hatırlatma",
-            currentCount = if (limitDialogType == "medicine") currentMedicineCount else currentReminderCount,
-            maxCount = if (limitDialogType == "medicine") medicineLimit else reminderLimit,
+            title = if (issMedicineLimit) "İlaç Limitine Ulaştınız" else "Hatırlatma Limitine Ulaştınız",
+            message = if (issMedicineLimit)
+                "Ücretsiz planda sadece 1 ilaç ekleyebilirsiniz. Sınırsız ilaç için Dozi Ekstra'ya yükseltin."
+            else
+                "Ücretsiz planda sadece 2 hatırlatma saati ekleyebilirsiniz. Sınırsız hatırlatma için Dozi Ekstra'ya yükseltin.",
+            currentCount = if (issMedicineLimit) currentMedicineCount else currentReminderCount,
+            maxCount = if (issMedicineLimit) medicineLimit else reminderLimit,
+            requiredPlan = "Dozi Ekstra",
+            onDismiss = {
+                showLimitDialog = false
+            },
             onUpgrade = {
                 showLimitDialog = false
                 // Premium ekranına yönlendir
                 navController.navigate(Screen.Premium.route)
-            },
-            onDismiss = {
-                showLimitDialog = false
             }
         )
     }
