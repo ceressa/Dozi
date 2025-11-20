@@ -175,6 +175,14 @@ fun ReminderListScreen(
                                         // Sonra veritabanından sil
                                         medicineRepository.deleteMedicine(medicine.id)
                                         android.util.Log.d("ReminderListScreen", "🗑️ ${medicine.name} silindi ve alarmları iptal edildi")
+
+                                        // ✅ Widget'ı güncelle
+                                        try {
+                                            com.bardino.dozi.widget.ReminderWidgetUpdater.updateWidgets(context)
+                                            android.util.Log.d("ReminderListScreen", "✅ Widget güncellendi")
+                                        } catch (e: Exception) {
+                                            android.util.Log.e("ReminderListScreen", "Widget güncelleme hatası", e)
+                                        }
                                     }
                                 },
                                 onEdit = {

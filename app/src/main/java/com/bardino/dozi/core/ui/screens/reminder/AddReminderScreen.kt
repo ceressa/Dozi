@@ -2465,6 +2465,15 @@ private fun saveMedicinesToFirestore(
 
         CoroutineScope(Dispatchers.Main).launch {
             if (allSuccess) {
+                // ✅ Widget'ı güncelle
+                CoroutineScope(Dispatchers.IO).launch {
+                    try {
+                        com.bardino.dozi.widget.ReminderWidgetUpdater.updateWidgets(context)
+                        android.util.Log.d("AddReminderScreen", "✅ Widget güncellendi")
+                    } catch (e: Exception) {
+                        android.util.Log.e("AddReminderScreen", "Widget güncelleme hatası", e)
+                    }
+                }
                 onSuccess()
             } else {
                 onError()
