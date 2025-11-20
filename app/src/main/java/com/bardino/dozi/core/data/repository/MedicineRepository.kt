@@ -1,8 +1,13 @@
 package com.bardino.dozi.core.data.repository
 
+import android.content.Context
 import android.os.Build
+import android.util.Log
 import androidx.annotation.RequiresApi
 import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.sync.SyncManager
+import com.bardino.dozi.core.sync.SyncWorker
+import com.bardino.dozi.core.utils.NetworkUtils
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -199,40 +204,93 @@ class MedicineRepository @Inject constructor() {
 
     /**
      * Add a new medicine
+     * Uses offline-first approach: saves to Firestore if online, queues if offline
      */
-    suspend fun addMedicine(medicine: Medicine): Medicine? {
+    suspend fun addMedicine(medicine: Medicine, context: Context? = null): Medicine? {
         val collection = getMedicinesCollection() ?: return null
-        return try {
-            val user = auth.currentUser ?: return null
+        val user = auth.currentUser ?: return null
 
-            val medicineWithUser = medicine.copy(
-                userId = user.uid,
-                id = if (medicine.id.isEmpty()) collection.document().id else medicine.id,
-                createdAt = System.currentTimeMillis(),
-                updatedAt = System.currentTimeMillis()
-            )
-            collection.document(medicineWithUser.id).set(medicineWithUser).await()
-            android.util.Log.d("MedicineRepository", "✅ Medicine added: ${medicineWithUser.id}")
-            medicineWithUser
-        } catch (e: Exception) {
-            android.util.Log.e("MedicineRepository", "❌ Error adding medicine", e)
-            null
+        val medicineWithUser = medicine.copy(
+            userId = user.uid,
+            id = if (medicine.id.isEmpty()) collection.document().id else medicine.id,
+            createdAt = System.currentTimeMillis(),
+            updatedAt = System.currentTimeMillis()
+        )
+
+        // Try direct Firestore write if online
+        if (context != null && NetworkUtils.isNetworkAvailable(context)) {
+            return try {
+                collection.document(medicineWithUser.id).set(medicineWithUser).await()
+                Log.d("MedicineRepository", "✅ Medicine added directly to Firestore: ${medicineWithUser.id}")
+                medicineWithUser
+            } catch (e: Exception) {
+                Log.w("MedicineRepository", "⚠️ Firestore write failed, queueing for sync", e)
+                // Queue for later sync
+                val syncManager = SyncManager(context)
+                syncManager.queueMedicineAdd(medicineWithUser)
+                SyncWorker.requestImmediateSync(context)
+                medicineWithUser
+            }
+        } else if (context != null) {
+            // Offline - queue for sync
+            Log.d("MedicineRepository", "📥 Offline - queueing medicine add: ${medicineWithUser.id}")
+            val syncManager = SyncManager(context)
+            syncManager.queueMedicineAdd(medicineWithUser)
+            SyncWorker.requestImmediateSync(context)
+            return medicineWithUser
+        } else {
+            // No context - fall back to direct write (legacy behavior)
+            return try {
+                collection.document(medicineWithUser.id).set(medicineWithUser).await()
+                Log.d("MedicineRepository", "✅ Medicine added: ${medicineWithUser.id}")
+                medicineWithUser
+            } catch (e: Exception) {
+                Log.e("MedicineRepository", "❌ Error adding medicine", e)
+                null
+            }
         }
     }
 
     /**
      * Update an existing medicine
+     * Uses offline-first approach: saves to Firestore if online, queues if offline
      */
-    suspend fun updateMedicine(medicine: Medicine): Boolean {
+    suspend fun updateMedicine(medicine: Medicine, context: Context? = null): Boolean {
         val collection = getMedicinesCollection() ?: return false
-        return try {
-            val updatedMedicine = medicine.copy(
-                updatedAt = System.currentTimeMillis()
-            )
-            collection.document(medicine.id).set(updatedMedicine).await()
-            true
-        } catch (e: Exception) {
-            false
+
+        val updatedMedicine = medicine.copy(
+            updatedAt = System.currentTimeMillis()
+        )
+
+        // Try direct Firestore write if online
+        if (context != null && NetworkUtils.isNetworkAvailable(context)) {
+            return try {
+                collection.document(medicine.id).set(updatedMedicine).await()
+                Log.d("MedicineRepository", "✅ Medicine updated directly in Firestore: ${medicine.id}")
+                true
+            } catch (e: Exception) {
+                Log.w("MedicineRepository", "⚠️ Firestore update failed, queueing for sync", e)
+                // Queue for later sync
+                val syncManager = SyncManager(context)
+                syncManager.queueMedicineUpdate(updatedMedicine)
+                SyncWorker.requestImmediateSync(context)
+                true // Return true since we've queued the update
+            }
+        } else if (context != null) {
+            // Offline - queue for sync
+            Log.d("MedicineRepository", "📥 Offline - queueing medicine update: ${medicine.id}")
+            val syncManager = SyncManager(context)
+            syncManager.queueMedicineUpdate(updatedMedicine)
+            SyncWorker.requestImmediateSync(context)
+            return true
+        } else {
+            // No context - fall back to direct write (legacy behavior)
+            return try {
+                collection.document(medicine.id).set(updatedMedicine).await()
+                true
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 
@@ -256,14 +314,40 @@ class MedicineRepository @Inject constructor() {
 
     /**
      * Delete a medicine
+     * Uses offline-first approach: deletes from Firestore if online, queues if offline
      */
-    suspend fun deleteMedicine(medicineId: String): Boolean {
+    suspend fun deleteMedicine(medicineId: String, context: Context? = null): Boolean {
         val collection = getMedicinesCollection() ?: return false
-        return try {
-            collection.document(medicineId).delete().await()
-            true
-        } catch (e: Exception) {
-            false
+
+        // Try direct Firestore delete if online
+        if (context != null && NetworkUtils.isNetworkAvailable(context)) {
+            return try {
+                collection.document(medicineId).delete().await()
+                Log.d("MedicineRepository", "✅ Medicine deleted from Firestore: $medicineId")
+                true
+            } catch (e: Exception) {
+                Log.w("MedicineRepository", "⚠️ Firestore delete failed, queueing for sync", e)
+                // Queue for later sync
+                val syncManager = SyncManager(context)
+                syncManager.queueMedicineDelete(medicineId)
+                SyncWorker.requestImmediateSync(context)
+                true // Return true since we've queued the delete
+            }
+        } else if (context != null) {
+            // Offline - queue for sync
+            Log.d("MedicineRepository", "📥 Offline - queueing medicine delete: $medicineId")
+            val syncManager = SyncManager(context)
+            syncManager.queueMedicineDelete(medicineId)
+            SyncWorker.requestImmediateSync(context)
+            return true
+        } else {
+            // No context - fall back to direct write (legacy behavior)
+            return try {
+                collection.document(medicineId).delete().await()
+                true
+            } catch (e: Exception) {
+                false
+            }
         }
     }
 
