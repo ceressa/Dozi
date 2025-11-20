@@ -369,6 +369,12 @@ fun CustomMedicineAddScreen(
                                 // Local'e kaydet
                                 MedicineLookupRepository.saveLocalMedicine(context, localMedicine)
 
+                                // Onboarding state kontrolü
+                                if (OnboardingPreferences.isInOnboarding(context) &&
+                                    OnboardingPreferences.getOnboardingStep(context) == "medicine") {
+                                    OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
+                                }
+
                                 // Firestore'a kaydet (isCustom = true)
                                 kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                                     try {
@@ -393,12 +399,27 @@ fun CustomMedicineAddScreen(
                                                     "✅ ${name.trim()} eklendi!",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
+
+                                                // Hatırlatma dialog'unu göster - Firestore ID kullan
+                                                if (onNavigateToReminder != null) {
+                                                    savedMedicineId = saved.id  // Firestore'dan dönen ID'yi kullan
+                                                    showReminderDialog = true
+                                                } else {
+                                                    onNavigateBack()
+                                                }
                                             } else {
                                                 Toast.makeText(
                                                     context,
                                                     "⚠️ İlaç yerel olarak kaydedildi",
                                                     Toast.LENGTH_SHORT
                                                 ).show()
+                                                // Firestore başarısız olsa da local ID ile devam et
+                                                if (onNavigateToReminder != null) {
+                                                    savedMedicineId = newId
+                                                    showReminderDialog = true
+                                                } else {
+                                                    onNavigateBack()
+                                                }
                                             }
                                         }
                                     } catch (e: Exception) {
@@ -409,22 +430,15 @@ fun CustomMedicineAddScreen(
                                                 "⚠️ İlaç yerel olarak kaydedildi",
                                                 Toast.LENGTH_SHORT
                                             ).show()
+                                            // Hata durumunda da local ID ile devam et
+                                            if (onNavigateToReminder != null) {
+                                                savedMedicineId = newId
+                                                showReminderDialog = true
+                                            } else {
+                                                onNavigateBack()
+                                            }
                                         }
                                     }
-                                }
-
-                                // Onboarding state kontrolü
-                                if (OnboardingPreferences.isInOnboarding(context) &&
-                                    OnboardingPreferences.getOnboardingStep(context) == "medicine") {
-                                    OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
-                                }
-
-                                // Hatırlatma dialog'unu göster
-                                if (onNavigateToReminder != null) {
-                                    savedMedicineId = newId
-                                    showReminderDialog = true
-                                } else {
-                                    onNavigateBack()
                                 }
                             }
                         },
