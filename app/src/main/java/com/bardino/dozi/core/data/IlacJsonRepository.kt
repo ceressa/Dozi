@@ -6,20 +6,20 @@ import android.content.Context
 object IlacJsonRepository {
 
     /**
-     * Uygulama açıldığında MedicineRepository.initialize() çağrıldığı için
+     * Uygulama açıldığında MedicineLookupRepository.initialize() çağrıldığı için
      * burada ilaclar.json tekrar okunmaz.
      */
     fun search(context: Context, query: String): List<IlacSearchResult> {
         android.util.Log.d("IlacJsonRepository", "Search called with query: '$query'")
 
         // Eğer cache henüz hazır değilse, güvenlik için initialize et
-        if (!MedicineRepository.isInitialized()) {
+        if (!MedicineLookupRepository.isInitialized()) {
             android.util.Log.d("IlacJsonRepository", "Cache not initialized, initializing now...")
-            MedicineRepository.initialize(context)
+            MedicineLookupRepository.initialize(context)
         }
 
         val clean = query.trim().lowercase()
-        val ilaclar = MedicineRepository.ilaclarCache ?: emptyList()
+        val ilaclar = MedicineLookupRepository.ilaclarCache ?: emptyList()
         android.util.Log.d("IlacJsonRepository", "Cache size: ${ilaclar.size}, searching for: '$clean'")
 
         val results = ilaclar
@@ -36,12 +36,12 @@ object IlacJsonRepository {
 
     fun searchByBarcode(context: Context, barcode: String): Ilac? {
         // Cache hazır değilse initialize et
-        if (!MedicineRepository.isInitialized()) {
-            MedicineRepository.initialize(context)
+        if (!MedicineLookupRepository.isInitialized()) {
+            MedicineLookupRepository.initialize(context)
         }
 
         // Cache'teki ilaç listesini al
-        val ilacList = MedicineRepository.ilaclarCache ?: emptyList()
+        val ilacList = MedicineLookupRepository.ilaclarCache ?: emptyList()
         val cleanBarcode = barcode.trim()
 
         // Barkoda göre arama yap

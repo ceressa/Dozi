@@ -77,17 +77,17 @@ fun MedicineLookupScreen(
         }
 
         // Cache durumunu kontrol et
-        if (!com.bardino.dozi.core.data.MedicineRepository.isInitialized()) {
+        if (!com.bardino.dozi.core.data.MedicineLookupRepository.isInitialized()) {
             android.util.Log.w("MedicineLookupScreen", "⚠️ Medicine repository not initialized on screen load!")
-            com.bardino.dozi.core.data.MedicineRepository.initialize(context)
+            com.bardino.dozi.core.data.MedicineLookupRepository.initialize(context)
         } else {
-            val cacheSize = com.bardino.dozi.core.data.MedicineRepository.ilaclarCache?.size ?: 0
+            val cacheSize = com.bardino.dozi.core.data.MedicineLookupRepository.ilaclarCache?.size ?: 0
             android.util.Log.d("MedicineLookupScreen", "✅ Medicine cache loaded: $cacheSize medicines")
 
             if (cacheSize == 0) {
                 android.util.Log.e("MedicineLookupScreen", "❌ Medicine cache is empty! Reinitializing...")
                 // Force reinitialize
-                com.bardino.dozi.core.data.MedicineRepository.initialize(context)
+                com.bardino.dozi.core.data.MedicineLookupRepository.initialize(context)
             }
         }
     }
@@ -170,9 +170,9 @@ fun MedicineLookupScreen(
             delay(700)
 
             // Önce initialize kontrolü yap
-            if (!com.bardino.dozi.core.data.MedicineRepository.isInitialized()) {
+            if (!com.bardino.dozi.core.data.MedicineLookupRepository.isInitialized()) {
                 android.util.Log.w("MedicineLookupScreen", "Repository not initialized, initializing now...")
-                com.bardino.dozi.core.data.MedicineRepository.initialize(context)
+                com.bardino.dozi.core.data.MedicineLookupRepository.initialize(context)
             }
 
             results = IlacJsonRepository.search(context, query)
@@ -348,7 +348,7 @@ fun MedicineLookupScreen(
 
                     query.isNotBlank() -> {
                         // Cache durumunu kontrol et
-                        val cacheSize = com.bardino.dozi.core.data.MedicineRepository.ilaclarCache?.size ?: 0
+                        val cacheSize = com.bardino.dozi.core.data.MedicineLookupRepository.ilaclarCache?.size ?: 0
 
                         Column(horizontalAlignment = Alignment.CenterHorizontally) {
                             Icon(

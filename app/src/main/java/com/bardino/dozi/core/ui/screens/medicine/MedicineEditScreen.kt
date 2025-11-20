@@ -26,8 +26,8 @@ import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.core.content.FileProvider
 import com.bardino.dozi.core.data.Ilac
-import com.bardino.dozi.core.data.Medicine
-import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.data.LocalMedicine
+import com.bardino.dozi.core.data.MedicineLookupRepository
 import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
@@ -43,7 +43,7 @@ import java.util.UUID
 // 🔍 Bellekten İlaç Doğrulama
 // --------------------------------------------------------------------
 fun verifyMedicine(name: String): Ilac? {
-    return MedicineRepository.findByNameOrIngredient(name)
+    return MedicineLookupRepository.findByNameOrIngredient(name)
 }
 
 // --------------------------------------------------------------------
@@ -128,7 +128,7 @@ fun MedicineEditScreen(
     val selectedMedicine = savedStateHandle?.get<IlacSearchResultParcelable>("selectedMedicine")
 
     // Mevcut ilaç bilgilerini yükle
-    val existing = MedicineRepository.getMedicine(context, medicineId)
+    val existing = MedicineLookupRepository.getLocalMedicine(context, medicineId)
     var name by remember { mutableStateOf(
         existing?.name
             ?: selectedMedicine?.item?.Product_Name
@@ -294,10 +294,10 @@ fun MedicineEditScreen(
 
                         if (!nameError && !stockError) {
                             val newId = if (medicineId == "new") UUID.randomUUID().toString() else medicineId
-                            val updated = Medicine(newId, name.trim(), stock = stock.toInt())
+                            val updated = LocalMedicine(newId, name.trim(), stock = stock.toInt())
 
                             // İlaç doğrulama
-                            val match = MedicineRepository.findByNameOrIngredient(name)
+                            val match = MedicineLookupRepository.findByNameOrIngredient(name)
                             if (match != null) {
                                 Toast.makeText(
                                     context,
@@ -306,7 +306,7 @@ fun MedicineEditScreen(
                                 ).show()
                             }
 
-                            MedicineRepository.saveMedicine(context, updated)
+                            MedicineLookupRepository.saveLocalMedicine(context, updated)
 
                             // 🔥 Firestore'a da kaydet (stockCount ile)
                             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {

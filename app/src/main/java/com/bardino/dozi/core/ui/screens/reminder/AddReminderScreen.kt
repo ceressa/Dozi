@@ -42,11 +42,11 @@ import androidx.compose.ui.window.Dialog
 import androidx.navigation.NavHostController
 import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.R
-import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.data.MedicineLookupRepository
 import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.MedicineCriticality
-import com.bardino.dozi.core.data.repository.MedicineRepository as FirestoreMedicineRepository
+import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.core.utils.SoundHelper
@@ -155,7 +155,7 @@ fun AddReminderScreen(
         if (OnboardingPreferences.isInOnboarding(context)) return@LaunchedEffect
 
         try {
-            val medicineRepository = FirestoreMedicineRepository()
+            val medicineRepository = MedicineRepository()
 
             // Mevcut sayıları al
             val allMedicines = medicineRepository.getAllMedicines()
@@ -197,7 +197,7 @@ fun AddReminderScreen(
             isLoading = true
             try {
                 // Local repository'den ilaç adını al
-                val localMedicine = MedicineRepository.getMedicine(context, medicineId)
+                val localMedicine = MedicineLookupRepository.getLocalMedicine(context, medicineId)
                 if (localMedicine != null) {
                     medicines = listOf(MedicineEntry(
                         id = 0,
@@ -228,7 +228,7 @@ fun AddReminderScreen(
     LaunchedEffect(medicineId) {
         if (isEditMode && medicineId != null) {
             try {
-                val repository = FirestoreMedicineRepository()
+                val repository = MedicineRepository()
                 val medicine = repository.getMedicineById(medicineId)
 
                 if (medicine != null) {
@@ -2514,7 +2514,7 @@ private fun saveMedicinesToFirestore(
         return
     }
 
-    val medicineRepository = FirestoreMedicineRepository()
+    val medicineRepository = MedicineRepository()
 
     // Zamanları listele
     val times = selectedTimes.map { it.time }
