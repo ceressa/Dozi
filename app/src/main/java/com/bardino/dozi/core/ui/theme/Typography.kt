@@ -10,16 +10,20 @@ import com.bardino.dozi.R // R.font tanımlı olduğu varsayılır
 
 // Font ailesi (Poppins Font ailesini kullanmaya devam ediyorum)
 val PoppinsFont = FontFamily(
+    Font(R.font.poppins_thin, FontWeight.Thin),
+    Font(R.font.poppins_light, FontWeight.Light),
     Font(R.font.poppins_regular, FontWeight.Normal),
     Font(R.font.poppins_medium, FontWeight.Medium),
     Font(R.font.poppins_semibold, FontWeight.SemiBold),
-    Font(R.font.poppins_bold, FontWeight.Bold)
+    Font(R.font.poppins_bold, FontWeight.Bold),
+    Font(R.font.poppins_extrabold, FontWeight.ExtraBold),
+    Font(R.font.poppins_black, FontWeight.Black)
 )
 
 val DoziTypography = Typography(
     headlineLarge = TextStyle(
         fontFamily = PoppinsFont,
-        fontWeight = FontWeight.Bold,
+        fontWeight = FontWeight.ExtraBold,
         fontSize = 32.sp,
         lineHeight = 36.sp,
         // color burada belirtilmez, MaterialTheme.colorScheme.onBackground kullanır

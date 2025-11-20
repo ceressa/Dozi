@@ -112,8 +112,14 @@ val InfoBlue = Color(0xFF818CF8)                // Indigo 400 - yumuşak mavi-mo
  * Premium kullanıcılar için badge, çerçeve ve vurgular
  */
 val DoziGold = Color(0xFFFFD700)                // Altın rengi - premium badge
+val DoziGoldLight = Color(0xFFFFF8DC)           // Açık altın - premium gradient start
+val DoziGoldDark = Color(0xFFDAA520)            // Koyu altın - premium gradient end
 val DoziPink = Color(0xFFFFC0CB)                // Pembe - premium gradient
 val DoziRose = Color(0xFFFDA4AF)                // Rose - premium accent
+
+// Premium gradient paleti
+val GradientPremium = listOf(Color(0xFFFFD700), Color(0xFFFF8C00))  // Gold → Orange
+val GradientPremiumSubtle = listOf(Color(0xFFFFF8DC), Color(0xFFFFE4B5))  // Soft gold
 
 // ═════════════════════════════════════════════════════════════════════════════
 // 🌫️ GRİ SKALASİ (Neutral Colors)

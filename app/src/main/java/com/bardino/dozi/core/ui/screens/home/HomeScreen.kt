@@ -5,6 +5,8 @@ import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.animation.core.Spring
+import androidx.compose.animation.core.spring
 import androidx.compose.foundation.*
 import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.interaction.MutableInteractionSource
@@ -32,9 +34,11 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.ui.hapticfeedback.HapticFeedbackType
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
+import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -542,8 +546,16 @@ private fun DoziHeader(firestoreUser: User?, isLoggedIn: Boolean) {
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp, vertical = 8.dp)
-            .shadow(elevation = 8.dp, shape = RoundedCornerShape(24.dp))
             .clip(RoundedCornerShape(24.dp))
+            .then(
+                if (isPremium) {
+                    Modifier.border(
+                        width = 2.dp,
+                        brush = Brush.horizontalGradient(listOf(DoziGold, Color(0xFFFF8C00))),
+                        shape = RoundedCornerShape(24.dp)
+                    )
+                } else Modifier
+            )
             .background(
                 Brush.horizontalGradient(
                     listOf(gradientStart, gradientEnd)
@@ -707,7 +719,8 @@ fun HorizontalCalendar(
         Card(
             shape = RoundedCornerShape(20.dp),
             colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
-            elevation = CardDefaults.cardElevation(6.dp)
+            elevation = CardDefaults.cardElevation(0.dp),
+            modifier = Modifier.border(1.dp, DoziPrimaryLight, RoundedCornerShape(20.dp))
         ) {
             Column(
                 modifier = Modifier.fillMaxWidth(),
@@ -785,6 +798,7 @@ private fun CalendarDayCircle(
     val interaction = remember { MutableInteractionSource() }
     val today = LocalDate.now()
     val isToday = date == today
+    val haptic = LocalHapticFeedback.current
 
     // 🔹 Yaşlılar için daha açık ve ayırt edici renkler
     val color = when (status) {
@@ -798,19 +812,57 @@ private fun CalendarDayCircle(
 
     val displayDay = date.dayOfMonth.toString()
 
+    // Animated scale for selection
+    val scale by animateFloatAsState(
+        targetValue = if (isSelected) 1.08f else 1f,
+        animationSpec = spring(
+            dampingRatio = Spring.DampingRatioMediumBouncy,
+            stiffness = Spring.StiffnessLow
+        ),
+        label = "calendarScale"
+    )
+
+    // Animated ring for selected day
+    val infiniteTransition = rememberInfiniteTransition(label = "ringPulse")
+    val ringAlpha by infiniteTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.7f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1200, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "ringAlpha"
+    )
+
     Column(
         horizontalAlignment = Alignment.CenterHorizontally,
         modifier = Modifier
             .padding(horizontal = 4.dp)
-            .clickable(onClick = onClick)
+            .graphicsLayer {
+                scaleX = scale
+                scaleY = scale
+            }
+            .clickable {
+                haptic.performHapticFeedback(HapticFeedbackType.TextHandleMove)
+                onClick()
+            }
     ) {
         Box(
             modifier = Modifier
                 .size(if (isSelected) 52.dp else 44.dp)
+                .then(
+                    if (isSelected) {
+                        Modifier.border(
+                            width = 3.dp,
+                            color = color.copy(alpha = ringAlpha),
+                            shape = CircleShape
+                        )
+                    } else Modifier
+                )
                 .clip(CircleShape)
                 .background(color.copy(alpha = if (status == MedicineStatus.NONE) 0.15f else 0.25f))
                 .border(
-                    width = if (isSelected) 3.dp else 2.dp,
+                    width = if (isSelected) 2.dp else 2.dp,
                     color = color,
                     shape = CircleShape
                 ),
@@ -876,9 +928,9 @@ private fun CalendarExpandedContent(
         modifier = Modifier
             .fillMaxWidth()
             .padding(top = 8.dp)
-            .shadow(8.dp, RoundedCornerShape(20.dp))
             .clip(RoundedCornerShape(20.dp))
             .background(MaterialTheme.colorScheme.surface)
+            .border(1.dp, DoziPrimaryLight, RoundedCornerShape(20.dp))
             .padding(16.dp)
     ) {
         Row(
@@ -1082,33 +1134,72 @@ private fun CurrentMedicineCard(
         }
     }
 
-    Card(
+    // Glow efekti için animated border
+    val glowTransition = rememberInfiniteTransition(label = "cardGlow")
+    val glowAlpha by glowTransition.animateFloat(
+        initialValue = 0.3f,
+        targetValue = 0.6f,
+        animationSpec = infiniteRepeatable(
+            animation = tween(1500, easing = FastOutSlowInEasing),
+            repeatMode = RepeatMode.Reverse
+        ),
+        label = "glowAlpha"
+    )
+
+    Box(
         modifier = Modifier
             .fillMaxWidth()
             .padding(horizontal = 16.dp)
-            .graphicsLayer {
-                alpha = cardPulseAlpha
-            },
-        colors = CardDefaults.cardColors(
-            containerColor = if (isOverdue)
-                MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
-            else
-                MaterialTheme.colorScheme.surface
-        ),
-        shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(6.dp)
     ) {
-        Column(
+        Card(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(20.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(16.dp)
+                .graphicsLayer {
+                    alpha = cardPulseAlpha
+                }
+                .border(
+                    width = 2.dp,
+                    brush = Brush.verticalGradient(
+                        listOf(
+                            DoziPrimary.copy(alpha = glowAlpha),
+                            DoziSecondary.copy(alpha = glowAlpha)
+                        )
+                    ),
+                    shape = RoundedCornerShape(24.dp)
+                ),
+            colors = CardDefaults.cardColors(
+                containerColor = if (isOverdue)
+                    MaterialTheme.colorScheme.errorContainer.copy(alpha = 0.3f)
+                else
+                    MaterialTheme.colorScheme.surface.copy(alpha = 0.95f)
+            ),
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(0.dp)
         ) {
+            Row(modifier = Modifier.fillMaxWidth()) {
+                // Gradient accent bar
+                Box(
+                    modifier = Modifier
+                        .width(4.dp)
+                        .fillMaxHeight()
+                        .background(
+                            brush = Brush.verticalGradient(
+                                listOf(DoziPrimary, DoziSecondary)
+                            )
+                        )
+                )
+
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(20.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(16.dp)
+                ) {
             Surface(
                 color = if (isOverdue) DoziRed else DoziRed,
                 shape = RoundedCornerShape(14.dp),
-                shadowElevation = 4.dp,
+                shadowElevation = 0.dp,
                 modifier = Modifier.graphicsLayer {
                     scaleX = pulseScale
                     scaleY = pulseScale
@@ -1275,6 +1366,8 @@ private fun CurrentMedicineCard(
                     onClick = onSkip
                 )
             }
+                }
+            }
         }
     }
 }
@@ -1326,10 +1419,11 @@ private fun EmptyMedicineCard(
     Card(
         modifier = Modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp),
+            .padding(horizontal = 16.dp)
+            .border(1.dp, DoziPrimaryLight, RoundedCornerShape(24.dp)),
         colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
         shape = RoundedCornerShape(24.dp),
-        elevation = CardDefaults.cardElevation(6.dp)
+        elevation = CardDefaults.cardElevation(0.dp)
     ) {
         Column(
             modifier = Modifier
@@ -1495,6 +1589,7 @@ private fun ActionButton(
     onClick: () -> Unit
 ) {
     var isPressed by remember { mutableStateOf(false) }
+    val haptic = LocalHapticFeedback.current
     val scale by animateFloatAsState(
         targetValue = if (isPressed) 0.92f else 1f,
         animationSpec = spring(
@@ -1505,7 +1600,10 @@ private fun ActionButton(
     )
 
     Button(
-        onClick = onClick,
+        onClick = {
+            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+            onClick()
+        },
         enabled = enabled,
         modifier = modifier
             .height(54.dp)
@@ -1527,7 +1625,7 @@ private fun ActionButton(
             disabledContainerColor = color.copy(alpha = 0.4f)
         ),
         shape = RoundedCornerShape(14.dp),
-        elevation = ButtonDefaults.buttonElevation(4.dp)
+        elevation = ButtonDefaults.buttonElevation(0.dp)
     ) {
         Column(
             horizontalAlignment = Alignment.CenterHorizontally,
@@ -2721,9 +2819,10 @@ private fun CompactStreakCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .clickable { onNavigateToStats() },
+            .clickable { onNavigateToStats() }
+            .border(1.dp, DoziSecondaryLight, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
@@ -2731,7 +2830,7 @@ private fun CompactStreakCard(
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        listOf(DoziRed.copy(alpha = 0.1f), DoziRed.copy(alpha = 0.05f))
+                        listOf(DoziSecondary.copy(alpha = 0.1f), DoziSecondary.copy(alpha = 0.05f))
                     )
                 )
                 .padding(12.dp),
@@ -2746,7 +2845,7 @@ private fun CompactStreakCard(
                 text = "$currentStreak gün",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.ExtraBold,
-                color = DoziRed
+                color = DoziSecondary
             )
             Text(
                 text = streakTitle,
@@ -2769,9 +2868,10 @@ private fun CompactBadiPromotionCard(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .clickable { onNavigateToBadi() },
+            .clickable { onNavigateToBadi() }
+            .border(1.dp, DoziPrimaryLight, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
         colors = CardDefaults.cardColors(containerColor = Color.White)
     ) {
         Column(
@@ -2779,7 +2879,7 @@ private fun CompactBadiPromotionCard(
                 .fillMaxWidth()
                 .background(
                     Brush.verticalGradient(
-                        listOf(DoziTurquoise.copy(alpha = 0.1f), DoziPurple.copy(alpha = 0.05f))
+                        listOf(DoziPrimary.copy(alpha = 0.1f), DoziPrimary.copy(alpha = 0.05f))
                     )
                 )
                 .padding(12.dp),
