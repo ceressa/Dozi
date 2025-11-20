@@ -48,28 +48,57 @@ data class PremiumSubscription(
 }
 
 /**
+ * 📦 Plan Kategorileri
+ */
+enum class PlanCategory {
+    FREE,
+    EKSTRA,
+    AILE;
+
+    fun toTurkish(): String = when (this) {
+        FREE -> "Ücretsiz"
+        EKSTRA -> "Dozi Ekstra"
+        AILE -> "Dozi Aile"
+    }
+}
+
+/**
  * 💎 Premium Plan Tipleri
+ *
+ * Fiyatlar artık Firestore'dan çekilir (config/pricing)
  */
 enum class PremiumPlanType(
+    val id: String,
     val displayName: String,
-    val durationDays: Int,
-    val price: String,
+    val category: PlanCategory,
     val productId: String
 ) {
-    FREE("Ücretsiz", 0, "0", ""),
-    TRIAL("7 Gün Deneme", 7, "0", "dozi_trial"),
-    WEEKLY("Haftalık", 7, "49.99", "dozi_weekly_premium"),
-    MONTHLY("Aylık", 30, "149.99", "dozi_monthly_premium"),
-    YEARLY("Yıllık", 365, "999.99", "dozi_yearly_premium"),
-    MONTHLY_FAMILY("Aylık Aile", 30, "249.99", "dozi_monthly_family_premium"), // 4 kişiye kadar
-    YEARLY_FAMILY("Yıllık Aile", 365, "1999.99", "dozi_yearly_family_premium"),
-    LIFETIME("Ömür Boyu", Int.MAX_VALUE, "2999.99", "dozi_lifetime");
+    FREE("free", "Ücretsiz", PlanCategory.FREE, ""),
+    TRIAL("trial", "3 Gün Deneme", PlanCategory.EKSTRA, ""),
+    EKSTRA_MONTHLY("ekstra_monthly", "Ekstra Aylık", PlanCategory.EKSTRA, "dozi_ekstra_monthly"),
+    EKSTRA_YEARLY("ekstra_yearly", "Ekstra Yıllık", PlanCategory.EKSTRA, "dozi_ekstra_yearly"),
+    AILE_MONTHLY("aile_monthly", "Aile Aylık", PlanCategory.AILE, "dozi_aile_monthly"),
+    AILE_YEARLY("aile_yearly", "Aile Yıllık", PlanCategory.AILE, "dozi_aile_yearly");
 
-    fun isPremium(): Boolean = this != FREE
+    fun isPremium(): Boolean = this != FREE && this != TRIAL
 
-    fun isFamilyPlan(): Boolean = this == MONTHLY_FAMILY || this == YEARLY_FAMILY
+    fun isFamilyPlan(): Boolean = category == PlanCategory.AILE
+
+    fun isEkstra(): Boolean = category == PlanCategory.EKSTRA
+
+    fun isAile(): Boolean = category == PlanCategory.AILE
 
     fun toTurkish(): String = displayName
+
+    companion object {
+        fun fromId(id: String): PremiumPlanType {
+            return entries.find { it.id == id } ?: FREE
+        }
+
+        fun fromProductId(productId: String): PremiumPlanType {
+            return entries.find { it.productId == productId } ?: FREE
+        }
+    }
 }
 
 /**
@@ -81,10 +110,10 @@ data class PremiumAnalytics(
     val totalUsers: Int = 0,
     val premiumUsers: Int = 0,
     val trialUsers: Int = 0,
-    val weeklyUsers: Int = 0,
-    val monthlyUsers: Int = 0,
-    val yearlyUsers: Int = 0,
-    val lifetimeUsers: Int = 0,
+    val ekstraMonthlyUsers: Int = 0,
+    val ekstraYearlyUsers: Int = 0,
+    val aileMonthlyUsers: Int = 0,
+    val aileYearlyUsers: Int = 0,
     val conversionRate: Float = 0f,
     val totalRevenue: Float = 0f,
     @ServerTimestamp
