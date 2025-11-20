@@ -16,11 +16,14 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.platform.LocalLifecycleOwner
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.repeatOnLifecycle
 import com.bardino.dozi.R
 import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.theme.*
@@ -32,18 +35,22 @@ fun OnboardingMedicineReminderScreen(
     onTryReminder: () -> Unit
 ) {
     val context = LocalContext.current
+    val lifecycleOwner = LocalLifecycleOwner.current
     var currentPhase by remember { mutableStateOf("initial") }
 
-    LaunchedEffect(Unit) {
-        val step = OnboardingPreferences.getOnboardingStep(context)
-        when (step) {
-            "medicine_completed" -> {
-                OnboardingPreferences.clearOnboardingState(context)
-                onNext()
-            }
-            "reminder_completed" -> {
-                OnboardingPreferences.clearOnboardingState(context)
-                onNext()
+    // Ekran her görünür olduğunda (back navigation dahil) state'i kontrol et
+    LaunchedEffect(lifecycleOwner) {
+        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
+            val step = OnboardingPreferences.getOnboardingStep(context)
+            when (step) {
+                "medicine_completed" -> {
+                    OnboardingPreferences.clearOnboardingState(context)
+                    onNext()
+                }
+                "reminder_completed" -> {
+                    OnboardingPreferences.clearOnboardingState(context)
+                    onNext()
+                }
             }
         }
     }
