@@ -8,7 +8,7 @@ data class User(
     val email: String = "",
     val photoUrl: String = "",
     val createdAt: Long = 0L,
-    val planType: String = "free", // "free", "trial", "weekly", "monthly", "yearly", "monthly_family", "yearly_family", "lifetime"
+    val planType: String = "free", // "free", "trial", "ekstra_monthly", "ekstra_yearly", "aile_monthly", "aile_yearly"
     val timezone: String = "Europe/Istanbul",
     val language: String = "tr",
     val vibration: Boolean = true,
@@ -93,13 +93,16 @@ data class User(
     fun getPremiumPlanType(): PremiumPlanType {
         return when (planType.lowercase()) {
             "trial" -> PremiumPlanType.TRIAL
-            "weekly" -> PremiumPlanType.WEEKLY
-            "monthly" -> PremiumPlanType.MONTHLY
-            "yearly" -> PremiumPlanType.YEARLY
-            "monthly_family" -> PremiumPlanType.MONTHLY_FAMILY
-            "yearly_family" -> PremiumPlanType.YEARLY_FAMILY
-            "family_premium" -> PremiumPlanType.YEARLY_FAMILY // Backward compatibility
-            "lifetime" -> PremiumPlanType.LIFETIME
+            "ekstra_monthly" -> PremiumPlanType.EKSTRA_MONTHLY
+            "ekstra_yearly" -> PremiumPlanType.EKSTRA_YEARLY
+            "aile_monthly" -> PremiumPlanType.AILE_MONTHLY
+            "aile_yearly" -> PremiumPlanType.AILE_YEARLY
+            // Backward compatibility for old plan types
+            "weekly", "monthly" -> PremiumPlanType.EKSTRA_MONTHLY
+            "yearly" -> PremiumPlanType.EKSTRA_YEARLY
+            "monthly_family" -> PremiumPlanType.AILE_MONTHLY
+            "yearly_family", "family_premium" -> PremiumPlanType.AILE_YEARLY
+            "lifetime" -> PremiumPlanType.EKSTRA_YEARLY // Lifetime users get Ekstra Yearly
             else -> PremiumPlanType.FREE
         }
     }
