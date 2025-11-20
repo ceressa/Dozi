@@ -5,6 +5,7 @@ import android.content.Intent
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.datastore.preferences.core.Preferences
@@ -13,9 +14,13 @@ import androidx.glance.action.ActionParameters
 import androidx.glance.action.actionParametersOf
 import androidx.glance.action.actionStartActivity
 import androidx.glance.action.clickable
-import androidx.glance.appwidget.*
+import androidx.glance.appwidget.GlanceAppWidget
+import androidx.glance.appwidget.GlanceAppWidgetManager
+import androidx.glance.appwidget.SizeMode
 import androidx.glance.appwidget.action.ActionCallback
 import androidx.glance.appwidget.action.actionRunCallback
+import androidx.glance.appwidget.cornerRadius
+import androidx.glance.appwidget.provideContent
 import androidx.glance.appwidget.state.updateAppWidgetState
 import androidx.glance.layout.*
 import androidx.glance.state.GlanceStateDefinition
@@ -33,19 +38,25 @@ import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
 import java.util.Calendar
+import androidx.glance.background
+import androidx.glance.color.ColorProvider
 
 /**
  * Dozi Hatırlatma Widget'ı
- * Sıradaki ilaç hatırlatmalarını gösterir, slide ile gezinme ve aksiyon butonları
  */
 class ReminderWidget : GlanceAppWidget() {
 
     override val stateDefinition: GlanceStateDefinition<*> = ReminderWidgetStateDefinition
-
     override val sizeMode = SizeMode.Exact
 
+    override suspend fun provideGlance(context: Context, id: GlanceId) {
+        provideContent {
+            Content(context)
+        }
+    }
+
     @Composable
-    override fun Content() {
+    private fun Content(context: Context) {
         val prefs = currentState<Preferences>()
         val currentIndex = prefs[ReminderWidgetKeys.CURRENT_INDEX] ?: 0
         val totalCount = prefs[ReminderWidgetKeys.TOTAL_COUNT] ?: 0
@@ -60,25 +71,28 @@ class ReminderWidget : GlanceAppWidget() {
 
         val currentReminder = reminders.getOrNull(currentIndex)
 
-        GlanceTheme {
-            Box(
-                modifier = GlanceModifier
-                    .fillMaxSize()
-                    .padding(8.dp)
-                    .background(ColorProvider(day = WidgetColors.BackgroundLight, night = WidgetColors.BackgroundDark))
-                    .cornerRadius(16.dp)
-            ) {
-                if (currentReminder != null) {
-                    ReminderContent(
-                        reminder = currentReminder,
-                        currentIndex = currentIndex,
-                        totalCount = totalCount,
-                        hasPrevious = currentIndex > 0,
-                        hasNext = currentIndex < totalCount - 1
+        Box(
+            modifier = GlanceModifier
+                .fillMaxSize()
+                .padding(8.dp)
+                .background(
+                    ColorProvider(
+                        day = Color(WidgetColors.BackgroundLight),
+                        night = Color(WidgetColors.BackgroundDark)
                     )
-                } else {
-                    EmptyContent()
-                }
+                )
+                .cornerRadius(16.dp)
+        ) {
+            if (currentReminder != null) {
+                ReminderContent(
+                    reminder = currentReminder,
+                    currentIndex = currentIndex,
+                    totalCount = totalCount,
+                    hasPrevious = currentIndex > 0,
+                    hasNext = currentIndex < totalCount - 1
+                )
+            } else {
+                EmptyContent()
             }
         }
     }
@@ -97,7 +111,6 @@ private fun ReminderContent(
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        // Üst kısım - Sayaç
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -105,28 +118,32 @@ private fun ReminderContent(
             Text(
                 text = "${currentIndex + 1}/$totalCount",
                 style = TextStyle(
-                    color = ColorProvider(WidgetColors.TextSecondary),
+                    color = ColorProvider(
+                        day = Color(WidgetColors.TextSecondary),
+                        night = Color(WidgetColors.TextSecondary)
+                    ),
                     fontSize = 12.sp
                 )
             )
         }
 
-        Spacer(modifier = GlanceModifier.height(4.dp))
+        Spacer(GlanceModifier.height(4.dp))
 
-        // Orta kısım - İlaç bilgisi ve navigasyon
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Sol ok - Önceki
+            // Sol ok
             Box(
                 modifier = GlanceModifier
                     .size(36.dp)
                     .cornerRadius(18.dp)
                     .background(
-                        if (hasPrevious) ColorProvider(WidgetColors.Primary)
-                        else ColorProvider(WidgetColors.Disabled)
+                        ColorProvider(
+                            day = Color(if (hasPrevious) WidgetColors.Primary else WidgetColors.Disabled),
+                            night = Color(if (hasPrevious) WidgetColors.Primary else WidgetColors.Disabled)
+                        )
                     )
                     .clickable(
                         onClick = if (hasPrevious) actionRunCallback<PreviousReminderAction>()
@@ -137,32 +154,33 @@ private fun ReminderContent(
                 Text(
                     text = "<",
                     style = TextStyle(
-                        color = ColorProvider(WidgetColors.White),
+                        color = ColorProvider(day = Color.White, night = Color.White),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
             }
 
-            Spacer(modifier = GlanceModifier.width(8.dp))
+            Spacer(GlanceModifier.width(8.dp))
 
-            // İlaç bilgisi
             Column(
                 modifier = GlanceModifier.defaultWeight(),
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                // İkon ve isim
                 Text(
                     text = reminder.icon,
                     style = TextStyle(fontSize = 28.sp)
                 )
 
-                Spacer(modifier = GlanceModifier.height(4.dp))
+                Spacer(GlanceModifier.height(4.dp))
 
                 Text(
                     text = reminder.medicineName,
                     style = TextStyle(
-                        color = ColorProvider(WidgetColors.TextPrimary),
+                        color = ColorProvider(
+                            day = Color(WidgetColors.TextPrimary),
+                            night = Color(WidgetColors.TextPrimary)
+                        ),
                         fontSize = 16.sp,
                         fontWeight = FontWeight.Bold,
                         textAlign = TextAlign.Center
@@ -170,40 +188,46 @@ private fun ReminderContent(
                     maxLines = 1
                 )
 
-                Spacer(modifier = GlanceModifier.height(2.dp))
+                Spacer(GlanceModifier.height(2.dp))
 
-                // Saat
                 Text(
                     text = reminder.time,
                     style = TextStyle(
-                        color = ColorProvider(WidgetColors.Primary),
+                        color = ColorProvider(
+                            day = Color(WidgetColors.Primary),
+                            night = Color(WidgetColors.Primary)
+                        ),
                         fontSize = 20.sp,
                         fontWeight = FontWeight.Bold
                     )
                 )
 
-                Spacer(modifier = GlanceModifier.height(2.dp))
+                Spacer(GlanceModifier.height(2.dp))
 
-                // Doz
                 Text(
                     text = "${reminder.dosage} ${reminder.unit}",
                     style = TextStyle(
-                        color = ColorProvider(WidgetColors.TextSecondary),
+                        color = ColorProvider(
+                            day = Color(WidgetColors.TextSecondary),
+                            night = Color(WidgetColors.TextSecondary)
+                        ),
                         fontSize = 12.sp
                     )
                 )
             }
 
-            Spacer(modifier = GlanceModifier.width(8.dp))
+            Spacer(GlanceModifier.width(8.dp))
 
-            // Sağ ok - Sonraki
+            // Sağ ok
             Box(
                 modifier = GlanceModifier
                     .size(36.dp)
                     .cornerRadius(18.dp)
                     .background(
-                        if (hasNext) ColorProvider(WidgetColors.Primary)
-                        else ColorProvider(WidgetColors.Disabled)
+                        ColorProvider(
+                            day = Color(if (hasNext) WidgetColors.Primary else WidgetColors.Disabled),
+                            night = Color(if (hasNext) WidgetColors.Primary else WidgetColors.Disabled)
+                        )
                     )
                     .clickable(
                         onClick = if (hasNext) actionRunCallback<NextReminderAction>()
@@ -214,7 +238,7 @@ private fun ReminderContent(
                 Text(
                     text = ">",
                     style = TextStyle(
-                        color = ColorProvider(WidgetColors.White),
+                        color = ColorProvider(day = Color.White, night = Color.White),
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold
                     )
@@ -222,9 +246,8 @@ private fun ReminderContent(
             }
         }
 
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        Spacer(GlanceModifier.height(8.dp))
 
-        // Alt kısım - Aksiyon butonları
         Row(
             modifier = GlanceModifier.fillMaxWidth(),
             horizontalAlignment = Alignment.CenterHorizontally
@@ -235,7 +258,7 @@ private fun ReminderContent(
                     .width(80.dp)
                     .height(32.dp)
                     .cornerRadius(16.dp)
-                    .background(ColorProvider(WidgetColors.Success))
+                    .background(ColorProvider(day = Color(WidgetColors.Success), night = Color(WidgetColors.Success)))
                     .clickable(
                         onClick = actionRunCallback<TakeMedicineAction>(
                             parameters = actionParametersOf(
@@ -251,14 +274,14 @@ private fun ReminderContent(
                 Text(
                     text = "Aldım",
                     style = TextStyle(
-                        color = ColorProvider(WidgetColors.White),
+                        color = ColorProvider(day = Color.White, night = Color.White),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
                 )
             }
 
-            Spacer(modifier = GlanceModifier.width(12.dp))
+            Spacer(GlanceModifier.width(12.dp))
 
             // Atla butonu
             Box(
@@ -266,7 +289,7 @@ private fun ReminderContent(
                     .width(80.dp)
                     .height(32.dp)
                     .cornerRadius(16.dp)
-                    .background(ColorProvider(WidgetColors.Secondary))
+                    .background(ColorProvider(day = Color(WidgetColors.Secondary), night = Color(WidgetColors.Secondary)))
                     .clickable(
                         onClick = actionRunCallback<SkipMedicineAction>(
                             parameters = actionParametersOf(
@@ -282,7 +305,7 @@ private fun ReminderContent(
                 Text(
                     text = "Atla",
                     style = TextStyle(
-                        color = ColorProvider(WidgetColors.White),
+                        color = ColorProvider(day = Color.White, night = Color.White),
                         fontSize = 14.sp,
                         fontWeight = FontWeight.Medium
                     )
@@ -302,52 +325,42 @@ private fun EmptyContent() {
         verticalAlignment = Alignment.CenterVertically,
         horizontalAlignment = Alignment.CenterHorizontally
     ) {
-        Text(
-            text = "💊",
-            style = TextStyle(fontSize = 32.sp)
-        )
+        Text(text = "💊", style = TextStyle(fontSize = 32.sp))
 
-        Spacer(modifier = GlanceModifier.height(8.dp))
+        Spacer(GlanceModifier.height(8.dp))
 
         Text(
             text = "Bugün ilaç yok",
             style = TextStyle(
-                color = ColorProvider(WidgetColors.TextSecondary),
+                color = ColorProvider(day = Color(WidgetColors.TextSecondary), night = Color(WidgetColors.TextSecondary)),
                 fontSize = 14.sp,
                 textAlign = TextAlign.Center
             )
         )
 
-        Spacer(modifier = GlanceModifier.height(4.dp))
+        Spacer(GlanceModifier.height(4.dp))
 
         Text(
             text = "Dokunarak aç",
             style = TextStyle(
-                color = ColorProvider(WidgetColors.Primary),
+                color = ColorProvider(day = Color(WidgetColors.Primary), night = Color(WidgetColors.Primary)),
                 fontSize = 12.sp
             )
         )
     }
 }
 
-/**
- * Widget renkleri - Dozi temasına uyumlu
- */
 object WidgetColors {
-    val Primary = android.graphics.Color.parseColor("#A78BFA")      // Lavender
-    val Secondary = android.graphics.Color.parseColor("#FDA4AF")    // Coral
-    val Success = android.graphics.Color.parseColor("#6EE7B7")      // Mint green
-    val Disabled = android.graphics.Color.parseColor("#E0E0E0")     // Gray 300
-    val White = android.graphics.Color.WHITE
-    val TextPrimary = android.graphics.Color.parseColor("#212121")  // Gray 900
-    val TextSecondary = android.graphics.Color.parseColor("#757575") // Gray 600
-    val BackgroundLight = android.graphics.Color.parseColor("#F3E8FF") // Purple 100
+    val Primary = android.graphics.Color.parseColor("#A78BFA")
+    val Secondary = android.graphics.Color.parseColor("#FDA4AF")
+    val Success = android.graphics.Color.parseColor("#6EE7B7")
+    val Disabled = android.graphics.Color.parseColor("#E0E0E0")
+    val TextPrimary = android.graphics.Color.parseColor("#212121")
+    val TextSecondary = android.graphics.Color.parseColor("#757575")
+    val BackgroundLight = android.graphics.Color.parseColor("#F3E8FF")
     val BackgroundDark = android.graphics.Color.parseColor("#1E1E1E")
 }
 
-/**
- * Action parameter keys
- */
 object ActionParamKeys {
     val MEDICINE_ID = ActionParameters.Key<String>("medicine_id")
     val MEDICINE_NAME = ActionParameters.Key<String>("medicine_name")
@@ -355,31 +368,15 @@ object ActionParamKeys {
     val TIME = ActionParameters.Key<String>("time")
 }
 
-/**
- * No-op action for disabled buttons
- */
 class NoOpAction : ActionCallback {
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
-        // Do nothing
-    }
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {}
 }
 
-/**
- * Önceki hatırlatmaya geç
- */
 class PreviousReminderAction : ActionCallback {
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         updateAppWidgetState(context, ReminderWidgetStateDefinition, glanceId) { prefs ->
-            val currentIndex = prefs[ReminderWidgetKeys.CURRENT_INDEX] ?: 0
             prefs.toMutablePreferences().apply {
+                val currentIndex = this[ReminderWidgetKeys.CURRENT_INDEX] ?: 0
                 this[ReminderWidgetKeys.CURRENT_INDEX] = (currentIndex - 1).coerceAtLeast(0)
             }
         }
@@ -387,45 +384,32 @@ class PreviousReminderAction : ActionCallback {
     }
 }
 
-/**
- * Sonraki hatırlatmaya geç
- */
 class NextReminderAction : ActionCallback {
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         updateAppWidgetState(context, ReminderWidgetStateDefinition, glanceId) { prefs ->
             val currentIndex = prefs[ReminderWidgetKeys.CURRENT_INDEX] ?: 0
             val totalCount = prefs[ReminderWidgetKeys.TOTAL_COUNT] ?: 0
+
             prefs.toMutablePreferences().apply {
-                this[ReminderWidgetKeys.CURRENT_INDEX] = (currentIndex + 1).coerceAtMost(totalCount - 1)
+                this[ReminderWidgetKeys.CURRENT_INDEX] =
+                    (currentIndex + 1).coerceAtMost(totalCount - 1)
             }
         }
         ReminderWidget().update(context, glanceId)
     }
 }
 
-/**
- * İlacı aldım aksiyonu
- */
 class TakeMedicineAction : ActionCallback {
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val medicineId = parameters[ActionParamKeys.MEDICINE_ID] ?: return
         val medicineName = parameters[ActionParamKeys.MEDICINE_NAME] ?: return
         val dosage = parameters[ActionParamKeys.DOSAGE] ?: return
         val time = parameters[ActionParamKeys.TIME] ?: return
 
-        // Scheduled time'ı hesapla
         val scheduledTime = parseTimeToMillis(time)
-
-        // MedicationLogRepository ile Firebase'e senkronize et (offline-first)
         val repository = MedicationLogRepository(context)
+
         withContext(Dispatchers.IO) {
             repository.logMedicationTaken(
                 medicineId = medicineId,
@@ -435,10 +419,7 @@ class TakeMedicineAction : ActionCallback {
             )
         }
 
-        // SharedPreferences'a da kaydet (backward compatibility)
         saveMedicineStatus(context, medicineId, time, "taken")
-
-        // Widget'ı güncelle
         ReminderWidgetUpdater.updateWidgets(context)
     }
 
@@ -464,25 +445,17 @@ class TakeMedicineAction : ActionCallback {
     }
 }
 
-/**
- * İlacı atla aksiyonu
- */
 class SkipMedicineAction : ActionCallback {
-    override suspend fun onAction(
-        context: Context,
-        glanceId: GlanceId,
-        parameters: ActionParameters
-    ) {
+    @RequiresApi(Build.VERSION_CODES.O)
+    override suspend fun onAction(context: Context, glanceId: GlanceId, parameters: ActionParameters) {
         val medicineId = parameters[ActionParamKeys.MEDICINE_ID] ?: return
         val medicineName = parameters[ActionParamKeys.MEDICINE_NAME] ?: return
         val dosage = parameters[ActionParamKeys.DOSAGE] ?: return
         val time = parameters[ActionParamKeys.TIME] ?: return
 
-        // Scheduled time'ı hesapla
         val scheduledTime = parseTimeToMillis(time)
-
-        // MedicationLogRepository ile Firebase'e senkronize et (offline-first)
         val repository = MedicationLogRepository(context)
+
         withContext(Dispatchers.IO) {
             repository.logMedicationSkipped(
                 medicineId = medicineId,
@@ -493,10 +466,8 @@ class SkipMedicineAction : ActionCallback {
             )
         }
 
-        // SharedPreferences'a da kaydet (backward compatibility)
         saveMedicineStatus(context, medicineId, time, "skipped")
 
-        // Widget'ı güncelle
         ReminderWidgetUpdater.updateWidgets(context)
     }
 
@@ -522,18 +493,12 @@ class SkipMedicineAction : ActionCallback {
     }
 }
 
-/**
- * Widget güncelleyici - Repository'den veri çeker ve widget state'ini günceller
- */
 object ReminderWidgetUpdater {
 
     @RequiresApi(Build.VERSION_CODES.O)
     suspend fun updateWidgets(context: Context) {
         val glanceIds = GlanceAppWidgetManager(context).getGlanceIds(ReminderWidget::class.java)
 
-        if (glanceIds.isEmpty()) return
-
-        // Repository'den bugünkü ilaçları çek
         val repository = MedicineRepository()
         val upcomingMedicines = withContext(Dispatchers.IO) {
             try {
@@ -544,7 +509,6 @@ object ReminderWidgetUpdater {
             }
         }
 
-        // WidgetReminder listesine dönüştür
         val reminders = upcomingMedicines.map { (medicine, time) ->
             WidgetReminder(
                 medicineId = medicine.id,
@@ -559,14 +523,12 @@ object ReminderWidgetUpdater {
 
         val remindersJson = Gson().toJson(reminders)
 
-        // Tüm widget instance'larını güncelle
         glanceIds.forEach { glanceId ->
             updateAppWidgetState(context, ReminderWidgetStateDefinition, glanceId) { prefs ->
                 prefs.toMutablePreferences().apply {
                     val currentIndex = this[ReminderWidgetKeys.CURRENT_INDEX] ?: 0
                     this[ReminderWidgetKeys.TOTAL_COUNT] = reminders.size
                     this[ReminderWidgetKeys.REMINDERS_JSON] = remindersJson
-                    // Index'i geçerli aralıkta tut
                     if (currentIndex >= reminders.size) {
                         this[ReminderWidgetKeys.CURRENT_INDEX] = (reminders.size - 1).coerceAtLeast(0)
                     }

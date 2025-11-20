@@ -74,7 +74,7 @@ enum class AchievementType(
         30,
         "#2196F3"
     ),
-    
+
     // 🏅 İlk Adımlar
     FIRST_MEDICINE(
         "İlk Adım",
@@ -90,7 +90,7 @@ enum class AchievementType(
         1,
         "#00BCD4"
     ),
-    
+
     // 📚 Koleksiyon Başarıları
     MEDICINE_COLLECTOR_5(
         "Yeni Başlayan",
@@ -106,7 +106,7 @@ enum class AchievementType(
         10,
         "#607D8B"
     ),
-    
+
     // 📊 Toplam Doz Başarıları
     TOTAL_DOSES_50(
         "Yarım Yüzyıl",

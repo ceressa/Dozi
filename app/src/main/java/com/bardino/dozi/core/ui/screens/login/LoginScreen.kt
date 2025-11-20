@@ -156,7 +156,9 @@ fun LoginScreen(
                 Button(
                     onClick = {
                         if (!isLoading) {
-                            launcher.launch(googleSignInClient.signInIntent)
+                            googleSignInClient.signOut().addOnCompleteListener {
+                                launcher.launch(googleSignInClient.signInIntent)
+                            }
                         }
                     },
                     modifier = Modifier

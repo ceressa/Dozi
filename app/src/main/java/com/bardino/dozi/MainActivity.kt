@@ -321,6 +321,21 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    /**
+     * Firestore'daki onboarding durumunu lokal SharedPreferences ile senkronize et
+     */
+    private suspend fun syncLocalOnboardingState() {
+        try {
+            val userData = userRepository.getUserData()
+            if (userData?.onboardingCompleted == true) {
+                // Firestore'da tamamlanmışsa lokal tercihi de güncelle
+                OnboardingPreferences.setFirstTimeComplete(this@MainActivity)
+                Log.d("ONBOARDING_SYNC", "✅ Onboarding durumu senkronize edildi")
+            }
+        } catch (e: Exception) {
+            Log.e("ONBOARDING_SYNC", "Senkronizasyon hatası: ${e.message}")
+        }
+    }
 
     // 🔹 Google oturum başlatma fonksiyonu
     private fun signInWithGoogle() {

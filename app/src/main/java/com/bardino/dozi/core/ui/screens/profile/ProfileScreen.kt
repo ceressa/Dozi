@@ -28,10 +28,6 @@ import com.bardino.dozi.core.ui.theme.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 
-/**
- * Kullanıcı Hesap Ayarları Ekranı
- * Login/Logout ve temel kullanıcı bilgileri
- */
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -48,7 +44,6 @@ fun ProfileScreen(
     val auth = remember { FirebaseAuth.getInstance() }
     var currentUser by remember { mutableStateOf(auth.currentUser) }
 
-    // Auth listener
     DisposableEffect(Unit) {
         val listener = FirebaseAuth.AuthStateListener { firebaseAuth ->
             currentUser = firebaseAuth.currentUser
@@ -58,13 +53,11 @@ fun ProfileScreen(
     }
 
     if (currentUser == null) {
-        // Giriş yapılmamış - Login ekranını göster
         LoginScreen(
             onLoginSuccess = onNavigateToHome,
             onSkip = onNavigateToHome
         )
     } else {
-        // Giriş yapılmış - Profil ekranını göster
         ProfileContent(
             user = currentUser,
             onNavigateToLocations = onNavigateToLocations,
@@ -99,6 +92,7 @@ private fun ProfileContent(
 
     var firestoreUser by remember { mutableStateOf<User?>(null) }
     var isLoading by remember { mutableStateOf(true) }
+    var showLogoutDialog by remember { mutableStateOf(false) }
 
     LaunchedEffect(user?.uid) {
         scope.launch {
@@ -111,12 +105,51 @@ private fun ProfileContent(
         }
     }
 
+    if (showLogoutDialog) {
+        AlertDialog(
+            onDismissRequest = { showLogoutDialog = false },
+            title = { Text("Çıkış Yap") },
+            text = { Text("Çıkış yapmak istediğinize emin misiniz?") },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        showLogoutDialog = false
+                        onLogout()
+                    }
+                ) {
+                    Text("Çıkış Yap", color = Color.Red)
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showLogoutDialog = false }) {
+                    Text("İptal")
+                }
+            }
+        )
+    }
+
     Scaffold(
         topBar = {
-            DoziTopBar(
-                title = "Profil",
-                canNavigateBack = false,
-                backgroundColor = MaterialTheme.colorScheme.surface
+            TopAppBar(
+                title = {
+                    Text(
+                        text = "Profil",
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                },
+                actions = {
+                    IconButton(onClick = { showLogoutDialog = true }) {
+                        Icon(
+                            Icons.Default.Logout,
+                            contentDescription = "Çıkış Yap",
+                            tint = Color.Red
+                        )
+                    }
+                },
+                colors = TopAppBarDefaults.topAppBarColors(
+                    containerColor = MaterialTheme.colorScheme.surface
+                )
             )
         },
         containerColor = MaterialTheme.colorScheme.background
@@ -127,7 +160,6 @@ private fun ProfileContent(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // Kullanıcı Bilgisi Kartı
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -142,7 +174,6 @@ private fun ProfileContent(
                         .padding(16.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    // Avatar
                     Box(
                         modifier = Modifier
                             .size(64.dp)
@@ -179,7 +210,6 @@ private fun ProfileContent(
 
             Spacer(modifier = Modifier.height(8.dp))
 
-            // Menü Seçenekleri
             ProfileMenuItem(
                 icon = Icons.Default.LocationOn,
                 title = "Konumlar",
@@ -189,12 +219,11 @@ private fun ProfileContent(
 
             ProfileMenuItem(
                 icon = Icons.Default.Star,
-                title = "Premium",
-                description = "Premium özelliklere erişin",
+                title = "Dozi Ekstra",
+                description = "Dozi Ekstra özelliklere erişin",
                 onClick = onNavigateToPremium
             )
 
-            // Aile Yönetimi - Sadece family plan olan kullanıcılar için
             if (firestoreUser?.familyPlanId != null) {
                 ProfileMenuItem(
                     icon = Icons.Default.FamilyRestroom,
@@ -224,24 +253,6 @@ private fun ProfileContent(
                 description = "Uygulama bilgileri",
                 onClick = onNavigateToAbout
             )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Çıkış Yap Butonu
-            Button(
-                onClick = onLogout,
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 16.dp),
-                colors = ButtonDefaults.buttonColors(
-                    containerColor = Color.Red.copy(alpha = 0.1f),
-                    contentColor = Color.Red
-                )
-            ) {
-                Icon(Icons.Default.Logout, contentDescription = null)
-                Spacer(modifier = Modifier.width(8.dp))
-                Text("Çıkış Yap")
-            }
 
             Spacer(modifier = Modifier.height(32.dp))
         }

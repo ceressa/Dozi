@@ -499,7 +499,7 @@ object NotificationHelper {
             .setContentText("İlacınızı almayı unutmayın!")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("⏰ Saat: $time\n💊 İlaç: $medicineName\n💉 Dozaj: $dosage\n\nLütfen ilacınızı almayı unutmayın!")
+                    .bigText("⏰ Saat: $time\n💊 İlaç: $medicineName")
                     .setBigContentTitle("⏰ Hatırlatma")
             )
             .setAutoCancel(true)
@@ -550,7 +550,7 @@ object NotificationHelper {
             .setContentText("$medicineName - Lütfen şimdi al!")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("🚨 $medicineName ilacını almayı unutuyorsun!\n\n⏰ Planlanan saat: $time\n💉 Dozaj: $dosage\n\nLütfen hemen ilacını al!")
+                    .bigText("🚨 $medicineName ilacını almayı unutuyorsun!\n\n⏰ Planlanan saat: $time\n\nLütfen hemen ilacını al!")
                     .setBigContentTitle("🚨 İlacını kaçırıyorsun!")
             )
             .setAutoCancel(true)
@@ -601,7 +601,7 @@ object NotificationHelper {
             .setContentText("$medicineName - 1 saattir bekleniyor!")
             .setStyle(
                 NotificationCompat.BigTextStyle()
-                    .bigText("🔴 $medicineName ilacını almayı 1 saattir bekliyorsun!\n\n⏰ Planlanan saat: $time\n💉 Dozaj: $dosage\n\n⚠️ Bu önemli bir hatırlatmadır. Lütfen ilacını al veya atla!")
+                    .bigText("🔴 $medicineName ilacını almayı 1 saattir bekliyorsun!\n\n⏰ Planlanan saat: $time\n\n⚠️ Bu önemli bir hatırlatmadır. Lütfen ilacını al veya atla!")
                     .setBigContentTitle("🔴 ÖNEMLİ: İlaç Uyarısı!")
             )
             .setAutoCancel(true)

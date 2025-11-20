@@ -12,6 +12,7 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import com.bardino.dozi.R
 import com.bardino.dozi.core.ui.theme.*
 
@@ -63,11 +64,11 @@ fun OnboardingNameScreen(
                 fontWeight = FontWeight.Bold,
                 color = DoziCoralDark,
                 textAlign = TextAlign.Center,
-                modifier = Modifier.padding(20.dp)
+                modifier = Modifier.padding(10.dp)
             )
         }
 
-        Spacer(Modifier.height(48.dp))
+        Spacer(Modifier.height(24.dp))
 
         // İsim girişi
         OutlinedTextField(

@@ -43,6 +43,10 @@ data class FamilyPlan(
         return currentMembers.size < maxMembers
     }
 
+    fun getAvailableSlots(): Int {
+        return maxMembers - currentMembers.size
+    }
+
     /**
      * Kullanıcı bu aile planının üyesi mi?
      */
