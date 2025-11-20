@@ -71,8 +71,14 @@ object MedicineLookupRepository {
             } ?: emptyList()
 
             android.util.Log.d("MedicineLookup", "✅ Initialize successful! Loaded ${cachedIlaclar?.size ?: 0} medicines")
+
+            // Debug: İlk 3 ilacı logla
+            cachedIlaclar?.take(3)?.forEachIndexed { index, ilac ->
+                android.util.Log.d("MedicineLookup", "Sample[$index]: ${ilac.Product_Name} | ${ilac.Active_Ingredient}")
+            }
         } catch (e: Exception) {
             android.util.Log.e("MedicineLookup", "❌ Error initializing ilaclar.json: ${e.message}", e)
+            android.util.Log.e("MedicineLookup", "Stack trace:", e)
             cachedIlaclar = emptyList()
         }
     }
