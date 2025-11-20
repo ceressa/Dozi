@@ -76,6 +76,10 @@ class SnoozePromptActivity : ComponentActivity() {
                 val min = minutes[selectedIndex]
                 val currentTime = System.currentTimeMillis()
 
+                // ✅ Erteleme başlangıç zamanı: İlaç saati veya şu an (hangisi daha geç ise)
+                val snoozeFromTime = maxOf(scheduledTime, currentTime)
+                val snoozeUntilTime = snoozeFromTime + min * 60_000L
+
                 // ✅ Erteleme planla (tüm parametrelerle)
                 NotificationHelper.scheduleSnooze(
                     context = this@SnoozePromptActivity,
@@ -90,9 +94,10 @@ class SnoozePromptActivity : ComponentActivity() {
                 // ✅ SharedPreferences'a timestamp ile kaydet
                 getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE).edit()
                     .putString("last_action", "ERTELENDI:$medicineName:$min dk")
-                    .putLong("snooze_until", currentTime + min * 60_000L)
+                    .putLong("snooze_until", snoozeUntilTime)
                     .putInt("snooze_minutes", min)
                     .putLong("snooze_timestamp", currentTime)
+                    .putLong("snooze_from", snoozeFromTime)
                     .apply()
 
                 // 🧠 Pattern'i kaydet (gelecekteki öneriler için - eğer kullanıcı aktif ettiyse)
@@ -107,9 +112,17 @@ class SnoozePromptActivity : ComponentActivity() {
                     }
                 }
 
+                // Hatırlatma saatini hesapla ve göster
+                val calendar = java.util.Calendar.getInstance().apply {
+                    timeInMillis = snoozeUntilTime
+                }
+                val snoozeHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+                val snoozeMinute = calendar.get(java.util.Calendar.MINUTE)
+                val formattedTime = String.format("%02d:%02d", snoozeHour, snoozeMinute)
+
                 Toast.makeText(
                     this@SnoozePromptActivity,
-                    "$medicineName $min dakika sonra hatırlatılacak ⏰",
+                    "$medicineName saat $formattedTime'de hatırlatılacak ⏰",
                     Toast.LENGTH_LONG
                 ).show()
 

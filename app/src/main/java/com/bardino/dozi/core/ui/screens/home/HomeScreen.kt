@@ -1067,6 +1067,7 @@ private fun CurrentMedicineCard(
 ) {
     val context = LocalContext.current
     var remainingSeconds by remember { mutableStateOf(0) }
+    var snoozeTargetTime by remember { mutableStateOf("") }
 
     // ✅ Bugün bu ilacın kaç dozu olduğunu göster
     val todayDosesForThisMedicine = medicine.times.size
@@ -1120,6 +1121,14 @@ private fun CurrentMedicineCard(
             val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
             val snoozeUntil = prefs.getLong("snooze_until", 0)
 
+            // Hedef saati hesapla
+            val calendar = java.util.Calendar.getInstance().apply {
+                timeInMillis = snoozeUntil
+            }
+            val targetHour = calendar.get(java.util.Calendar.HOUR_OF_DAY)
+            val targetMinute = calendar.get(java.util.Calendar.MINUTE)
+            snoozeTargetTime = String.format("%02d:%02d", targetHour, targetMinute)
+
             while (snoozeUntil > System.currentTimeMillis()) {
                 val remainingMillis = snoozeUntil - System.currentTimeMillis()
                 remainingSeconds = (remainingMillis / 1000).toInt()
@@ -1131,6 +1140,7 @@ private fun CurrentMedicineCard(
 
             // Süre doldu
             remainingSeconds = 0
+            snoozeTargetTime = ""
         }
     }
 
@@ -1227,13 +1237,29 @@ private fun CurrentMedicineCard(
                 }
             }
 
-            if (remainingSeconds > 0) {
-                Text(
-                    "Ertelendi: ${remainingSeconds / 60}:${(remainingSeconds % 60).toString().padStart(2, '0')}",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = WarningOrange
-                )
+            if (remainingSeconds > 0 && snoozeTargetTime.isNotEmpty()) {
+                Surface(
+                    color = WarningOrange.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(12.dp),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Column(
+                        modifier = Modifier.padding(12.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "⏰ Saat $snoozeTargetTime'de hatırlatılacak",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = WarningOrange
+                        )
+                        Text(
+                            "${remainingSeconds / 60} dk ${remainingSeconds % 60} sn kaldı",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = WarningOrange.copy(alpha = 0.8f)
+                        )
+                    }
+                }
             }
 
             Row(
