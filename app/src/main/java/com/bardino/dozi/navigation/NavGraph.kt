@@ -37,6 +37,7 @@ import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
 import com.bardino.dozi.core.ui.screens.family.FamilyManagementScreen
 import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
+import com.bardino.dozi.onboarding.screens.OnboardingLoginScreen
 import com.bardino.dozi.onboarding.screens.OnboardingMedicineReminderScreen
 import com.bardino.dozi.onboarding.screens.OnboardingNameScreen
 import com.bardino.dozi.onboarding.screens.OnboardingPremiumScreen
@@ -280,10 +281,10 @@ fun NavGraph(
                 )
             }
 
-            // Onboarding akışı - YENİ: Name → MedicineReminder → Premium
+            // Onboarding akışı - YENİ: Welcome → Login → MedicineReminder → Premium → Home
             composable(Screen.OnboardingWelcome.route) {
                 OnboardingWelcomeScreen(
-                    onStartTour = { navController.navigate(Screen.OnboardingName.route) },
+                    onStartTour = { navController.navigate(Screen.OnboardingLogin.route) },
                     onSkip = {
                         OnboardingPreferences.skipOnboarding(context)
                         navController.navigate(Screen.Home.route) {
@@ -293,6 +294,27 @@ fun NavGraph(
                 )
             }
 
+            composable(Screen.OnboardingLogin.route) {
+                OnboardingLoginScreen(
+                    onGoogleSignIn = {
+                        // Google giriş yap
+                        onGoogleSignInClick()
+
+                        // Giriş başarılı olunca ilaç ekleme ekranına git
+                        navController.navigate(Screen.OnboardingMedicineReminder.route) {
+                            popUpTo(Screen.OnboardingLogin.route) { inclusive = true }
+                        }
+                    },
+                    onSkip = {
+                        // Giriş yapmadan devam et
+                        navController.navigate(Screen.OnboardingMedicineReminder.route) {
+                            popUpTo(Screen.OnboardingLogin.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // OnboardingName artık kullanılmıyor ama backward compatibility için tutuluyor
             composable(Screen.OnboardingName.route) {
                 OnboardingNameScreen(
                     onNext = { name ->
@@ -333,22 +355,16 @@ fun NavGraph(
 
             composable(Screen.OnboardingPremium.route) {
                 OnboardingPremiumScreen(
-                    onGoogleSignIn = {
+                    onFinish = {
                         // Lokal olarak kaydet
                         OnboardingPreferences.setFirstTimeComplete(context)
 
-                        // Firebase'e de kaydet ve onboarding sırasında eklenen ilaçları sync et
+                        // Firebase'e de kaydet
                         val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                             userRepository.updateUserField("onboardingCompleted", true)
                             android.util.Log.d("OnboardingPremium", "✅ Onboarding completed saved to Firebase")
-
-                            // 🔥 FIX: Onboarding sırasında lokale kaydedilen ilaçları Firebase'e sync et
-                            OnboardingPreferences.syncLocalRemindersToFirebase(context)
                         }
-
-                        // Google giriş yap
-                        onGoogleSignInClick()
 
                         // Ana ekrana git
                         navController.navigate(Screen.Home.route) {
