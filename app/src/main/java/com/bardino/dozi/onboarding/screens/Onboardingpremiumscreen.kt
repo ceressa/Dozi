@@ -93,7 +93,7 @@ fun OnboardingPremiumScreen(
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        text = "🎁 1 Hafta Ücretsiz",
+                        text = "🎁 3 Gün Ücretsiz",
                         style = MaterialTheme.typography.headlineSmall,
                         fontWeight = FontWeight.ExtraBold,
                         color = Color.White,
@@ -124,13 +124,13 @@ fun OnboardingPremiumScreen(
             Column(
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                FeatureRow("💊", "Sınırsız ilaç ekleme")
+                FeatureRow("💊", "Sınırsız ilaç ve hatırlatma")
                 FeatureRow("☁️", "Bulut yedekleme & senkronizasyon")
                 FeatureRow("🔊", "Sesli hatırlatıcılar")
-                FeatureRow("📊", "Detaylı sağlık raporları")
-                FeatureRow("👥", "Badi Sistemi - Yakınlarını takip et")
-                FeatureRow("🎯", "Akıllı ilaç önerileri")
-                FeatureRow("📱", "Tüm cihazlarda senkronizasyon")
+                FeatureRow("📊", "Gelişmiş istatistikler")
+                FeatureRow("👤", "1 Badi ekleme - Yakınını takip et")
+                FeatureRow("🔔", "Kritik ilaç bildirimleri")
+                FeatureRow("🎨", "Tema özelleştirme")
                 FeatureRow("💬", "Öncelikli destek")
             }
 
@@ -204,7 +204,7 @@ fun OnboardingPremiumScreen(
                         modifier = Modifier.size(24.dp)
                     )
                     Text(
-                        text = "Hediyenin süresi bitmeden istediğin zaman iptal edebilirsin. Otomatik ücretlendirme olmaz.",
+                        text = "3 günlük deneme süresi bitmeden istediğin zaman iptal edebilirsin. Otomatik ücretlendirme olmaz.",
                         style = MaterialTheme.typography.bodyMedium,
                         color = TextPrimary,
                         lineHeight = 20.sp

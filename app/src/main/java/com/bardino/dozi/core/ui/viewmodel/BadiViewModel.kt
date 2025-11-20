@@ -357,4 +357,11 @@ class BadiViewModel @Inject constructor(
     fun clearError() {
         _uiState.update { it.copy(error = null) }
     }
+
+    /**
+     * Mevcut badi sayısını döndür
+     */
+    suspend fun getBadiCount(): Int {
+        return badiRepository.getActiveBadiCount()
+    }
 }
