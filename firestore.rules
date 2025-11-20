@@ -16,12 +16,13 @@ rules_version = '2';
 ║    6. Hatırlatıcılar (Reminders)                                             ║
 ║    7. İlaç Logları (Medication Logs)                                         ║
 ║    8. Bildirimler (Notifications)                                            ║
-║    9. Aile Paketi (Family Plans) 👨‍👩‍👧‍👦                                          ║
-║   10. Ban Yönetimi (User Bans)                                               ║
-║   11. Analytics                                                              ║
+║    9. Aile Paketi (Family Plans)                                             ║
+║   10. Kullanıcı İstatistikleri (User Stats)                                  ║
+║   11. Ban Yönetimi (User Bans)                                               ║
+║   12. Analytics                                                              ║
 ║                                                                              ║
 ║  🔒 Güvenlik Seviyesi: YÜKSEK                                                ║
-║  ⚡ Son Güncelleme: 2025-11-17                                               ║
+║  ⚡ Son Güncelleme: 2025-11-20                                               ║
 ╚══════════════════════════════════════════════════════════════════════════════╝
 */
 
@@ -529,7 +530,34 @@ service cloud.firestore {
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 🚫 BÖLÜM 10: BAN YÖNETİMİ (USER_BANS COLLECTION)
+    // 📈 BÖLÜM 10: KULLANICI İSTATİSTİKLERİ (USER_STATS COLLECTION)
+    // ═══════════════════════════════════════════════════════════════════════
+    // Kullanıcı istatistiklerini saklar: streak, uyumluluk oranı, başarılar vb.
+    //
+    // 🔒 Güvenlik Politikası:
+    //    - Sadece kullanıcı kendi istatistiklerini okuyabilir
+    //    - Sadece kullanıcı kendi istatistiklerini oluşturabilir
+    //    - Sadece kullanıcı kendi istatistiklerini güncelleyebilir
+    //    - Sadece kullanıcı kendi istatistiklerini silebilir
+    // ═══════════════════════════════════════════════════════════════════════
+
+    match /user_stats/{userId} {
+      // 📖 OKUMA: Sadece kullanıcı kendi istatistiklerini okuyabilir
+      allow read: if isAuthenticated() && isOwner(userId);
+
+      // ✏️ OLUŞTURMA: Sadece kullanıcı kendi istatistiklerini oluşturabilir
+      allow create: if isAuthenticated() && isOwner(userId);
+
+      // 🔄 GÜNCELLEME: Sadece kullanıcı kendi istatistiklerini güncelleyebilir
+      allow update: if isAuthenticated() && isOwner(userId);
+
+      // 🗑️ SİLME: Sadece kullanıcı kendi istatistiklerini silebilir
+      allow delete: if isAuthenticated() && isOwner(userId);
+    }
+
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🚫 BÖLÜM 11: BAN YÖNETİMİ (USER_BANS COLLECTION)
     // ═══════════════════════════════════════════════════════════════════════
     // Kullanıcı ban bilgilerini saklar
     //
@@ -549,7 +577,7 @@ service cloud.firestore {
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 📊 BÖLÜM 11: ANALYTICS (ANALYTICS COLLECTION)
+    // 📊 BÖLÜM 12: ANALYTICS (ANALYTICS COLLECTION)
     // ═══════════════════════════════════════════════════════════════════════
     // Premium analytics ve günlük kullanım istatistikleri
     //
@@ -572,7 +600,7 @@ service cloud.firestore {
 
 
     // ═══════════════════════════════════════════════════════════════════════
-    // 🚫 BÖLÜM 12: VARSAYILAN REDDETME KURALI
+    // 🚫 BÖLÜM 13: VARSAYILAN REDDETME KURALI
     // ═══════════════════════════════════════════════════════════════════════
     // Yukarıda belirtilmeyen tüm koleksiyonlara erişim varsayılan olarak
     // engellenmiştir. Bu, güvenliği artırır ve yanlışlıkla veri sızıntısını
@@ -630,8 +658,8 @@ service cloud.firestore {
    - Düzenli olarak security audit yapın
 
 ══════════════════════════════════════════════════════════════════════════════
-Son Güncelleme: 2025-11-17
-Versiyon: 2.1.0 (Aile Paketi Eklendi)
+Son Güncelleme: 2025-11-20
+Versiyon: 2.2.0 (User Stats Kuralları Eklendi)
 Geliştirici: Dozi Security Team
 ══════════════════════════════════════════════════════════════════════════════
 */
