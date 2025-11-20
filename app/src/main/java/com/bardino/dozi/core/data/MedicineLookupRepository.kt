@@ -45,7 +45,6 @@ object MedicineLookupRepository {
                 return  // zaten yüklendiyse ve cache doluysa tekrar yükleme
             }
         }
-        initialized = true
 
         try {
             android.util.Log.d("MedicineLookup", "Starting to initialize ilaclar.json...")
@@ -70,7 +69,14 @@ object MedicineLookupRepository {
                 )
             } ?: emptyList()
 
-            android.util.Log.d("MedicineLookup", "✅ Initialize successful! Loaded ${cachedIlaclar?.size ?: 0} medicines")
+            // Sadece başarılı yüklemede initialized = true yap
+            if (!cachedIlaclar.isNullOrEmpty()) {
+                initialized = true
+                android.util.Log.d("MedicineLookup", "✅ Initialize successful! Loaded ${cachedIlaclar?.size ?: 0} medicines")
+            } else {
+                initialized = false
+                android.util.Log.e("MedicineLookup", "❌ Initialize failed: cache is empty after loading")
+            }
 
             // Debug: İlk 3 ilacı logla
             cachedIlaclar?.take(3)?.forEachIndexed { index, ilac ->
@@ -80,6 +86,7 @@ object MedicineLookupRepository {
             android.util.Log.e("MedicineLookup", "❌ Error initializing ilaclar.json: ${e.message}", e)
             android.util.Log.e("MedicineLookup", "Stack trace:", e)
             cachedIlaclar = emptyList()
+            initialized = false
         }
     }
 
