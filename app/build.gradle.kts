@@ -183,6 +183,10 @@ dependencies {
     // 🖼️ Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
 
+    // 🔲 Glance (Widget)
+    implementation("androidx.glance:glance-appwidget:1.1.0")
+    implementation("androidx.glance:glance-material3:1.1.0")
+
     // 📸 ML Kit Barcode / QR Code Scanner (Play Services)
     implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.1")
     implementation("com.google.mlkit:barcode-scanning:17.3.0")

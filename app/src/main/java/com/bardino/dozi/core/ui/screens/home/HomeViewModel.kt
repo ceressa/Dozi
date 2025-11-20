@@ -18,6 +18,7 @@ import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.data.repository.AchievementRepository
 import com.bardino.dozi.core.data.repository.UserStatsRepository
+import com.bardino.dozi.core.data.repository.UserPreferencesRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -652,6 +653,8 @@ class HomeViewModel @Inject constructor(
                 Log.w(TAG, "⚠️ STOK BİTTİ: ${medicine.name}")
                 // Son uyarı zamanını kaydet
                 prefs.edit().putLong(lastWarningKey, currentTime).apply()
+                // ✅ Firebase'e senkronize et
+                syncStockWarningToFirebase(medicine.id, currentTime)
             }
             medicine.isStockCritical() -> {
                 // 🔴 Kritik seviye (3 gün kaldı)
@@ -659,6 +662,8 @@ class HomeViewModel @Inject constructor(
                 Log.w(TAG, "🔴 KRİTİK STOK: ${medicine.name} - ${medicine.daysRemainingInStock()} gün kaldı")
                 // Son uyarı zamanını kaydet
                 prefs.edit().putLong(lastWarningKey, currentTime).apply()
+                // ✅ Firebase'e senkronize et
+                syncStockWarningToFirebase(medicine.id, currentTime)
             }
             medicine.isStockLow() -> {
                 // 🟡 Düşük stok (threshold'a göre)
@@ -666,6 +671,22 @@ class HomeViewModel @Inject constructor(
                 Log.w(TAG, "🟡 DÜŞÜK STOK: ${medicine.name} - ${medicine.daysRemainingInStock()} gün kaldı (${medicine.stockCount} doz)")
                 // Son uyarı zamanını kaydet
                 prefs.edit().putLong(lastWarningKey, currentTime).apply()
+                // ✅ Firebase'e senkronize et
+                syncStockWarningToFirebase(medicine.id, currentTime)
+            }
+        }
+    }
+
+    /**
+     * Stock warning'i Firebase'e senkronize et
+     */
+    private fun syncStockWarningToFirebase(medicineId: String, lastWarningTime: Long) {
+        viewModelScope.launch {
+            try {
+                val userPrefsRepo = UserPreferencesRepository(context)
+                userPrefsRepo.syncStockWarning(medicineId, lastWarningTime)
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Stock warning Firebase'e senkronize edilemedi", e)
             }
         }
     }
