@@ -74,13 +74,16 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 return@launch
                             }
 
+                            // 🔥 Kritik ilaç kontrolü
+                            val isCritical = medicine?.criticalityLevel == com.bardino.dozi.core.data.model.MedicineCriticality.CRITICAL
                             NotificationHelper.showMedicationNotification(
                                 context = context,
                                 medicineName = med,
                                 medicineId = medicineId,
                                 dosage = dosage,
                                 time = time,
-                                scheduledTime = scheduledTime
+                                scheduledTime = scheduledTime,
+                                isCritical = isCritical
                             )
 
                             // ⏰ Escalation sistemi: 10dk, 30dk, 60dk (endDate geçmemişse)
@@ -440,6 +443,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     // Bildirim göster (medicineId, dosage, time note ve reminderName ile)
                     if (hasNotificationPermission(context)) {
                         val timeNote = parseTimeNoteFromMedicine(medicine.notes, time)
+                        // 🔥 Kritik ilaç kontrolü
+                        val isCritical = medicine.criticalityLevel == com.bardino.dozi.core.data.model.MedicineCriticality.CRITICAL
                         NotificationHelper.showMedicationNotification(
                             context = context,
                             medicineName = medicine.name,
@@ -448,7 +453,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                             time = time,
                             scheduledTime = scheduledTime,
                             timeNote = timeNote,
-                            reminderName = medicine.reminderName
+                            reminderName = medicine.reminderName,
+                            isCritical = isCritical
                         )
                     }
 
