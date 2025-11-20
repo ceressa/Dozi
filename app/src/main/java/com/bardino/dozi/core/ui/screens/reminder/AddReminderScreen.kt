@@ -257,7 +257,12 @@ fun AddReminderScreen(
                     frequency = medicine.frequency
                     xValue = medicine.frequencyValue
                     selectedDates = medicine.days
-                    startDate = medicine.startDate
+                    // Eğer startDate 0 veya 1970 öncesi ise bugünü kullan
+                    startDate = if (medicine.startDate > 0L && medicine.startDate > 946684800000L) {
+                        medicine.startDate
+                    } else {
+                        System.currentTimeMillis()
+                    }
                 }
                 isLoading = false
             } catch (e: Exception) {
