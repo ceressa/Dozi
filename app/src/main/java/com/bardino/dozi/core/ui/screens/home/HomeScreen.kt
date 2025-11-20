@@ -1224,7 +1224,7 @@ private fun CurrentMedicineCard(
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
             Surface(
-                color = if (isOverdue) DoziRed else DoziRed,
+                color = if (isOverdue) ErrorRed else DoziTurquoise,
                 shape = RoundedCornerShape(14.dp),
                 shadowElevation = 0.dp,
                 modifier = Modifier.graphicsLayer {
@@ -1286,14 +1286,14 @@ private fun CurrentMedicineCard(
                 Icon(
                     Icons.Default.Schedule,
                     contentDescription = null,
-                    tint = DoziRed,
+                    tint = if (isOverdue) ErrorRed else DoziPrimary,
                     modifier = Modifier.size(32.dp)
                 )
                 Text(
                     time,
                     style = MaterialTheme.typography.displaySmall,
                     fontWeight = FontWeight.Bold,
-                    color = DoziRed
+                    color = if (isOverdue) ErrorRed else DoziPrimary
                 )
             }
 
@@ -1354,7 +1354,7 @@ private fun CurrentMedicineCard(
                             },
                             contentDescription = null,
                             tint = when {
-                                isOverdue -> DoziRed
+                                isOverdue -> ErrorRed
                                 minutesUntilMedicine in 1..30 -> WarningOrange
                                 else -> DoziTurquoise
                             },
@@ -1365,7 +1365,7 @@ private fun CurrentMedicineCard(
                             timeStatusMessage,
                             style = MaterialTheme.typography.bodyMedium,
                             color = when {
-                                isOverdue -> DoziRed
+                                isOverdue -> ErrorRed
                                 minutesUntilMedicine in 1..30 -> WarningOrange
                                 else -> DoziTurquoise
                             },

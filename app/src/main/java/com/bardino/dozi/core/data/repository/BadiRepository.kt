@@ -56,12 +56,17 @@ class BadiRepository(
                     val badi = doc.toObject(Badi::class.java)?.copy(id = doc.id)
                     android.util.Log.d("BadiRepository", "getBadisFlow: Found badi record - id=${doc.id}, userId=${badi?.userId}, buddyUserId=${badi?.buddyUserId}, status=${badi?.status}")
 
-                    // REMOVED olanları filtrele
-                    if (badi?.status == BadiStatus.REMOVED) {
-                        android.util.Log.d("BadiRepository", "getBadisFlow: Filtering out REMOVED badi ${doc.id}")
-                        null
-                    } else {
-                        badi
+                    // REMOVED olanları ve self-buddy'leri filtrele
+                    when {
+                        badi?.status == BadiStatus.REMOVED -> {
+                            android.util.Log.d("BadiRepository", "getBadisFlow: Filtering out REMOVED badi ${doc.id}")
+                            null
+                        }
+                        badi?.userId == badi?.buddyUserId -> {
+                            android.util.Log.w("BadiRepository", "getBadisFlow: Filtering out self-buddy ${doc.id}")
+                            null
+                        }
+                        else -> badi
                     }
                 } ?: emptyList()
 
@@ -267,6 +272,11 @@ class BadiRepository(
         message: String? = null
     ): Result<String> {
         val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
+
+        // Kendine istek göndermeyi engelle
+        if (userId == toUserId) {
+            return Result.failure(Exception("Kendinize badi isteği gönderemezsiniz"))
+        }
 
         return try {
             // Kullanıcı bilgilerini al

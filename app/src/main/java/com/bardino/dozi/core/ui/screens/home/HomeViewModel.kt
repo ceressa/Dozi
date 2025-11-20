@@ -439,6 +439,9 @@ class HomeViewModel @Inject constructor(
             // 🏆 Achievement kontrolü
             checkAchievementsAfterMedicineTaken()
 
+            // 📊 UserStats güncelle (streak, compliance, etc.)
+            userStatsRepository.onMedicationTaken(medicationLogRepository)
+
             // 🚫 Escalation alarmlarını iptal et
             cancelEscalationAlarms(context, medicine.id, time)
 
@@ -793,9 +796,10 @@ class HomeViewModel @Inject constructor(
                 achievementRepository.checkStreakAchievements(userStats.currentStreak)
 
                 // 🏅 First step achievements
+                // Note: hasTakenDose = true because we just took a dose (stats not yet updated)
                 achievementRepository.checkFirstStepAchievements(
                     hasMedicine = totalMedicines > 0,
-                    hasTakenDose = userStats.totalMedicationsTaken > 0
+                    hasTakenDose = true
                 )
 
                 // 📚 Medicine collector achievements
