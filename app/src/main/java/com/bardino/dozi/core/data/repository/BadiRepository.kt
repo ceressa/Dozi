@@ -606,4 +606,87 @@ class BadiRepository(
             User(uid = userId, name = "Bilinmeyen")
         }
     }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 📏 PLAN LİMİT KONTROL METODLARİ
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Kullanıcının aktif badi sayısını döndür
+     * ACTIVE ve PAUSED badileri sayar
+     */
+    suspend fun getActiveBadiCount(): Int {
+        val userId = currentUserId ?: return 0
+
+        return try {
+            val snapshot = db.collection("buddies")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            snapshot.documents.count { doc ->
+                val status = doc.getString("status")
+                status == BadiStatus.ACTIVE.name || status == BadiStatus.PAUSED.name
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("BadiRepository", "getActiveBadiCount: Error", e)
+            0
+        }
+    }
+
+    /**
+     * Daha fazla badi eklenebilir mi kontrol et
+     * @param limit Maksimum izin verilen badi sayısı (-1 = sınırsız)
+     */
+    suspend fun canAddMoreBadis(limit: Int): Boolean {
+        if (limit == -1) return true // Sınırsız
+        if (limit == 0) return false // Badi yok (Free plan)
+        return getActiveBadiCount() < limit
+    }
+
+    /**
+     * Badi isteği kabul edilebilir mi kontrol et
+     * Her iki kullanıcının da limitini kontrol eder
+     */
+    suspend fun canAcceptBadiRequest(requestId: String, userLimit: Int, requesterLimit: Int): Result<Boolean> {
+        val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
+
+        return try {
+            // İsteği al
+            val request = db.collection("buddy_requests")
+                .document(requestId)
+                .get()
+                .await()
+                .toObject(BadiRequest::class.java)
+                ?: return Result.failure(Exception("Request not found"))
+
+            // Kabul eden kullanıcının limitini kontrol et
+            if (!canAddMoreBadis(userLimit)) {
+                return Result.success(false)
+            }
+
+            // İsteği gönderen kullanıcının limitini kontrol et
+            val requesterBadiCount = try {
+                val snapshot = db.collection("buddies")
+                    .whereEqualTo("userId", request.fromUserId)
+                    .get()
+                    .await()
+
+                snapshot.documents.count { doc ->
+                    val status = doc.getString("status")
+                    status == BadiStatus.ACTIVE.name || status == BadiStatus.PAUSED.name
+                }
+            } catch (e: Exception) {
+                0
+            }
+
+            if (requesterLimit != -1 && requesterBadiCount >= requesterLimit) {
+                return Result.success(false)
+            }
+
+            Result.success(true)
+        } catch (e: Exception) {
+            Result.failure(e)
+        }
+    }
 }
