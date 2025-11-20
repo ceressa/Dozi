@@ -10,6 +10,7 @@ import androidx.compose.foundation.ExperimentalFoundationApi
 import com.bardino.dozi.core.common.Constants.BUDDY_CHANNEL_ID
 import com.bardino.dozi.core.common.Constants.REMINDER_CHANNEL_ID
 import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.sync.SyncWorker
 import com.bardino.dozi.notifications.NotificationHelper
 import com.google.android.libraries.places.api.Places
 import com.google.firebase.firestore.FirebaseFirestore
@@ -38,6 +39,10 @@ class DoziApplication : Application() {
 
         // 🔔 Bildirim kanallarını oluştur
         createNotificationChannels()
+
+        // 🔄 Periyodik sync worker'ı başlat (offline-first support)
+        SyncWorker.schedulePeriodicSync(this)
+        android.util.Log.d("DoziApplication", "✅ Periodic sync worker scheduled")
     }
 
     private fun createNotificationChannels() {
