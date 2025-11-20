@@ -9,7 +9,7 @@ import android.os.Build
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.bardino.dozi.core.common.Constants.BUDDY_CHANNEL_ID
 import com.bardino.dozi.core.common.Constants.REMINDER_CHANNEL_ID
-import com.bardino.dozi.core.data.MedicineRepository
+import com.bardino.dozi.core.data.MedicineLookupRepository
 import com.bardino.dozi.core.sync.SyncWorker
 import com.bardino.dozi.notifications.NotificationHelper
 import com.google.android.libraries.places.api.Places
@@ -35,7 +35,7 @@ class DoziApplication : Application() {
         android.util.Log.d("DoziApplication", "✅ Firestore offline persistence enabled")
 
         // 💊 Uygulama açıldığında ilaç veritabanını belleğe yükle (ilaclar.json lookup için)
-        MedicineRepository.initialize(this)
+        MedicineLookupRepository.initialize(this)
 
         // 🔔 Bildirim kanallarını oluştur
         createNotificationChannels()

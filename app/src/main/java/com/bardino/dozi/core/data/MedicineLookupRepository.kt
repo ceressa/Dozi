@@ -4,16 +4,24 @@ import android.content.Context
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 
-// 💊 Kullanıcının kendi kaydettiği ilaç modeli
-data class Medicine(
+// 💊 Kullanıcının kendi kaydettiği ilaç modeli (Local/Onboarding için)
+data class LocalMedicine(
     val id: String,
     val name: String,
-    val dosage: String = "", // Artık opsiyonel, varsayılan boş string
+    val dosage: String = "",
     val stock: Int
 )
 
-// 🧠 Uygulama genelinde hem cache hem kullanıcı verisini yöneten repository
-object MedicineRepository {
+/**
+ * 🧠 İlaç Arama ve Lokal Depolama Repository'si
+ *
+ * İki ana görevi var:
+ * 1. ilaclar.json'dan ilaç veritabanını yükler (autocomplete için)
+ * 2. Kullanıcının lokal ilaçlarını SharedPreferences'da saklar (onboarding için)
+ *
+ * NOT: Firestore'daki ilaçlar için MedicineRepository (repository paketi) kullanılır
+ */
+object MedicineLookupRepository {
     private const val PREF_NAME = "medicines_prefs"
     private const val KEY_MEDICINES = "medicines_json"
     private val gson = Gson()
@@ -28,10 +36,10 @@ object MedicineRepository {
     // ✅ Tek seferlik JSON yükleme
     fun initialize(context: Context, forceReload: Boolean = false) {
         if (initialized && !forceReload) {
-            android.util.Log.d("MedicineRepository", "Already initialized, skipping...")
+            android.util.Log.d("MedicineLookup", "Already initialized, skipping...")
             // Ama cache boşsa, reload et
             if (cachedIlaclar.isNullOrEmpty()) {
-                android.util.Log.w("MedicineRepository", "Cache is empty despite initialization, forcing reload...")
+                android.util.Log.w("MedicineLookup", "Cache is empty despite initialization, forcing reload...")
                 initialized = false
             } else {
                 return  // zaten yüklendiyse ve cache doluysa tekrar yükleme
@@ -40,16 +48,16 @@ object MedicineRepository {
         initialized = true
 
         try {
-            android.util.Log.d("MedicineRepository", "Starting to initialize ilaclar.json...")
+            android.util.Log.d("MedicineLookup", "Starting to initialize ilaclar.json...")
             val json = context.assets.open("ilaclar.json").bufferedReader().use { it.readText() }
-            android.util.Log.d("MedicineRepository", "JSON file read successfully, length: ${json.length}")
+            android.util.Log.d("MedicineLookup", "JSON file read successfully, length: ${json.length}")
 
             val type = object : TypeToken<List<Map<String, Any>>>() {}.type
             val raw = gson.fromJson<List<Map<String, Any>>>(json, type)
-            android.util.Log.d("MedicineRepository", "JSON parsed, raw size: ${raw?.size}")
+            android.util.Log.d("MedicineLookup", "JSON parsed, raw size: ${raw?.size}")
 
             val dataSection = raw.firstOrNull { it["type"] == "table" }?.get("data") as? List<Map<String, Any>>
-            android.util.Log.d("MedicineRepository", "Data section extracted, size: ${dataSection?.size}")
+            android.util.Log.d("MedicineLookup", "Data section extracted, size: ${dataSection?.size}")
 
             cachedIlaclar = dataSection?.map {
                 Ilac(
@@ -62,46 +70,46 @@ object MedicineRepository {
                 )
             } ?: emptyList()
 
-            android.util.Log.d("MedicineRepository", "✅ Initialize successful! Loaded ${cachedIlaclar?.size ?: 0} medicines")
+            android.util.Log.d("MedicineLookup", "✅ Initialize successful! Loaded ${cachedIlaclar?.size ?: 0} medicines")
         } catch (e: Exception) {
-            android.util.Log.e("MedicineRepository", "❌ Error initializing ilaclar.json: ${e.message}", e)
+            android.util.Log.e("MedicineLookup", "❌ Error initializing ilaclar.json: ${e.message}", e)
             cachedIlaclar = emptyList()
         }
     }
 
     fun isInitialized(): Boolean = initialized
 
-    // 🗂 Kullanıcının kendi eklediği ilaçları yükle
-    fun loadMedicines(context: Context): List<Medicine> {
+    // 🗂 Kullanıcının kendi eklediği ilaçları yükle (Local storage)
+    fun loadLocalMedicines(context: Context): List<LocalMedicine> {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         val json = prefs.getString(KEY_MEDICINES, null) ?: return emptyList()
         return try {
-            val type = object : TypeToken<List<Medicine>>() {}.type
+            val type = object : TypeToken<List<LocalMedicine>>() {}.type
             gson.fromJson(json, type) ?: emptyList()
         } catch (e: Exception) {
             emptyList()
         }
     }
 
-    fun saveMedicines(context: Context, medicines: List<Medicine>) {
+    fun saveLocalMedicines(context: Context, medicines: List<LocalMedicine>) {
         val prefs = context.getSharedPreferences(PREF_NAME, Context.MODE_PRIVATE)
         prefs.edit().putString(KEY_MEDICINES, gson.toJson(medicines)).apply()
     }
 
-    fun saveMedicine(context: Context, medicine: Medicine) {
-        val medicines = loadMedicines(context).toMutableList()
+    fun saveLocalMedicine(context: Context, medicine: LocalMedicine) {
+        val medicines = loadLocalMedicines(context).toMutableList()
         val index = medicines.indexOfFirst { it.id == medicine.id }
         if (index >= 0) medicines[index] = medicine else medicines.add(medicine)
-        saveMedicines(context, medicines)
+        saveLocalMedicines(context, medicines)
     }
 
-    fun deleteMedicine(context: Context, id: String) {
-        val newList = loadMedicines(context).filterNot { it.id == id }
-        saveMedicines(context, newList)
+    fun deleteLocalMedicine(context: Context, id: String) {
+        val newList = loadLocalMedicines(context).filterNot { it.id == id }
+        saveLocalMedicines(context, newList)
     }
 
-    fun getMedicine(context: Context, id: String): Medicine? {
-        return loadMedicines(context).find { it.id == id }
+    fun getLocalMedicine(context: Context, id: String): LocalMedicine? {
+        return loadLocalMedicines(context).find { it.id == id }
     }
 
     fun findByNameOrIngredient(query: String): Ilac? {
@@ -111,4 +119,18 @@ object MedicineRepository {
                     it.Active_Ingredient?.lowercase()?.contains(clean) == true
         }
     }
+
+    // 🔄 Backward compatibility - eski methodlar
+    @Deprecated("Use loadLocalMedicines instead", ReplaceWith("loadLocalMedicines(context)"))
+    fun loadMedicines(context: Context) = loadLocalMedicines(context)
+
+    @Deprecated("Use saveLocalMedicine instead", ReplaceWith("saveLocalMedicine(context, medicine)"))
+    fun saveMedicine(context: Context, medicine: LocalMedicine) = saveLocalMedicine(context, medicine)
+
+    @Deprecated("Use getLocalMedicine instead", ReplaceWith("getLocalMedicine(context, id)"))
+    fun getMedicine(context: Context, id: String) = getLocalMedicine(context, id)
 }
+
+// Backward compatibility type alias
+@Deprecated("Use LocalMedicine instead", ReplaceWith("LocalMedicine"))
+typealias Medicine = LocalMedicine
