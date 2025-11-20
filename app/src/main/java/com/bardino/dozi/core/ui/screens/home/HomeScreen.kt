@@ -39,6 +39,9 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalFocusManager
 import androidx.compose.ui.platform.LocalHapticFeedback
+import androidx.compose.ui.platform.LocalLifecycleOwner
+import androidx.lifecycle.Lifecycle
+import androidx.lifecycle.LifecycleEventObserver
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.SpanStyle
 import androidx.compose.ui.text.buildAnnotatedString
@@ -263,12 +266,26 @@ fun HomeScreen(
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
+    val lifecycleOwner = LocalLifecycleOwner.current
 
     // ✅ Context gerektiren ViewModel fonksiyonlarını çağır
     LaunchedEffect(context) {
         // 🔥 Not: refreshMedicines artık Flow ile otomatik - polling kaldırıldı
         viewModel.loadSnoozeStateFromContext(context)
         viewModel.startSnoozeTimerWithContext(context)
+    }
+
+    // ✅ Uygulama ön plana geldiğinde state'i yenile (Widget senkronizasyonu için)
+    DisposableEffect(lifecycleOwner) {
+        val observer = LifecycleEventObserver { _, event ->
+            if (event == Lifecycle.Event.ON_RESUME) {
+                viewModel.refreshMedicines(context)
+            }
+        }
+        lifecycleOwner.lifecycle.addObserver(observer)
+        onDispose {
+            lifecycleOwner.lifecycle.removeObserver(observer)
+        }
     }
 
     // 🎨 Tema renklerini al
