@@ -283,6 +283,25 @@ service cloud.firestore {
         // 🗑️ SİLME: Kullanıcı kendi profilini silebilir
         allow delete: if isAuthenticated() && isOwner(userId);
       }
+
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 🏆 BAŞARILAR SUBCOLLECTION (users/{userId}/achievements)
+      // ═══════════════════════════════════════════════════════════════════════
+      // Kullanıcının kazandığı rozetler ve başarılar
+      match /achievements/{achievementId} {
+        // 📖 OKUMA: Kullanıcı kendi başarılarını okuyabilir
+        allow read: if isAuthenticated() && isOwner(userId);
+
+        // ✏️ OLUŞTURMA: Kullanıcı kendi başarısını oluşturabilir
+        allow create: if isAuthenticated() && isOwner(userId);
+
+        // 🔄 GÜNCELLEME: Kullanıcı kendi başarısını güncelleyebilir
+        allow update: if isAuthenticated() && isOwner(userId);
+
+        // 🗑️ SİLME: Kullanıcı kendi başarısını silebilir
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
     }
 
 
