@@ -23,7 +23,7 @@ class StreakManager(
 
     companion object {
         private const val TAG = "StreakManager"
-        private const val COLLECTION_USER_STATS = "userStats"
+        private const val COLLECTION_USER_STATS = "user_stats"
     }
 
     /**
