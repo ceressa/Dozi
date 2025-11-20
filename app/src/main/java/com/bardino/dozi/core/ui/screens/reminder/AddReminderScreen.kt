@@ -56,6 +56,21 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import java.text.SimpleDateFormat
 import java.util.*
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import com.bardino.dozi.core.premium.PremiumManager
+import com.bardino.dozi.core.ui.components.PremiumLimitDialog
+import com.bardino.dozi.core.ui.components.LimitIndicator
+import com.bardino.dozi.core.common.Constants
+
+// EntryPoint for accessing PremiumManager in Composable
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface AddReminderEntryPoint {
+    fun premiumManager(): PremiumManager
+}
 
 // Medicine entry data class
 data class MedicineEntry(
@@ -87,6 +102,22 @@ fun AddReminderScreen(
     val focusManager = LocalFocusManager.current
     var selectedPlace by remember { mutableStateOf<String?>(null) }
 
+    // 💎 Premium Manager için EntryPoint erişimi
+    val premiumManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            AddReminderEntryPoint::class.java
+        ).premiumManager()
+    }
+
+    // 📊 Limit kontrol state'leri
+    var showLimitDialog by remember { mutableStateOf(false) }
+    var limitDialogType by remember { mutableStateOf("medicine") } // "medicine" veya "reminder"
+    var currentMedicineCount by remember { mutableStateOf(0) }
+    var currentReminderCount by remember { mutableStateOf(0) }
+    var medicineLimit by remember { mutableStateOf(Constants.FREE_MEDICINE_LIMIT) }
+    var reminderLimit by remember { mutableStateOf(Constants.FREE_REMINDER_LIMIT) }
+
     // 🔔 Bildirim izni kontrolü ve isteme
     var showPermissionDialog by remember { mutableStateOf(false) }
     val notificationPermissionLauncher = rememberLauncherForActivityResult(
@@ -117,6 +148,30 @@ fun AddReminderScreen(
             onNavigateBack()
         }
     }
+
+    // 📊 Limit ve sayaçları yükle
+    LaunchedEffect(Unit) {
+        // Onboarding'deyse limit kontrolü yapma
+        if (OnboardingPreferences.isInOnboarding(context)) return@LaunchedEffect
+
+        try {
+            val medicineRepository = FirestoreMedicineRepository()
+
+            // Mevcut sayıları al
+            val allMedicines = medicineRepository.getAllMedicines()
+            currentMedicineCount = allMedicines.size
+            currentReminderCount = allMedicines.sumOf { it.times.size }
+
+            // Limitleri al
+            medicineLimit = premiumManager.getMedicineLimit()
+            reminderLimit = premiumManager.getReminderLimit()
+
+            android.util.Log.d("AddReminder", "📊 Limits loaded - Medicines: $currentMedicineCount/$medicineLimit, Reminders: $currentReminderCount/$reminderLimit")
+        } catch (e: Exception) {
+            android.util.Log.e("AddReminder", "Error loading limits", e)
+        }
+    }
+
     var isLoading by remember { mutableStateOf(false) }
 
     // State'ler
@@ -388,6 +443,26 @@ fun AddReminderScreen(
                                     }
                                 }
 
+                                // 📊 Limit kontrolü (Onboarding ve Edit mode hariç)
+                                if (!OnboardingPreferences.isInOnboarding(context) && !isEditMode) {
+                                    val newTimeSlotsCount = selectedTimes.size
+
+                                    // İlaç limiti kontrolü
+                                    if (medicineLimit != Constants.UNLIMITED && currentMedicineCount >= medicineLimit) {
+                                        limitDialogType = "medicine"
+                                        showLimitDialog = true
+                                        return@NavigationButtons
+                                    }
+
+                                    // Hatırlatma (time slot) limiti kontrolü
+                                    if (reminderLimit != Constants.UNLIMITED &&
+                                        (currentReminderCount + newTimeSlotsCount) > reminderLimit) {
+                                        limitDialogType = "reminder"
+                                        showLimitDialog = true
+                                        return@NavigationButtons
+                                    }
+                                }
+
                                 // Tüm ilaçları kaydet
                                 saveMedicinesToFirestore(
                                     context = context,
@@ -440,6 +515,23 @@ fun AddReminderScreen(
             onFinish = {
                 showSuccess = false
                 onNavigateBack()
+            }
+        )
+    }
+
+    // 📊 Premium limit dialog'u
+    if (showLimitDialog) {
+        PremiumLimitDialog(
+            limitType = if (limitDialogType == "medicine") "İlaç" else "Hatırlatma",
+            currentCount = if (limitDialogType == "medicine") currentMedicineCount else currentReminderCount,
+            maxCount = if (limitDialogType == "medicine") medicineLimit else reminderLimit,
+            onUpgrade = {
+                showLimitDialog = false
+                // Premium ekranına yönlendir
+                navController.navigate(Screen.Premium.route)
+            },
+            onDismiss = {
+                showLimitDialog = false
             }
         )
     }
