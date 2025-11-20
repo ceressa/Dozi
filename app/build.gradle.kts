@@ -78,6 +78,11 @@ android {
 
     kotlinOptions {
         jvmTarget = "17"
+        // Faster compilation
+        freeCompilerArgs += listOf(
+            "-opt-in=kotlin.RequiresOptIn",
+            "-Xjvm-default=all"
+        )
     }
 
     buildFeatures {
