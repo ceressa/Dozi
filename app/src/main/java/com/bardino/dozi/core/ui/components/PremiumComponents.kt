@@ -451,3 +451,182 @@ fun PremiumStatusCard(
         }
     }
 }
+
+/**
+ * 🚫 Premium Limit Dialog
+ *
+ * Limit aşıldığında kullanıcıya gösterilecek dialog
+ */
+@Composable
+fun PremiumLimitDialog(
+    title: String,
+    message: String,
+    currentCount: Int,
+    maxCount: Int,
+    requiredPlan: String,
+    onDismiss: () -> Unit,
+    onUpgrade: () -> Unit
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = Color.White)
+        ) {
+            Column(
+                modifier = Modifier.padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally,
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                // Icon
+                Box(
+                    modifier = Modifier
+                        .size(64.dp)
+                        .background(
+                            color = DoziSecondary.copy(alpha = 0.1f),
+                            shape = CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = null,
+                        tint = DoziSecondary,
+                        modifier = Modifier.size(32.dp)
+                    )
+                }
+
+                // Title
+                Text(
+                    text = title,
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    textAlign = TextAlign.Center
+                )
+
+                // Limit indicator
+                Column(
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                    verticalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Text(
+                        text = "$currentCount / $maxCount",
+                        style = MaterialTheme.typography.headlineMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = DoziSecondary
+                    )
+                    LinearProgressIndicator(
+                        progress = { currentCount.toFloat() / maxCount.toFloat() },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(8.dp)
+                            .clip(RoundedCornerShape(4.dp)),
+                        color = DoziSecondary,
+                        trackColor = Gray100
+                    )
+                }
+
+                // Message
+                Text(
+                    text = message,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = TextSecondary,
+                    textAlign = TextAlign.Center
+                )
+
+                // Required plan badge
+                Surface(
+                    color = DoziGold.copy(alpha = 0.1f),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.spacedBy(8.dp)
+                    ) {
+                        PremiumBadge(size = 20.dp, animated = false)
+                        Text(
+                            text = "$requiredPlan ile sınırsız",
+                            style = MaterialTheme.typography.labelMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = DoziGold
+                        )
+                    }
+                }
+
+                // Buttons
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text("Vazgeç")
+                    }
+                    Button(
+                        onClick = onUpgrade,
+                        modifier = Modifier.weight(1f),
+                        shape = RoundedCornerShape(12.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = DoziGold)
+                    ) {
+                        Text("Yükselt", color = Color.White, fontWeight = FontWeight.Bold)
+                    }
+                }
+            }
+        }
+    }
+}
+
+/**
+ * 📊 Limit Indicator
+ *
+ * Mevcut kullanımı gösteren kompakt gösterge
+ */
+@Composable
+fun LimitIndicator(
+    label: String,
+    currentCount: Int,
+    maxCount: Int,
+    modifier: Modifier = Modifier,
+    showWarning: Boolean = currentCount >= maxCount
+) {
+    val isUnlimited = maxCount == -1
+    val progress = if (isUnlimited) 0f else currentCount.toFloat() / maxCount.toFloat()
+    val color = when {
+        isUnlimited -> DoziPrimary
+        progress >= 1f -> DoziSecondary
+        progress >= 0.8f -> Color(0xFFFF9800) // Orange
+        else -> DoziPrimary
+    }
+
+    Row(
+        modifier = modifier
+            .background(
+                color = color.copy(alpha = 0.1f),
+                shape = RoundedCornerShape(8.dp)
+            )
+            .padding(horizontal = 12.dp, vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+        horizontalArrangement = Arrangement.spacedBy(8.dp)
+    ) {
+        if (showWarning && !isUnlimited) {
+            Icon(
+                imageVector = Icons.Default.Warning,
+                contentDescription = null,
+                tint = color,
+                modifier = Modifier.size(16.dp)
+            )
+        }
+        Text(
+            text = if (isUnlimited) "$label: $currentCount" else "$label: $currentCount/$maxCount",
+            style = MaterialTheme.typography.labelMedium,
+            fontWeight = FontWeight.Medium,
+            color = color
+        )
+    }
+}
