@@ -12,14 +12,21 @@ object IlacJsonRepository {
     fun search(context: Context, query: String): List<IlacSearchResult> {
         android.util.Log.d("IlacJsonRepository", "Search called with query: '$query'")
 
-        // Eğer cache henüz hazır değilse, güvenlik için initialize et
+        // Eğer cache henüz hazır değilse veya boşsa, initialize et
         if (!MedicineLookupRepository.isInitialized()) {
             android.util.Log.d("IlacJsonRepository", "Cache not initialized, initializing now...")
             MedicineLookupRepository.initialize(context)
         }
 
+        // Cache boşsa, force reload ile tekrar dene
+        var ilaclar = MedicineLookupRepository.ilaclarCache ?: emptyList()
+        if (ilaclar.isEmpty()) {
+            android.util.Log.w("IlacJsonRepository", "⚠️ Cache is empty, forcing reload from JSON...")
+            MedicineLookupRepository.initialize(context, forceReload = true)
+            ilaclar = MedicineLookupRepository.ilaclarCache ?: emptyList()
+        }
+
         val clean = query.trim().lowercase()
-        val ilaclar = MedicineLookupRepository.ilaclarCache ?: emptyList()
         android.util.Log.d("IlacJsonRepository", "Cache size: ${ilaclar.size}, searching for: '$clean'")
 
         val results = ilaclar
@@ -41,7 +48,15 @@ object IlacJsonRepository {
         }
 
         // Cache'teki ilaç listesini al
-        val ilacList = MedicineLookupRepository.ilaclarCache ?: emptyList()
+        var ilacList = MedicineLookupRepository.ilaclarCache ?: emptyList()
+
+        // Cache boşsa, force reload ile tekrar dene
+        if (ilacList.isEmpty()) {
+            android.util.Log.w("IlacJsonRepository", "⚠️ Cache is empty for barcode search, forcing reload from JSON...")
+            MedicineLookupRepository.initialize(context, forceReload = true)
+            ilacList = MedicineLookupRepository.ilaclarCache ?: emptyList()
+        }
+
         val cleanBarcode = barcode.trim()
 
         // Barkoda göre arama yap
