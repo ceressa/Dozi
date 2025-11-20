@@ -76,12 +76,12 @@ class PremiumRepository @Inject constructor(
     }
 
     /**
-     * 1 haftalık ücretsiz deneme başlat (onboarding için)
+     * 3 günlük ücretsiz deneme başlat (onboarding için)
      */
     suspend fun activateTrialPeriod(userId: String): Boolean {
         return try {
             val now = System.currentTimeMillis()
-            val expiryDate = now + (7 * 24 * 60 * 60 * 1000L) // 7 gün
+            val expiryDate = now + (com.bardino.dozi.core.common.Constants.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000L)
 
             val updates = hashMapOf<String, Any>(
                 "isPremium" to true,
@@ -117,12 +117,9 @@ class PremiumRepository @Inject constructor(
         return try {
             val now = System.currentTimeMillis()
             val durationMillis = when (planType) {
-                PremiumPlanType.WEEKLY -> 7 * 24 * 60 * 60 * 1000L
-                PremiumPlanType.MONTHLY -> 30 * 24 * 60 * 60 * 1000L
-                PremiumPlanType.YEARLY -> 365 * 24 * 60 * 60 * 1000L
-                PremiumPlanType.MONTHLY_FAMILY -> 30 * 24 * 60 * 60 * 1000L
-                PremiumPlanType.YEARLY_FAMILY -> 365 * 24 * 60 * 60 * 1000L
-                PremiumPlanType.LIFETIME -> Long.MAX_VALUE - now
+                PremiumPlanType.EKSTRA_MONTHLY, PremiumPlanType.AILE_MONTHLY -> 30 * 24 * 60 * 60 * 1000L
+                PremiumPlanType.EKSTRA_YEARLY, PremiumPlanType.AILE_YEARLY -> 365 * 24 * 60 * 60 * 1000L
+                PremiumPlanType.TRIAL -> com.bardino.dozi.core.common.Constants.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000L
                 else -> 0L
             }
 
@@ -131,7 +128,7 @@ class PremiumRepository @Inject constructor(
             val updates = hashMapOf<String, Any>(
                 "isPremium" to true,
                 "isTrial" to false,
-                "planType" to planType.name.lowercase(),
+                "planType" to planType.id,
                 "premiumStartDate" to now,
                 "premiumExpiryDate" to expiryDate
             )
@@ -160,18 +157,13 @@ class PremiumRepository @Inject constructor(
     ): Boolean {
         return try {
             val now = System.currentTimeMillis()
-            val durationMillis = if (planType == PremiumPlanType.LIFETIME) {
-                Long.MAX_VALUE - now
-            } else {
-                durationDays * 24 * 60 * 60 * 1000L
-            }
-
+            val durationMillis = durationDays * 24 * 60 * 60 * 1000L
             val expiryDate = now + durationMillis
 
             val updates = hashMapOf<String, Any>(
                 "isPremium" to true,
                 "isTrial" to false,
-                "planType" to planType.name.lowercase(),
+                "planType" to planType.id,
                 "premiumStartDate" to now,
                 "premiumExpiryDate" to expiryDate
             )

@@ -40,11 +40,10 @@ class BillingManager @Inject constructor(
         private const val TAG = "BillingManager"
 
         // Product IDs - MUST match Google Play Console configuration
-        const val PRODUCT_WEEKLY = "dozi_weekly_premium"
-        const val PRODUCT_MONTHLY = "dozi_monthly_premium"
-        const val PRODUCT_YEARLY = "dozi_yearly_premium"
-        const val PRODUCT_MONTHLY_FAMILY = "dozi_monthly_family_premium"
-        const val PRODUCT_YEARLY_FAMILY = "dozi_yearly_family_premium"
+        const val PRODUCT_EKSTRA_MONTHLY = "dozi_ekstra_monthly"
+        const val PRODUCT_EKSTRA_YEARLY = "dozi_ekstra_yearly"
+        const val PRODUCT_AILE_MONTHLY = "dozi_aile_monthly"
+        const val PRODUCT_AILE_YEARLY = "dozi_aile_yearly"
     }
 
     // Billing client instance
@@ -109,23 +108,19 @@ class BillingManager @Inject constructor(
             try {
                 val productList = listOf(
                     QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(PRODUCT_WEEKLY)
+                        .setProductId(PRODUCT_EKSTRA_MONTHLY)
                         .setProductType(BillingClient.ProductType.SUBS)
                         .build(),
                     QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(PRODUCT_MONTHLY)
+                        .setProductId(PRODUCT_EKSTRA_YEARLY)
                         .setProductType(BillingClient.ProductType.SUBS)
                         .build(),
                     QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(PRODUCT_YEARLY)
+                        .setProductId(PRODUCT_AILE_MONTHLY)
                         .setProductType(BillingClient.ProductType.SUBS)
                         .build(),
                     QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(PRODUCT_MONTHLY_FAMILY)
-                        .setProductType(BillingClient.ProductType.SUBS)
-                        .build(),
-                    QueryProductDetailsParams.Product.newBuilder()
-                        .setProductId(PRODUCT_YEARLY_FAMILY)
+                        .setProductId(PRODUCT_AILE_YEARLY)
                         .setProductType(BillingClient.ProductType.SUBS)
                         .build()
                 )

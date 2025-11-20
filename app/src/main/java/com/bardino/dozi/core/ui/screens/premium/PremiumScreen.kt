@@ -276,12 +276,11 @@ fun PremiumScreen(
                 Button(
                     onClick = {
                         val planType = when (selectedPlan) {
-                            "weekly" -> PlanType.WEEKLY
-                            "monthly" -> PlanType.MONTHLY
-                            "yearly" -> PlanType.YEARLY
-                            "monthly_family" -> PlanType.MONTHLY_FAMILY
-                            "yearly_family" -> PlanType.YEARLY_FAMILY
-                            else -> PlanType.MONTHLY
+                            "ekstra_monthly" -> PlanType.EKSTRA_MONTHLY
+                            "ekstra_yearly" -> PlanType.EKSTRA_YEARLY
+                            "aile_monthly" -> PlanType.AILE_MONTHLY
+                            "aile_yearly" -> PlanType.AILE_YEARLY
+                            else -> PlanType.EKSTRA_MONTHLY
                         }
                         onPurchase(planType)
                     },
@@ -502,16 +501,14 @@ private fun PremiumPlanCard(
     }
 }
 
-// Plan Modeli - Eski PlanType enum'ı korunuyor (geriye uyumluluk için)
+// Plan Modeli - Yeni 3 kademeli yapı
 enum class PlanType(
     val title: String,
     val price: String,
     val period: String
 ) {
-    WEEKLY("Haftalık", "49", "hafta"),
-    MONTHLY("Aylık", "149", "ay"),
-    YEARLY("Yıllık", "999", "yıl"),
-    MONTHLY_FAMILY("Aylık Aile", "249", "ay"),
-    YEARLY_FAMILY("Yıllık Aile", "1999", "yıl"),
-    LIFETIME("Ömür Boyu", "2999", "tek seferlik")
+    EKSTRA_MONTHLY("Ekstra Aylık", "149", "ay"),
+    EKSTRA_YEARLY("Ekstra Yıllık", "999", "yıl"),
+    AILE_MONTHLY("Aile Aylık", "249", "ay"),
+    AILE_YEARLY("Aile Yıllık", "1999", "yıl")
 }
