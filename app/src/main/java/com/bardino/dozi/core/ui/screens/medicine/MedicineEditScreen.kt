@@ -317,8 +317,16 @@ fun MedicineEditScreen(
 
                                     if (existingMedicine != null) {
                                         // Mevcut ilacı güncelle, sadece stockCount'u değiştir
-                                        firestoreRepo.updateMedicineField(newId, "stockCount", stock.toInt())
-                                        android.util.Log.d("MedicineEditScreen", "✅ Firestore stockCount güncellendi: $newId -> ${stock.toInt()}")
+                                        val success = firestoreRepo.updateMedicineField(newId, "stockCount", stock.toInt())
+                                        if (success) {
+                                            android.util.Log.d("MedicineEditScreen", "✅ Firestore stockCount güncellendi: $newId -> ${stock.toInt()}")
+                                        } else {
+                                            android.util.Log.e("MedicineEditScreen", "❌ Firestore güncelleme başarısız: $newId")
+                                            // 🔥 FIX: Kullanıcıya hata göster
+                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                Toast.makeText(context, "⚠️ İlaç yerel olarak kaydedildi ama sunucuya gönderilemedi", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
                                     } else {
                                         // Yeni ilaç oluştur (temel bilgilerle)
                                         val firestoreMedicine = com.bardino.dozi.core.data.model.Medicine(
@@ -328,11 +336,23 @@ fun MedicineEditScreen(
                                             boxSize = stock.toInt(),
                                             reminderEnabled = false
                                         )
-                                        firestoreRepo.addMedicine(firestoreMedicine)
-                                        android.util.Log.d("MedicineEditScreen", "✅ Firestore'a yeni ilaç eklendi: ${name.trim()}")
+                                        val savedMedicine = firestoreRepo.addMedicine(firestoreMedicine)
+                                        if (savedMedicine != null) {
+                                            android.util.Log.d("MedicineEditScreen", "✅ Firestore'a yeni ilaç eklendi: ${name.trim()}")
+                                        } else {
+                                            android.util.Log.e("MedicineEditScreen", "❌ Firestore kayıt başarısız: ${name.trim()}")
+                                            // 🔥 FIX: Kullanıcıya hata göster
+                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                Toast.makeText(context, "⚠️ İlaç yerel olarak kaydedildi ama sunucuya gönderilemedi", Toast.LENGTH_LONG).show()
+                                            }
+                                        }
                                     }
                                 } catch (e: Exception) {
                                     android.util.Log.e("MedicineEditScreen", "❌ Firestore kayıt hatası", e)
+                                    // 🔥 FIX: Kullanıcıya hata göster
+                                    kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                        Toast.makeText(context, "⚠️ İlaç yerel olarak kaydedildi ama sunucu bağlantısı başarısız", Toast.LENGTH_LONG).show()
+                                    }
                                 }
                             }
 

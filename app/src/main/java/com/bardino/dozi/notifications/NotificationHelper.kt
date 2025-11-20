@@ -145,7 +145,14 @@ object NotificationHelper {
             .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
             .build()
 
-        nm.notify(NOTIF_ID, notification)
+        // 🔥 FIX: Unique notification ID kullan (her ilaç+zaman için ayrı bildirim)
+        val notificationId = if (medicineId.isNotEmpty()) {
+            getNotificationId(medicineId, time, 0)
+        } else {
+            NOTIF_ID // Fallback for backward compatibility
+        }
+        nm.notify(notificationId, notification)
+        Log.d("NotificationHelper", "✅ Bildirim gösterildi: ID=$notificationId (medicineId=$medicineId, time=$time)")
     }
 
     // ✅ RemoteViews kaldırıldı - Modern BigTextStyle kullanıyoruz
