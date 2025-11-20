@@ -1,6 +1,8 @@
 package com.bardino.dozi.core.data.repository
 
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.bardino.dozi.core.data.model.*
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
@@ -60,6 +62,7 @@ class UserStatsRepository @Inject constructor(
     /**
      * Streak'i güncelle (her gün ilaç alındığında çağrılır)
      */
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun updateStreak(medicationLogRepository: MedicationLogRepository) {
         try {
             val userId = auth.currentUser?.uid ?: return
@@ -76,7 +79,7 @@ class UserStatsRepository @Inject constructor(
             // Bugün tüm ilaçlar alındı mı kontrol et
             val todayLogs = medicationLogRepository.getMedicationLogsForDate(today)
             val allTakenToday = todayLogs.isNotEmpty() &&
-                todayLogs.all { it.status == MedicationStatus.TAKEN }
+                    todayLogs.all { it.status == MedicationStatus.TAKEN }
 
             if (!allTakenToday) {
                 Log.d(TAG, "Not all medications taken today, streak not updated")

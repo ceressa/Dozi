@@ -1,3 +1,6 @@
+import java.util.Properties
+import java.io.FileInputStream
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
@@ -7,27 +10,7 @@ plugins {
     id("kotlin-parcelize")
 }
 
-// 🎯 Profesyonel Versiyonlama Sistemi
-// ────────────────────────────────────────────────────────────────
-// Semantic Versioning: MAJOR.MINOR.PATCH[-STAGE][+BUILD]
-// Örnek: 0.1.0-beta+241
-
-object AppVersion {
-    const val MAJOR = 0          // Breaking changes
-    const val MINOR = 1          // New features, backwards compatible
-    const val PATCH = 0          // Bug fixes
-
-    // 📋 Test Aşamaları:
-    // "alpha"      -> Internal Testing (Dahili Test)
-    // "beta"       -> Closed Testing (Kapalı Test) ✅ Şu an buradasınız
-    // "rc"         -> Open Testing (Açık Test / Release Candidate)
-    // "production" -> Production (Canlı Yayın)
-    const val RELEASE_STAGE = "beta"  // 🔵 Kapalı Test
-
-    const val INCLUDE_BUILD_NUMBER = true  // APK isminde build numarası göster
-}
-
-// 📊 Git commit sayısını al (versionCode için)
+// Git commit sayısını versionCode olarak kullan
 fun getGitCommitCount(): Int {
     return try {
         val process = Runtime.getRuntime().exec("git rev-list --count HEAD")
@@ -35,24 +18,15 @@ fun getGitCommitCount(): Int {
         val output = process.inputStream.bufferedReader().readText().trim()
         output.toIntOrNull() ?: 1
     } catch (e: Exception) {
-        println("⚠️ Git commit sayısı alınamadı, varsayılan değer kullanılıyor: ${e.message}")
         1
     }
 }
 
-// 🏷️ Version Name oluştur (Semantic Versioning)
-fun getVersionName(): String {
-    val baseVersion = "${AppVersion.MAJOR}.${AppVersion.MINOR}.${AppVersion.PATCH}"
-    val stageSuffix = when (AppVersion.RELEASE_STAGE) {
-        "production" -> ""
-        else -> "-${AppVersion.RELEASE_STAGE}"
-    }
-    val buildSuffix = if (AppVersion.INCLUDE_BUILD_NUMBER && AppVersion.RELEASE_STAGE != "production") {
-        ".${getGitCommitCount()}"
-    } else {
-        ""
-    }
-    return "$baseVersion$stageSuffix$buildSuffix"
+// local.properties oku
+val localProperties = Properties()
+val localPropertiesFile = rootProject.file("local.properties")
+if (localPropertiesFile.exists()) {
+    localProperties.load(FileInputStream(localPropertiesFile))
 }
 
 android {
@@ -63,28 +37,27 @@ android {
         applicationId = "com.bardino.dozi"
         minSdk = 24
         targetSdk = 35
-        versionCode = getGitCommitCount()  // Build number (her commit +1)
-        versionName = getVersionName()      // Semantic version (0.1.0-beta.241)
+
+        // Tek versionCode / Tek versionName
+        versionCode = getGitCommitCount()
+        versionName = "1"
+
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         vectorDrawables.useSupportLibrary = true
     }
 
-    // 📦 APK dosya ismi (Profesyonel format)
-    // Örnek: Dozi_v0.1.0-beta.241_Release_build-241.apk
-    android.applicationVariants.all {
-        outputs.all {
-            val appName = "Dozi"
-            val version = defaultConfig.versionName
-            val buildNumber = defaultConfig.versionCode
-            val variantName = name.replaceFirstChar { it.uppercase() }
-            val newName = "${appName}_v${version}_${variantName}_build-${buildNumber}.apk"
-            val outputImpl = this as com.android.build.gradle.internal.api.BaseVariantOutputImpl
-            outputImpl.outputFileName = newName
+    signingConfigs {
+        create("release") {
+            storeFile = file("../dozi-release-key.jks")
+            storePassword = localProperties.getProperty("storePassword")
+            keyAlias = "dozi"
+            keyPassword = localProperties.getProperty("keyPassword")
         }
     }
 
     buildTypes {
         release {
+            signingConfig = signingConfigs.getByName("release")
             isMinifyEnabled = true
             isShrinkResources = true
             proguardFiles(
@@ -102,12 +75,24 @@ android {
         sourceCompatibility = JavaVersion.VERSION_17
         targetCompatibility = JavaVersion.VERSION_17
     }
-    kotlinOptions.jvmTarget = "17"
 
-    buildFeatures.compose = true
-    composeOptions.kotlinCompilerExtensionVersion = "1.5.15"
+    kotlinOptions {
+        jvmTarget = "17"
+    }
 
-    packaging.resources.excludes += "/META-INF/{AL2.0,LGPL2.1}"
+    buildFeatures {
+        compose = true
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
+    }
+
+    packaging {
+        resources {
+            excludes += "/META-INF/{AL2.0,LGPL2.1}"
+        }
+    }
 }
 
 dependencies {
@@ -182,6 +167,10 @@ dependencies {
 
     // 🖼️ Coil (Image Loading)
     implementation("io.coil-kt:coil-compose:2.5.0")
+
+    // 🔲 Glance (Widget)
+    implementation("androidx.glance:glance-appwidget:1.1.0")
+    implementation("androidx.glance:glance-material3:1.1.0")
 
     // 📸 ML Kit Barcode / QR Code Scanner (Play Services)
     implementation("com.google.android.gms:play-services-mlkit-barcode-scanning:18.3.1")

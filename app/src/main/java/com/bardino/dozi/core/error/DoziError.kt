@@ -93,7 +93,7 @@ sealed class DoziError {
         val reason: String,
         override val message: String
     ) : DoziError() {
-        override val userMessage: String
+        override val userMessage: String = ""
             get() = when (field) {
                 "medicine_name" -> "İlaç adı boş olamaz"
                 "dosage" -> "Doz bilgisi gerekli"

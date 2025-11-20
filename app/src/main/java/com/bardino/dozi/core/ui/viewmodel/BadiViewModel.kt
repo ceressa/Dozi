@@ -327,43 +327,12 @@ class BadiViewModel @Inject constructor(
     }
 
     /**
-     * Badi bildirim tercihlerini güncelle
-     */
-    fun updateBadiNotificationPreferences(
-        badiId: String,
-        preferences: BadiNotificationPreferences
-    ) {
-        viewModelScope.launch {
-            badiRepository.updateBadiNotificationPreferences(badiId, preferences)
-                .onFailure { error ->
-                    _uiState.update { it.copy(error = error.message) }
-                }
-        }
-    }
-
-    /**
      * Badi durumunu güncelle (aktif/duraklatılmış)
      */
     fun updateBadiStatus(badiId: String, status: BadiStatus) {
         viewModelScope.launch {
             _uiState.update { it.copy(isLoading = true) }
             badiRepository.updateBadiStatus(badiId, status)
-                .onSuccess {
-                    _uiState.update { it.copy(isLoading = false, error = null) }
-                }
-                .onFailure { error ->
-                    _uiState.update { it.copy(isLoading = false, error = error.message) }
-                }
-        }
-    }
-
-    /**
-     * Badi ilişkisini kaldır
-     */
-    fun removeBadi(badiId: String) {
-        viewModelScope.launch {
-            _uiState.update { it.copy(isLoading = true) }
-            badiRepository.updateBadiStatus(badiId, BadiStatus.REMOVED)
                 .onSuccess {
                     _uiState.update { it.copy(isLoading = false, error = null) }
                 }

@@ -9,6 +9,7 @@ import androidx.activity.ComponentActivity
 import androidx.lifecycle.lifecycleScope
 import com.bardino.dozi.MainActivity
 import com.bardino.dozi.core.data.model.User
+import com.bardino.dozi.core.data.repository.UserPreferencesRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.launch
@@ -92,13 +93,26 @@ class SnoozePromptActivity : ComponentActivity() {
                 )
 
                 // ✅ SharedPreferences'a timestamp ile kaydet
+                val snoozeUntil = currentTime + min * 60_000L
                 getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE).edit()
                     .putString("last_action", "ERTELENDI:$medicineName:$min dk")
                     .putLong("snooze_until", snoozeUntilTime)
+                    .putLong("snooze_until", snoozeUntil)
                     .putInt("snooze_minutes", min)
                     .putLong("snooze_timestamp", currentTime)
                     .putLong("snooze_from", snoozeFromTime)
                     .apply()
+
+                // ✅ Firebase'e senkronize et
+                lifecycleScope.launch {
+                    val userPrefsRepo = UserPreferencesRepository(this@SnoozePromptActivity)
+                    userPrefsRepo.syncSnoozeData(
+                        snoozeMinutes = min,
+                        snoozeUntil = snoozeUntil,
+                        snoozeTimestamp = currentTime,
+                        medicineId = medicineId
+                    )
+                }
 
                 // 🧠 Pattern'i kaydet (gelecekteki öneriler için - eğer kullanıcı aktif ettiyse)
                 if (smartReminderEnabled) {

@@ -74,7 +74,7 @@ fun OnboardingWelcomeScreen(
 
             // Dozi logosu - yumuşak animasyon
             Image(
-                painter = painterResource(id = R.drawable.dozi_hosgeldin),
+                painter = painterResource(id = R.drawable.dozi_brand),
                 contentDescription = "Dozi Logo",
                 modifier = Modifier
                     .size(200.dp)
@@ -93,15 +93,6 @@ fun OnboardingWelcomeScreen(
                 style = MaterialTheme.typography.headlineMedium,
                 fontWeight = FontWeight.Bold,
                 color = DoziTurquoise,
-                textAlign = TextAlign.Center
-            )
-
-            Spacer(Modifier.height(16.dp))
-
-            Text(
-                text = "Sağlıklı yaşam asistanın",
-                style = MaterialTheme.typography.titleMedium,
-                color = TextSecondary,
                 textAlign = TextAlign.Center
             )
 

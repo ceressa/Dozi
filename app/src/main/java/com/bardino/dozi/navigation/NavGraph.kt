@@ -321,10 +321,19 @@ fun NavGraph(
             composable(Screen.OnboardingPremium.route) {
                 OnboardingPremiumScreen(
                     onGoogleSignIn = {
-                        // Onboarding tamamlandı olarak işaretle
+                        // Lokal olarak kaydet
                         OnboardingPreferences.setFirstTimeComplete(context)
+
+                        // Firebase'e de kaydet
+                        val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
+                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
+                            userRepository.updateUserField("onboardingCompleted", true)
+                            android.util.Log.d("OnboardingPremium", "✅ Onboarding completed saved to Firebase")
+                        }
+
                         // Google giriş yap
                         onGoogleSignInClick()
+
                         // Ana ekrana git
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }

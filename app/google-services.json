@@ -14,6 +14,22 @@
       },
       "oauth_client": [
         {
+          "client_id": "393677078355-ai114931lcrmed2v1515i0isdqf56iot.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bardino.dozi",
+            "certificate_hash": "6a625ee8f094cb00799b05bdbf9b6e5762ee975b"
+          }
+        },
+        {
+          "client_id": "393677078355-tmm0vl1rskmjceht9gnrd1cqfcnha7ph.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.bardino.dozi",
+            "certificate_hash": "8f922c0061b3f7341d4ce6fcfdb45e92acfc097e"
+          }
+        },
+        {
           "client_id": "393677078355-trhl42cu4dmv3skmrmi78oss701pg7k6.apps.googleusercontent.com",
           "client_type": 3
         }
@@ -27,7 +43,7 @@
         "appinvite_service": {
           "other_platform_oauth_client": [
             {
-              "client_id": "393677078355-trhl42cu4dmv3skmrmi78oss701pg7k6.apps.googleusercontent.com",
+              "client_id": "393677078355-f10df9lcr70ftshml3oudnttfjan5576.apps.googleusercontent.com",
               "client_type": 3
             }
           ]

@@ -2,6 +2,7 @@ package com.bardino.dozi.core.ui.screens.premium
 
 import androidx.compose.animation.*
 import androidx.compose.animation.core.*
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -485,8 +486,8 @@ private fun PremiumPlanCard(
                 Image(
                     painter = painterResource(
                         id = when (plan.id) {
-                            "weekly" -> R.drawable.dozi_happy
-                            "monthly" -> R.drawable.dozi_ok
+                            "weekly" -> R.drawable.dozi_idea
+                            "monthly" -> R.drawable.dozi_kalp
                             "yearly" -> R.drawable.dozi_perfect
                             "monthly_family" -> R.drawable.dozi_family
                             "yearly_family" -> R.drawable.dozi_king

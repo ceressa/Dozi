@@ -2396,7 +2396,12 @@ private fun saveMedicinesToFirestore(
                     medicineRepository.updateMedicineField(existingMedicine.id, "startDate", startDate)
 
                     // 🔥 FIX: endDate'i güncelle
-                    medicineRepository.updateMedicineField(existingMedicine.id, "endDate", endDate)
+                    if (endDate != null) {
+                        medicineRepository.updateMedicineField(existingMedicine.id, "endDate", endDate as Long)
+                    } else {
+                        medicineRepository.updateMedicineField(existingMedicine.id, "endDate", com.google.firebase.firestore.FieldValue.delete())
+                    }
+
 
                     // 🔥 FIX: reminderEnabled'ı true yap (hatırlatma eklendi)
                     medicineRepository.updateMedicineField(existingMedicine.id, "reminderEnabled", true)

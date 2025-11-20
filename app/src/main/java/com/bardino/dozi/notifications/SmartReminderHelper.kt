@@ -3,6 +3,7 @@ package com.bardino.dozi.notifications
 import android.content.Context
 import android.util.Log
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
+import com.bardino.dozi.core.data.repository.UserPreferencesRepository
 import com.bardino.dozi.core.data.model.MedicationStatus
 import com.google.gson.Gson
 import kotlinx.coroutines.Dispatchers
@@ -217,6 +218,20 @@ object SmartReminderHelper {
                 .putInt("mode_snooze_minutes_$medicineId", modeSnooze)
                 .apply()
 
+            // ✅ Firebase'e senkronize et
+            try {
+                val userPrefsRepo = UserPreferencesRepository(context)
+                userPrefsRepo.syncSmartPattern(
+                    medicineId = medicineId,
+                    modeSnoozeMinutes = modeSnooze,
+                    avgSnoozeMinutes = avgSnooze,
+                    lastSnoozeMinutes = snoozeMinutes
+                )
+                userPrefsRepo.syncSnoozeHistory(medicineId, snoozeHistory)
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Smart pattern Firebase'e senkronize edilemedi", e)
+            }
+
             Log.d(TAG, "✅ Snooze pattern kaydedildi: $medicineId -> son: $snoozeMinutes dk, ortalama: $avgSnooze dk, en çok: $modeSnooze dk")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Error recording snooze pattern", e)
@@ -261,6 +276,17 @@ object SmartReminderHelper {
                 .putString(delaysKey, com.google.gson.Gson().toJson(delays))
                 .putInt("avg_delay_minutes_$medicineId", avgDelay)
                 .apply()
+
+            // ✅ Firebase'e senkronize et
+            try {
+                val userPrefsRepo = UserPreferencesRepository(context)
+                userPrefsRepo.syncSmartPattern(
+                    medicineId = medicineId,
+                    avgDelayMinutes = avgDelay
+                )
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Delay pattern Firebase'e senkronize edilemedi", e)
+            }
 
             Log.d(TAG, "✅ Delay pattern kaydedildi: $medicineId -> ortalama $avgDelay dk gecikme")
         } catch (e: Exception) {
