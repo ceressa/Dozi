@@ -19,6 +19,7 @@ import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.data.repository.AchievementRepository
 import com.bardino.dozi.core.data.repository.UserStatsRepository
 import com.bardino.dozi.core.data.repository.UserPreferencesRepository
+import com.bardino.dozi.core.utils.EscalationManager
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -81,6 +82,24 @@ class HomeViewModel @Inject constructor(
         observeMedicinesFlow()
         loadSnoozeState()
         startSnoozeTimer()
+        // 🔥 FIX: Kritik ilaç eskalasyonlarını kontrol et
+        checkEscalations()
+    }
+
+    /**
+     * 🚨 Kritik ilaç eskalasyonlarını kontrol et
+     * Kaçırılan kritik ilaçlar için buddy'lere bildirim gönder
+     */
+    private fun checkEscalations() {
+        viewModelScope.launch {
+            try {
+                val escalationManager = EscalationManager(context)
+                escalationManager.checkAndEscalate()
+                Log.d(TAG, "✅ Escalation check completed")
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Escalation check failed: ${e.message}", e)
+            }
+        }
     }
 
     /**

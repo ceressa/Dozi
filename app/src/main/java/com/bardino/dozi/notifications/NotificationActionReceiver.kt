@@ -21,7 +21,12 @@ import androidx.core.content.ContextCompat
 import androidx.core.content.edit
 import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.core.utils.SoundHelper
+import com.bardino.dozi.core.utils.EscalationManager
 import com.bardino.dozi.core.data.repository.BadiRepository
+import com.bardino.dozi.core.data.repository.MedicationLogRepository
+import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.google.firebase.auth.FirebaseAuth
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -69,13 +74,16 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 return@launch
                             }
 
+                            // 🔥 Kritik ilaç kontrolü
+                            val isCritical = medicine?.criticalityLevel == com.bardino.dozi.core.data.model.MedicineCriticality.CRITICAL
                             NotificationHelper.showMedicationNotification(
                                 context = context,
                                 medicineName = med,
                                 medicineId = medicineId,
                                 dosage = dosage,
                                 time = time,
-                                scheduledTime = scheduledTime
+                                scheduledTime = scheduledTime,
+                                isCritical = isCritical
                             )
 
                             // ⏰ Escalation sistemi: 10dk, 30dk, 60dk (endDate geçmemişse)
@@ -140,6 +148,40 @@ class NotificationActionReceiver : BroadcastReceiver() {
                         scheduledTime = scheduledTime
                     )
                     android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 bildirimi gösterildi: $med")
+
+                    // 🔥 FIX: İlacı MISSED olarak logla ve buddy'lere bildir
+                    if (medicineId.isNotEmpty()) {
+                        CoroutineScope(Dispatchers.IO).launch {
+                            try {
+                                val medicationLogRepository = MedicationLogRepository(
+                                    context,
+                                    FirebaseAuth.getInstance(),
+                                    FirebaseFirestore.getInstance()
+                                )
+
+                                // İlacı MISSED olarak logla
+                                medicationLogRepository.logMedicationMissed(
+                                    medicineId = medicineId,
+                                    medicineName = med,
+                                    dosage = dosage,
+                                    scheduledTime = scheduledTime,
+                                    reason = "1 saat boyunca cevap verilmedi"
+                                )
+                                android.util.Log.d("NotificationActionReceiver", "❌ İlaç MISSED olarak loglandı: $med")
+
+                                // Kritik ilaç ise buddy'lere bildir
+                                val medicineRepository = MedicineRepository()
+                                val medicine = medicineRepository.getMedicineById(medicineId)
+                                if (medicine != null) {
+                                    val escalationManager = EscalationManager(context)
+                                    escalationManager.notifyBuddiesForSingleCriticalMedicine(medicine)
+                                    android.util.Log.d("NotificationActionReceiver", "🚨 Buddy bildirimi gönderildi: $med")
+                                }
+                            } catch (e: Exception) {
+                                android.util.Log.e("NotificationActionReceiver", "❌ MISSED loglama hatası: ${e.message}", e)
+                            }
+                        }
+                    }
                 }
             }
         }
@@ -401,6 +443,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     // Bildirim göster (medicineId, dosage, time note ve reminderName ile)
                     if (hasNotificationPermission(context)) {
                         val timeNote = parseTimeNoteFromMedicine(medicine.notes, time)
+                        // 🔥 Kritik ilaç kontrolü
+                        val isCritical = medicine.criticalityLevel == com.bardino.dozi.core.data.model.MedicineCriticality.CRITICAL
                         NotificationHelper.showMedicationNotification(
                             context = context,
                             medicineName = medicine.name,
@@ -409,7 +453,8 @@ class NotificationActionReceiver : BroadcastReceiver() {
                             time = time,
                             scheduledTime = scheduledTime,
                             timeNote = timeNote,
-                            reminderName = medicine.reminderName
+                            reminderName = medicine.reminderName,
+                            isCritical = isCritical
                         )
                     }
 

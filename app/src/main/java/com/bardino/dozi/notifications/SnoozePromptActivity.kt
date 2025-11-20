@@ -97,7 +97,6 @@ class SnoozePromptActivity : ComponentActivity() {
                 getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE).edit()
                     .putString("last_action", "ERTELENDI:$medicineName:$min dk")
                     .putLong("snooze_until", snoozeUntilTime)
-                    .putLong("snooze_until", snoozeUntil)
                     .putInt("snooze_minutes", min)
                     .putLong("snooze_timestamp", currentTime)
                     .putLong("snooze_from", snoozeFromTime)

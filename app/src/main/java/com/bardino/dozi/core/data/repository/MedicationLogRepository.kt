@@ -134,6 +134,24 @@ class MedicationLogRepository(
         return createMedicationLog(log)
     }
 
+    suspend fun logMedicationMissed(
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        scheduledTime: Long,
+        reason: String? = null
+    ): Result<String> {
+        val log = MedicationLog(
+            medicineId = medicineId,
+            medicineName = medicineName,
+            dosage = dosage,
+            scheduledTime = Timestamp(Date(scheduledTime)),
+            status = MedicationStatus.MISSED,
+            notes = reason
+        )
+        return createMedicationLog(log)
+    }
+
     suspend fun logMedicationSnoozed(
         medicineId: String,
         medicineName: String,

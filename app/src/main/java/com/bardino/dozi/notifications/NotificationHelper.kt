@@ -80,9 +80,15 @@ object NotificationHelper {
         time: String = getCurrentTime(),
         scheduledTime: Long = System.currentTimeMillis(),
         timeNote: String = "",
-        reminderName: String = ""
+        reminderName: String = "",
+        isCritical: Boolean = false // 🔥 Kritik ilaç - IMPORTANT channel kullan
     ) {
-        createDoziChannel(context)
+        // 🔥 Kritik ilaç için IMPORTANT channel, normal ilaç için standart channel
+        if (isCritical) {
+            createImportantChannel(context)
+        } else {
+            createDoziChannel(context)
+        }
         val nm = NotificationManagerCompat.from(context)
 
         val contentIntent = PendingIntent.getActivity(
@@ -100,7 +106,10 @@ object NotificationHelper {
 
         val largeIcon = BitmapFactory.decodeResource(context.resources, R.drawable.dozi)
 
+        // 🔥 Kritik ilaç için farklı başlık
         val contentTitle = when {
+            isCritical && reminderName.isNotEmpty() -> "🚨 $reminderName"
+            isCritical && medicineName.isNotEmpty() -> "🚨 KRİTİK: $medicineName"
             reminderName.isNotEmpty() -> reminderName
             medicineName.isNotEmpty() -> "💊 $medicineName"
             else -> "💊 İlaç Hatırlatması"
@@ -110,9 +119,11 @@ object NotificationHelper {
             append("⏰ $time")
             if (dosage.isNotEmpty()) append(" • $dosage")
             if (timeNote.isNotEmpty()) append(" • $timeNote")
+            if (isCritical) append(" • ⚠️ Kritik İlaç")
         }
 
         val bigText = buildString {
+            if (isCritical) append("🚨 KRİTİK İLAÇ - Bu ilaç hayati önem taşıyor!\n\n")
             append("⏰ Saat: $time\n")
             if (medicineName.isNotEmpty()) append("💊 İlaç: $medicineName\n")
             if (dosage.isNotEmpty()) append("💉 Dozaj: $dosage\n")
@@ -120,9 +131,14 @@ object NotificationHelper {
             append("\nDetayları görmek için dokunun.")
         }
 
-        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+        // 🔥 Kritik ilaç için farklı notification builder
+        val channelId = if (isCritical) CHANNEL_ID_IMPORTANT else CHANNEL_ID
+        val notificationColor = if (isCritical) Color.parseColor("#D32F2F") else Color.parseColor("#26C6DA")
+        val vibrationPattern = if (isCritical) longArrayOf(0, 700, 300, 700, 300, 700) else longArrayOf(0, 300, 150, 300)
+
+        val notificationBuilder = NotificationCompat.Builder(context, channelId)
             .setSmallIcon(R.drawable.ic_notification_pill)
-            .setColor(Color.parseColor("#26C6DA"))
+            .setColor(notificationColor)
             .setLargeIcon(largeIcon)
             .setContentTitle(contentTitle)
             .setContentText(contentText)
@@ -130,22 +146,36 @@ object NotificationHelper {
                 NotificationCompat.BigTextStyle()
                     .bigText(bigText)
                     .setBigContentTitle(contentTitle)
-                    .setSummaryText("Dozi")
+                    .setSummaryText(if (isCritical) "Dozi - Kritik İlaç" else "Dozi")
             )
             .setAutoCancel(true)
-            .setPriority(NotificationCompat.PRIORITY_HIGH)
-            .setCategory(NotificationCompat.CATEGORY_REMINDER)
+            .setPriority(if (isCritical) NotificationCompat.PRIORITY_MAX else NotificationCompat.PRIORITY_HIGH)
+            .setCategory(if (isCritical) NotificationCompat.CATEGORY_ALARM else NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setVibrate(longArrayOf(0, 300, 150, 300))
-            .setLights(Color.parseColor("#26C6DA"), 1000, 1000)
+            .setVibrate(vibrationPattern)
+            .setLights(notificationColor, 1000, 1000)
             .setContentIntent(contentIntent)
-            .setSound(null)
             .addAction(R.drawable.ic_notification_pill, "Aldım ✓", takenPending)
             .addAction(R.drawable.ic_notification_pill, "Ertele ⏰", snoozePending)
             .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
-            .build()
 
-        nm.notify(NOTIF_ID, notification)
+        // 🔥 Kritik ilaç için alarm sesi ekle
+        if (isCritical) {
+            notificationBuilder.setSound(android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM))
+        } else {
+            notificationBuilder.setSound(null)
+        }
+
+        val notification = notificationBuilder.build()
+
+        // 🔥 FIX: Unique notification ID kullan (her ilaç+zaman için ayrı bildirim)
+        val notificationId = if (medicineId.isNotEmpty()) {
+            getNotificationId(medicineId, time, 0)
+        } else {
+            NOTIF_ID // Fallback for backward compatibility
+        }
+        nm.notify(notificationId, notification)
+        Log.d("NotificationHelper", "✅ Bildirim gösterildi: ID=$notificationId (medicineId=$medicineId, time=$time, critical=$isCritical)")
     }
 
     // ✅ RemoteViews kaldırıldı - Modern BigTextStyle kullanıyoruz

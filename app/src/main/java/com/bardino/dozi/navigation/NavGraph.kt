@@ -324,11 +324,14 @@ fun NavGraph(
                         // Lokal olarak kaydet
                         OnboardingPreferences.setFirstTimeComplete(context)
 
-                        // Firebase'e de kaydet
+                        // Firebase'e de kaydet ve onboarding sırasında eklenen ilaçları sync et
                         val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
                         kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
                             userRepository.updateUserField("onboardingCompleted", true)
                             android.util.Log.d("OnboardingPremium", "✅ Onboarding completed saved to Firebase")
+
+                            // 🔥 FIX: Onboarding sırasında lokale kaydedilen ilaçları Firebase'e sync et
+                            OnboardingPreferences.syncLocalRemindersToFirebase(context)
                         }
 
                         // Google giriş yap

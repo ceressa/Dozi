@@ -45,6 +45,7 @@ import com.bardino.dozi.R
 import com.bardino.dozi.core.data.MedicineRepository
 import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.data.model.MedicineCriticality
 import com.bardino.dozi.core.data.repository.MedicineRepository as FirestoreMedicineRepository
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
@@ -63,7 +64,8 @@ data class MedicineEntry(
     var reminderName: String = "", // Hatırlatma için özel isim
     var dosageType: String = "1",
     var customDosage: String = "",
-    var unit: String = "hap"
+    var unit: String = "hap",
+    var isCritical: Boolean = false // Kritik ilaç - tüm bildirimler IMPORTANT seviyesinde
 )
 
 // Time entry data class - Her saat için not tutulabilir
@@ -691,6 +693,105 @@ private fun MultipleMedicinesStep(
                             unfocusedContainerColor = Color.White
                         )
                     )
+
+                    // 🚨 Kritik İlaç Seçimi
+                    Spacer(modifier = Modifier.height(8.dp))
+
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(
+                            containerColor = if (medicine.isCritical)
+                                Color(0xFFFFEBEE) // Light red background
+                            else
+                                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
+                        ),
+                        shape = MaterialTheme.shapes.medium
+                    ) {
+                        Column(
+                            modifier = Modifier.padding(16.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.SpaceBetween
+                            ) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    modifier = Modifier.weight(1f)
+                                ) {
+                                    Icon(
+                                        Icons.Default.Warning,
+                                        contentDescription = null,
+                                        tint = if (medicine.isCritical) Color(0xFFD32F2F) else MaterialTheme.colorScheme.onSurfaceVariant,
+                                        modifier = Modifier.size(24.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(12.dp))
+                                    Column {
+                                        Text(
+                                            "Kritik İlaç",
+                                            style = MaterialTheme.typography.titleSmall,
+                                            fontWeight = FontWeight.Bold,
+                                            color = if (medicine.isCritical) Color(0xFFD32F2F) else MaterialTheme.colorScheme.onSurface
+                                        )
+                                        Text(
+                                            "Hayati önem taşıyan ilaç",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+
+                                Switch(
+                                    checked = medicine.isCritical,
+                                    onCheckedChange = { isChecked ->
+                                        onMedicinesChange(medicines.toMutableList().also {
+                                            it[index] = it[index].copy(isCritical = isChecked)
+                                        })
+                                    },
+                                    colors = SwitchDefaults.colors(
+                                        checkedThumbColor = Color.White,
+                                        checkedTrackColor = Color(0xFFD32F2F),
+                                        uncheckedThumbColor = Color.White,
+                                        uncheckedTrackColor = MaterialTheme.colorScheme.outline
+                                    )
+                                )
+                            }
+
+                            // Bilgi mesajı
+                            if (medicine.isCritical) {
+                                Spacer(modifier = Modifier.height(12.dp))
+                                Row(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .background(
+                                            Color(0xFFD32F2F).copy(alpha = 0.1f),
+                                            MaterialTheme.shapes.small
+                                        )
+                                        .padding(12.dp),
+                                    verticalAlignment = Alignment.Top
+                                ) {
+                                    Icon(
+                                        Icons.Default.Info,
+                                        contentDescription = null,
+                                        tint = Color(0xFFD32F2F),
+                                        modifier = Modifier.size(16.dp)
+                                    )
+                                    Spacer(modifier = Modifier.width(8.dp))
+                                    Text(
+                                        "Bu ilaç için tüm bildirimler en yüksek öncelikte gönderilecek. " +
+                                        "Telefon sessiz modda olsa bile alarm sesi çalacak ve " +
+                                        "Rahatsız Etmeyin modunu geçecek. " +
+                                        "Kaçırıldığında buddy'lerinize hemen bildirim gidecek.",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = Color(0xFFD32F2F),
+                                        lineHeight = MaterialTheme.typography.bodySmall.lineHeight * 1.3f
+                                    )
+                                }
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
 
                     // Dozaj seçici
                     Text(
@@ -2406,6 +2507,10 @@ private fun saveMedicinesToFirestore(
                     // 🔥 FIX: reminderEnabled'ı true yap (hatırlatma eklendi)
                     medicineRepository.updateMedicineField(existingMedicine.id, "reminderEnabled", true)
 
+                    // 🔥 Kritiklik seviyesini güncelle
+                    val criticalityLevel = if (medicineEntry.isCritical) "CRITICAL" else "ROUTINE"
+                    medicineRepository.updateMedicineField(existingMedicine.id, "criticalityLevel", criticalityLevel)
+
                     // Notes'u güncelle - Edit mode'da REPLACE, yoksa MERGE
                     val newNotes = buildNotesFromTimes(selectedTimes, frequency, xValue)
                     val updatedNotes = if (medicineId != null) {
@@ -2451,7 +2556,9 @@ private fun saveMedicinesToFirestore(
                     notes = buildNotesFromTimes(selectedTimes, frequency, xValue),
                     reminderEnabled = true,
                     reminderName = medicineEntry.reminderName.ifEmpty { medicineEntry.name },
-                    icon = "💊"
+                    icon = "💊",
+                    // 🔥 Kritiklik seviyesi
+                    criticalityLevel = if (medicineEntry.isCritical) MedicineCriticality.CRITICAL else MedicineCriticality.ROUTINE
                 )
 
                 medicineRepository.addMedicine(medicine)
