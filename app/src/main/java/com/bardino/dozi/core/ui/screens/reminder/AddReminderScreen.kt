@@ -2524,9 +2524,10 @@ private fun saveMedicinesToFirestore(
     onSuccess: () -> Unit,
     onError: () -> Unit
 ) {
-    // Onboarding'deyse LOCAL'e kaydet (Firebase yerine)
-    if (OnboardingPreferences.isInOnboarding(context)) {
-        android.util.Log.d("AddReminder", "✅ Onboarding mode: Saving to local storage")
+    // Onboarding'deyse veya kullanıcı giriş yapmamışsa LOCAL'e kaydet (Firebase yerine)
+    val isUserAuthenticated = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null
+    if (OnboardingPreferences.isInOnboarding(context) || !isUserAuthenticated) {
+        android.util.Log.d("AddReminder", "✅ Saving to local storage (onboarding: ${OnboardingPreferences.isInOnboarding(context)}, authenticated: $isUserAuthenticated)")
         saveRemindersToLocal(context, medicines, selectedTimes, frequency, xValue, selectedDates, startDate)
         onSuccess()
         return
