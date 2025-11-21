@@ -546,23 +546,23 @@ fun MedicineEditScreen(
                                 }
                             }
                         }
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(58.dp)
-                        .shadow(4.dp, RoundedCornerShape(16.dp)),
-                    shape = RoundedCornerShape(16.dp),
-                    colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise)
-                ) {
-                    Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Text(
-                        text = if (medicineId == "new") "İlaç Ekle" else "Kaydet",
-                        style = MaterialTheme.typography.titleMedium,
-                        fontWeight = FontWeight.Bold,
-                        color = Color.White
-                    )
-                }
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(58.dp)
+                            .shadow(4.dp, RoundedCornerShape(16.dp)),
+                        shape = RoundedCornerShape(16.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise)
+                    ) {
+                        Icon(Icons.Default.Check, contentDescription = null, tint = Color.White)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text(
+                            text = if (medicineId == "new") "İlaç Ekle" else "Kaydet",
+                            style = MaterialTheme.typography.titleMedium,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
                 }
             }
         }
