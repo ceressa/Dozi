@@ -262,30 +262,17 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // 🚫 Aynı ilaca ait TÜM bildirimleri iptal et
         NotificationHelper.cancelAllNotificationsForMedicine(context, medicineId, time)
 
-        // ✅ MedicationLog'a kaydet
+        // ✅ MedicationLog'a kaydet (WorkManager ile garantili)
         if (medicineId.isNotEmpty()) {
-            val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
-                context,
-                com.google.firebase.auth.FirebaseAuth.getInstance(),
-                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            MedicationSyncWorker.enqueueLogTaken(
+                context = context,
+                medicineId = medicineId,
+                medicineName = medicineName,
+                dosage = dosage,
+                scheduledTime = scheduledTime,
+                takenTime = takenTime
             )
-            CoroutineScope(Dispatchers.IO).launch {
-                medicationLogRepository.logMedicationTaken(
-                    medicineId = medicineId,
-                    medicineName = medicineName,
-                    dosage = dosage,
-                    scheduledTime = scheduledTime
-                )
-                android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: TAKEN")
-
-                // 🧠 Gecikme pattern'ini kaydet (gelecekteki öneriler için)
-                SmartReminderHelper.recordDelayPattern(
-                    context = context,
-                    medicineId = medicineId,
-                    scheduledTime = scheduledTime,
-                    takenTime = takenTime
-                )
-            }
+            android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog WorkManager'a enqueue edildi: TAKEN")
 
             // İptal: Tüm escalation alarmları
             cancelAllEscalations(context, medicineId, time)
@@ -316,23 +303,17 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // 🚫 Aynı ilaca ait TÜM bildirimleri iptal et
         NotificationHelper.cancelAllNotificationsForMedicine(context, medicineId, time)
 
-        // ✅ MedicationLog'a kaydet
+        // ✅ MedicationLog'a kaydet (WorkManager ile garantili)
         if (medicineId.isNotEmpty()) {
-            val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
-                context,
-                com.google.firebase.auth.FirebaseAuth.getInstance(),
-                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            MedicationSyncWorker.enqueueLogSkipped(
+                context = context,
+                medicineId = medicineId,
+                medicineName = medicineName,
+                dosage = dosage,
+                scheduledTime = scheduledTime,
+                reason = "Kullanıcı atladı"
             )
-            CoroutineScope(Dispatchers.IO).launch {
-                medicationLogRepository.logMedicationSkipped(
-                    medicineId = medicineId,
-                    medicineName = medicineName,
-                    dosage = dosage,
-                    scheduledTime = scheduledTime,
-                    reason = "Kullanıcı atladı"
-                )
-                android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SKIPPED")
-            }
+            android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog WorkManager'a enqueue edildi: SKIPPED")
 
             // İptal: Tüm escalation alarmları
             cancelAllEscalations(context, medicineId, time)
@@ -357,24 +338,17 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // 🚫 Aynı ilaca ait TÜM bildirimleri iptal et
         NotificationHelper.cancelAllNotificationsForMedicine(context, medicineId, time)
 
-        // ✅ MedicationLog'a kaydet (SNOOZED)
+        // ✅ MedicationLog'a kaydet (WorkManager ile garantili)
         if (medicineId.isNotEmpty()) {
-            val medicationLogRepository = com.bardino.dozi.core.data.repository.MedicationLogRepository(
-                context,
-                com.google.firebase.auth.FirebaseAuth.getInstance(),
-                com.google.firebase.firestore.FirebaseFirestore.getInstance()
+            MedicationSyncWorker.enqueueLogSnoozed(
+                context = context,
+                medicineId = medicineId,
+                medicineName = medicineName,
+                dosage = dosage,
+                scheduledTime = scheduledTime,
+                snoozeMinutes = 10
             )
-
-            CoroutineScope(Dispatchers.IO).launch {
-                medicationLogRepository.logMedicationSnoozed(
-                    medicineId = medicineId,
-                    medicineName = medicineName,
-                    dosage = dosage,
-                    scheduledTime = scheduledTime,
-                    snoozeMinutes = 10
-                )
-                android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog kaydedildi: SNOOZED")
-            }
+            android.util.Log.d("NotificationActionReceiver", "✅ MedicationLog WorkManager'a enqueue edildi: SNOOZED")
 
             // 🔥 FIX: Erteleme seçilince tüm escalation alarmlarını iptal et
             cancelAllEscalations(context, medicineId, time)
@@ -405,28 +379,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // Bildirimi kapat
         nm.cancel(requestId.hashCode())
 
-        // Badi isteğini kabul et
-        val buddyRepository = BadiRepository()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                buddyRepository.acceptBadiRequest(requestId)
-                    .onSuccess {
-                        // Ana thread'de toast göster
-                        CoroutineScope(Dispatchers.Main).launch {
-                            showToast(context, "✅ $fromUserName buddy olarak eklendi!")
-                        }
-                    }
-                    .onFailure { error ->
-                        CoroutineScope(Dispatchers.Main).launch {
-                            showToast(context, "❌ Hata: ${error.message}")
-                        }
-                    }
-            } catch (e: Exception) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    showToast(context, "❌ Hata: ${e.message}")
-                }
-            }
-        }
+        // Badi isteğini kabul et (WorkManager ile garantili)
+        MedicationSyncWorker.enqueueBuddyAccept(context, requestId)
+        showToast(context, "✅ $fromUserName buddy isteği işleniyor...")
+        android.util.Log.d("NotificationActionReceiver", "✅ Buddy accept WorkManager'a enqueue edildi: $requestId")
     }
 
     private fun handleBuddyReject(
@@ -438,27 +394,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // Bildirimi kapat
         nm.cancel(requestId.hashCode())
 
-        // Badi isteğini reddet
-        val buddyRepository = BadiRepository()
-        CoroutineScope(Dispatchers.IO).launch {
-            try {
-                buddyRepository.rejectBadiRequest(requestId)
-                    .onSuccess {
-                        CoroutineScope(Dispatchers.Main).launch {
-                            showToast(context, "🚫 $fromUserName buddy isteği reddedildi")
-                        }
-                    }
-                    .onFailure { error ->
-                        CoroutineScope(Dispatchers.Main).launch {
-                            showToast(context, "❌ Hata: ${error.message}")
-                        }
-                    }
-            } catch (e: Exception) {
-                CoroutineScope(Dispatchers.Main).launch {
-                    showToast(context, "❌ Hata: ${e.message}")
-                }
-            }
-        }
+        // Badi isteğini reddet (WorkManager ile garantili)
+        MedicationSyncWorker.enqueueBuddyReject(context, requestId)
+        showToast(context, "🚫 $fromUserName buddy isteği reddediliyor...")
+        android.util.Log.d("NotificationActionReceiver", "✅ Buddy reject WorkManager'a enqueue edildi: $requestId")
     }
 
     @androidx.annotation.RequiresPermission(android.Manifest.permission.POST_NOTIFICATIONS)
