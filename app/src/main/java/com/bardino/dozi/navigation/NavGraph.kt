@@ -358,6 +358,8 @@ fun NavGraph(
                     onFinish = {
                         // Lokal olarak kaydet
                         OnboardingPreferences.setFirstTimeComplete(context)
+                        // Onboarding state'ini temizle
+                        OnboardingPreferences.clearOnboardingState(context)
 
                         // Firebase'e de kaydet
                         val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
