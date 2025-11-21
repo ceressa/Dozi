@@ -116,7 +116,7 @@ private fun ProfileContent(
                     android.util.Log.d("ProfileScreen", "  - premiumExpiryDate: ${u.premiumExpiryDate}")
                     android.util.Log.d("ProfileScreen", "  - isCurrentlyPremium(): ${u.isCurrentlyPremium()}")
                     android.util.Log.d("ProfileScreen", "  - premiumDaysRemaining(): ${u.premiumDaysRemaining()}")
-                    android.util.Log.d("ProfileScreen", "  - getPremiumPlanType(): ${u.getPremiumPlanType()}")
+                    android.util.Log.d("ProfileScreen", "  - premiumPlanType(): ${u.premiumPlanType()}")
                 }
                 isLoading = false
             } catch (e: Exception) {
