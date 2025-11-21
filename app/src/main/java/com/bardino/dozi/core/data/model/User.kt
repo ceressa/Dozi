@@ -1,6 +1,8 @@
 package com.bardino.dozi.core.data.model
 
+import com.google.firebase.firestore.Exclude
 import com.google.firebase.firestore.PropertyName
+import java.util.Locale
 
 data class User(
     val uid: String = "",
@@ -22,6 +24,15 @@ data class User(
 
     @PropertyName("isTrial")
     val isTrial: Boolean = false,                // Deneme sürümü mü?
+
+    @get:PropertyName("premiumPlanType")
+    val legacyPremiumPlanType: String? = null,   // V1/V2 plan alanı
+
+    @get:PropertyName("premium")
+    val legacyPremiumFlag: Boolean = false,      // Legacy premium bayrağı
+
+    @get:PropertyName("currentlyPremium")
+    val legacyCurrentlyPremium: Boolean = false, // Legacy aktif premium bayrağı
 
     val premiumExpiryDate: Long = 0L,            // Premium bitiş tarihi (timestamp)
     val premiumStartDate: Long = 0L,             // Premium başlangıç tarihi
@@ -71,39 +82,75 @@ data class User(
     /**
      * Kullanıcının şu anda premium olup olmadığını kontrol eder
      */
+    @get:Exclude
     fun isCurrentlyPremium(): Boolean {
-        if (!isPremium) return false
-        val now = System.currentTimeMillis()
-        return now < premiumExpiryDate
+        return premiumStatus().isActive
     }
 
     /**
      * Premium'un kaç gün kaldığını hesaplar
      */
+    @get:Exclude
     fun premiumDaysRemaining(): Int {
-        if (!isCurrentlyPremium()) return 0
-        val now = System.currentTimeMillis()
-        val diff = premiumExpiryDate - now
-        return (diff / (1000 * 60 * 60 * 24)).toInt()
+        return premiumStatus().daysRemaining()
     }
 
     /**
      * Plan tipini PremiumPlanType enum'a çevirir
      */
-    fun getPremiumPlanType(): PremiumPlanType {
-        return when (planType.lowercase()) {
-            "trial" -> PremiumPlanType.TRIAL
-            "ekstra_monthly" -> PremiumPlanType.EKSTRA_MONTHLY
-            "ekstra_yearly" -> PremiumPlanType.EKSTRA_YEARLY
-            "aile_monthly" -> PremiumPlanType.AILE_MONTHLY
-            "aile_yearly" -> PremiumPlanType.AILE_YEARLY
-            // Backward compatibility for old plan types
-            "weekly", "monthly" -> PremiumPlanType.EKSTRA_MONTHLY
-            "yearly" -> PremiumPlanType.EKSTRA_YEARLY
-            "monthly_family" -> PremiumPlanType.AILE_MONTHLY
-            "yearly_family", "family_premium" -> PremiumPlanType.AILE_YEARLY
-            "lifetime" -> PremiumPlanType.EKSTRA_YEARLY // Lifetime users get Ekstra Yearly
-            else -> PremiumPlanType.FREE
+    @get:Exclude
+    fun premiumPlanType(): PremiumPlanType {
+        return premiumStatus().planType
+    }
+
+    /**
+     * Premium durumunu normalize eder ve tek noktadan hesaplar
+     */
+    @get:Exclude
+    fun premiumStatus(now: Long = System.currentTimeMillis()): PremiumStatus {
+        val planType = resolvePlanType()
+        val expiry = premiumExpiryDate
+
+        val hasPremiumFlag = isPremium || legacyPremiumFlag || legacyCurrentlyPremium || planType.isPremium()
+        val isActive = hasPremiumFlag && expiry > now && planType != PremiumPlanType.FREE
+        val isTrialActive = isTrial && isActive
+
+        val source = when {
+            isInFamilyPlan() -> PremiumSource.FAMILY
+            isTrialActive -> PremiumSource.TRIAL
+            isActive -> PremiumSource.INDIVIDUAL
+            else -> PremiumSource.NONE
+        }
+
+        return PremiumStatus(
+            planType = planType,
+            isActive = isActive,
+            isTrial = isTrialActive,
+            premiumStartDate = premiumStartDate,
+            premiumExpiryDate = expiry,
+            source = source
+        )
+    }
+
+    private fun resolvePlanType(): PremiumPlanType {
+        val normalizedPlanId = normalizePlanId(planType)
+            ?: normalizePlanId(legacyPremiumPlanType)
+            ?: "free"
+
+        return PremiumPlanType.fromId(normalizedPlanId)
+    }
+
+    private fun normalizePlanId(raw: String?): String? {
+        val normalized = raw?.trim()?.lowercase(Locale.ROOT)
+        if (normalized.isNullOrEmpty() || normalized == "free") return null
+
+        return when (normalized) {
+            "trial" -> PremiumPlanType.TRIAL.id
+            "ekstra_monthly", "weekly", "monthly" -> PremiumPlanType.EKSTRA_MONTHLY.id
+            "ekstra_yearly", "yearly", "lifetime" -> PremiumPlanType.EKSTRA_YEARLY.id
+            "aile_monthly", "monthly_family" -> PremiumPlanType.AILE_MONTHLY.id
+            "aile_yearly", "yearly_family", "family_premium" -> PremiumPlanType.AILE_YEARLY.id
+            else -> normalized
         }
     }
 
@@ -127,4 +174,26 @@ data class User(
     fun isFamilyMember(): Boolean {
         return familyRole == "MEMBER"
     }
+}
+
+data class PremiumStatus(
+    val planType: PremiumPlanType,
+    val isActive: Boolean,
+    val isTrial: Boolean,
+    val premiumStartDate: Long,
+    val premiumExpiryDate: Long,
+    val source: PremiumSource
+) {
+    fun daysRemaining(now: Long = System.currentTimeMillis()): Int {
+        if (!isActive) return 0
+        val diff = premiumExpiryDate - now
+        return (diff / (1000 * 60 * 60 * 24)).toInt()
+    }
+}
+
+enum class PremiumSource {
+    INDIVIDUAL,
+    FAMILY,
+    TRIAL,
+    NONE
 }

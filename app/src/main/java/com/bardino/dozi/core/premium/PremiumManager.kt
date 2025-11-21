@@ -29,7 +29,7 @@ class PremiumManager @Inject constructor(
     fun isPremiumFlow(): Flow<Boolean> {
         return premiumRepository.observePremiumStatus()
             .map { user ->
-                user?.isCurrentlyPremium() ?: false
+                user?.premiumStatus()?.isActive ?: false
             }
     }
 
@@ -39,7 +39,7 @@ class PremiumManager @Inject constructor(
     fun planCategoryFlow(): Flow<PlanCategory> {
         return premiumRepository.observePremiumStatus()
             .map { user ->
-                user?.getPremiumPlanType()?.category ?: PlanCategory.FREE
+                user?.premiumStatus()?.planType?.category ?: PlanCategory.FREE
             }
     }
 
@@ -48,7 +48,7 @@ class PremiumManager @Inject constructor(
      */
     suspend fun isPremium(): Boolean {
         val user = premiumRepository.getCurrentPremiumStatus()
-        return user?.isCurrentlyPremium() ?: false
+        return user?.premiumStatus()?.isActive ?: false
     }
 
     /**
@@ -56,7 +56,7 @@ class PremiumManager @Inject constructor(
      */
     suspend fun getPlanCategory(): PlanCategory {
         val user = premiumRepository.getCurrentPremiumStatus()
-        return user?.getPremiumPlanType()?.category ?: PlanCategory.FREE
+        return user?.premiumStatus()?.planType?.category ?: PlanCategory.FREE
     }
 
     /**
@@ -64,7 +64,7 @@ class PremiumManager @Inject constructor(
      */
     suspend fun getPlanType(): PremiumPlanType {
         val user = premiumRepository.getCurrentPremiumStatus()
-        return user?.getPremiumPlanType() ?: PremiumPlanType.FREE
+        return user?.premiumStatus()?.planType ?: PremiumPlanType.FREE
     }
 
     /**
@@ -72,7 +72,7 @@ class PremiumManager @Inject constructor(
      */
     suspend fun isTrial(): Boolean {
         val user = premiumRepository.getCurrentPremiumStatus()
-        return user?.isTrial == true && user.isCurrentlyPremium()
+        return user?.premiumStatus()?.isTrial == true
     }
 
     /**
@@ -88,7 +88,7 @@ class PremiumManager @Inject constructor(
      */
     suspend fun daysRemaining(): Int {
         val user = premiumRepository.getCurrentPremiumStatus()
-        return user?.premiumDaysRemaining() ?: 0
+        return user?.premiumStatus()?.daysRemaining() ?: 0
     }
 
     /**

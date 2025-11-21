@@ -1,6 +1,7 @@
 package com.bardino.dozi.core.data.repository
 
 import com.bardino.dozi.core.data.model.*
+import com.bardino.dozi.core.premium.PremiumFields
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.ListenerRegistration
@@ -83,17 +84,9 @@ class PremiumRepository @Inject constructor(
             val now = System.currentTimeMillis()
             val expiryDate = now + (com.bardino.dozi.core.common.Constants.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000L)
 
-            val updates = hashMapOf<String, Any>(
-                "isPremium" to true,
-                "isTrial" to true,
-                "planType" to "trial",
-                "premiumStartDate" to now,
-                "premiumExpiryDate" to expiryDate
-            )
-
             firestore.collection(USERS_COLLECTION)
                 .document(userId)
-                .update(updates)
+                .update(PremiumFields.activePlan(PremiumPlanType.TRIAL, now, expiryDate, isTrial = true))
                 .await()
 
             // Analytics güncelle
@@ -125,17 +118,9 @@ class PremiumRepository @Inject constructor(
 
             val expiryDate = now + durationMillis
 
-            val updates = hashMapOf<String, Any>(
-                "isPremium" to true,
-                "isTrial" to false,
-                "planType" to planType.id,
-                "premiumStartDate" to now,
-                "premiumExpiryDate" to expiryDate
-            )
-
             firestore.collection(USERS_COLLECTION)
                 .document(userId)
-                .update(updates)
+                .update(PremiumFields.activePlan(planType, now, expiryDate))
                 .await()
 
             // Analytics güncelle
@@ -160,17 +145,9 @@ class PremiumRepository @Inject constructor(
             val durationMillis = durationDays * 24 * 60 * 60 * 1000L
             val expiryDate = now + durationMillis
 
-            val updates = hashMapOf<String, Any>(
-                "isPremium" to true,
-                "isTrial" to false,
-                "planType" to planType.id,
-                "premiumStartDate" to now,
-                "premiumExpiryDate" to expiryDate
-            )
-
             firestore.collection(USERS_COLLECTION)
                 .document(userId)
-                .update(updates)
+                .update(PremiumFields.activePlan(planType, now, expiryDate))
                 .await()
 
             true
@@ -184,16 +161,9 @@ class PremiumRepository @Inject constructor(
      */
     suspend fun cancelPremium(userId: String): Boolean {
         return try {
-            val updates = hashMapOf<String, Any>(
-                "isPremium" to false,
-                "isTrial" to false,
-                "planType" to "free",
-                "premiumExpiryDate" to 0L
-            )
-
             firestore.collection(USERS_COLLECTION)
                 .document(userId)
-                .update(updates)
+                .update(PremiumFields.reset())
                 .await()
 
             true
