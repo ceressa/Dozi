@@ -116,7 +116,7 @@ private fun ProfileContent(
                     android.util.Log.d("ProfileScreen", "  - premiumExpiryDate: ${u.premiumExpiryDate}")
                     android.util.Log.d("ProfileScreen", "  - isCurrentlyPremium(): ${u.isCurrentlyPremium()}")
                     android.util.Log.d("ProfileScreen", "  - premiumDaysRemaining(): ${u.premiumDaysRemaining()}")
-                    android.util.Log.d("ProfileScreen", "  - getPremiumPlanType(): ${u.getPremiumPlanType()}")
+                    android.util.Log.d("ProfileScreen", "  - premiumPlanType(): ${u.premiumPlanType()}")
                 }
                 isLoading = false
             } catch (e: Exception) {
@@ -238,9 +238,11 @@ private fun ProfileContent(
                     // Premium Badge
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    val isCurrentlyPremium = firestoreUser?.isCurrentlyPremium() == true
-                    val isTrial = firestoreUser?.isTrial == true
-                    val daysRemaining = firestoreUser?.premiumDaysRemaining() ?: 0
+                    val premiumStatus = firestoreUser?.premiumStatus()
+                    val isCurrentlyPremium = premiumStatus?.isActive == true
+                    val isTrial = premiumStatus?.isTrial == true
+                    val daysRemaining = premiumStatus?.daysRemaining() ?: 0
+                    val planName = premiumStatus?.planType?.toTurkish()
 
                     Surface(
                         shape = RoundedCornerShape(20.dp),
@@ -265,12 +267,11 @@ private fun ProfileContent(
                                 text = when {
                                     isLoading -> "Yükleniyor..."
                                     isCurrentlyPremium && isTrial -> {
-                                        if (daysRemaining > 0) "Deneme - $daysRemaining gün kaldı"
-                                        else "Deneme Sürümü"
+                                        if (daysRemaining > 0) "Deneme - $daysRemaining gün kaldı" else "Deneme Sürümü"
                                     }
                                     isCurrentlyPremium -> {
-                                        if (daysRemaining > 0) "Dozi Ekstra - $daysRemaining gün"
-                                        else "Dozi Ekstra"
+                                        val planLabel = planName ?: "Dozi Ekstra"
+                                        if (daysRemaining > 0) "$planLabel - $daysRemaining gün" else planLabel
                                     }
                                     else -> "Ücretsiz Plan"
                                 },

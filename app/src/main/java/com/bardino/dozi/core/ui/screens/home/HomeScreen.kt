@@ -1063,7 +1063,7 @@ private fun ClickableReminderText(onNavigateToReminders: () -> Unit, isLoggedIn:
         }
     } else {
         Text(
-            text = "💧 Login olursan ilaçlarını beraber takip edebiliriz!",
+            text = "💧 Giriş yaparsan ilaçlarını beraber takip edebiliriz!",
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center
@@ -1500,7 +1500,7 @@ private fun EmptyMedicineCard(
             // ✅ Kalan doz bilgisi göster (eğer varsa)
             if (!isLoggedIn) {
                 Text(
-                    "Login olursan ilaçlarını beraber takip edebiliriz! 💊",
+                    "Giriş yaparsan ilaçlarını beraber takip edebiliriz! 💊",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     textAlign = TextAlign.Center
