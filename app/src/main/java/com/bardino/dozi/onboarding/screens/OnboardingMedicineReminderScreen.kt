@@ -38,17 +38,18 @@ fun OnboardingMedicineReminderScreen(
     val lifecycleOwner = LocalLifecycleOwner.current
     var currentPhase by remember { mutableStateOf("initial") }
 
+    // Ekran ilk açıldığında onboarding state'ini başlat
+    LaunchedEffect(Unit) {
+        OnboardingPreferences.setOnboardingStep(context, "medicine")
+    }
+
     // Ekran her görünür olduğunda (back navigation dahil) state'i kontrol et
     LaunchedEffect(lifecycleOwner) {
         lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
             val step = OnboardingPreferences.getOnboardingStep(context)
             when (step) {
-                "medicine_completed" -> {
-                    OnboardingPreferences.clearOnboardingState(context)
-                    onNext()
-                }
-                "reminder_completed" -> {
-                    OnboardingPreferences.clearOnboardingState(context)
+                "medicine_completed", "reminder_completed" -> {
+                    // Onboarding tamamlandı, Premium'a git
                     onNext()
                 }
             }
