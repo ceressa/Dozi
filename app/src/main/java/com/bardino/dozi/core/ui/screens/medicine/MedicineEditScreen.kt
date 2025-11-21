@@ -50,6 +50,8 @@ import java.io.File
 import java.io.IOException
 import java.util.UUID
 import androidx.compose.ui.unit.sp
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 // Emoji ikonları for custom medicines
 private val medicineEmojis = listOf(
@@ -170,28 +172,36 @@ fun MedicineEditScreen(
     // Load from Firestore for existing medicines
     LaunchedEffect(medicineId) {
         if (medicineId != "new") {
-            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+            withContext(Dispatchers.IO) {
                 try {
                     val repo = com.bardino.dozi.core.data.repository.MedicineRepository()
                     val medicine = repo.getMedicineById(medicineId)
                     if (medicine != null) {
-                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                        withContext(Dispatchers.Main) {
                             firestoreMedicine = medicine
                             name = medicine.name
                             stock = medicine.stockCount.toString()
                             isCustomMedicine = medicine.isCustom
                             selectedColor = medicine.color
                             selectedEmoji = medicine.icon
-                            android.util.Log.d("MedicineEditScreen", "✅ Loaded from Firestore: ${medicine.name}, isCustom: ${medicine.isCustom}")
+
+                            android.util.Log.d(
+                                "MedicineEditScreen",
+                                "Loaded from Firestore: ${medicine.name}, isCustom: ${medicine.isCustom}"
+                            )
                         }
+                    } else {
+                        Unit
                     }
+
+
                 } catch (e: Exception) {
-                    android.util.Log.e("MedicineEditScreen", "❌ Failed to load from Firestore", e)
+                    android.util.Log.e("MedicineEditScreen", "Failed to load from Firestore", e)
                 }
             }
         }
-        Unit
     }
+
 
     // İlaç adı değiştiğinde stok'u otomatik güncelle
     LaunchedEffect(name) {
@@ -407,7 +417,10 @@ fun MedicineEditScreen(
                                                         tint = colorValue,
                                                         modifier = Modifier.size(20.dp)
                                                     )
+                                                } else {
+                                                    Spacer(modifier = Modifier.size(0.dp))
                                                 }
+
                                             }
                                         }
                                     }
