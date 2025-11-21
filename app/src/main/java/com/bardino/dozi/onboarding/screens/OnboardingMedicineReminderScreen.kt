@@ -49,7 +49,8 @@ fun OnboardingMedicineReminderScreen(
             val step = OnboardingPreferences.getOnboardingStep(context)
             when (step) {
                 "medicine_completed", "reminder_completed" -> {
-                    // Onboarding tamamlandı, Premium'a git
+                    // Onboarding tamamlandı, state'i temizle ve Premium'a git
+                    OnboardingPreferences.clearOnboardingState(context)
                     onNext()
                 }
             }
