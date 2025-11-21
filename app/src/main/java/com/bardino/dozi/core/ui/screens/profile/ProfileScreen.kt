@@ -3,17 +3,21 @@ package com.bardino.dozi.core.ui.screens.profile
 import android.os.Build
 import androidx.annotation.RequiresApi
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.*
+import androidx.compose.material.icons.outlined.*
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.platform.LocalContext
@@ -27,6 +31,8 @@ import com.bardino.dozi.core.ui.screens.login.LoginScreen
 import com.bardino.dozi.core.ui.theme.*
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
+import java.text.SimpleDateFormat
+import java.util.*
 
 @RequiresApi(Build.VERSION_CODES.O)
 @OptIn(ExperimentalMaterial3Api::class)
@@ -163,6 +169,7 @@ private fun ProfileContent(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
+            // User Profile Card with Premium Status
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -170,6 +177,109 @@ private fun ProfileContent(
                 colors = CardDefaults.cardColors(
                     containerColor = MaterialTheme.colorScheme.surface
                 )
+            ) {
+                Column {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Box(
+                            modifier = Modifier
+                                .size(64.dp)
+                                .clip(CircleShape)
+                                .background(DoziTurquoise),
+                            contentAlignment = Alignment.Center
+                        ) {
+                            Text(
+                                text = (firestoreUser?.name?.firstOrNull()?.uppercase() ?: user?.email?.firstOrNull()?.uppercase() ?: "U").toString(),
+                                fontSize = 24.sp,
+                                fontWeight = FontWeight.Bold,
+                                color = Color.White
+                            )
+                        }
+
+                        Spacer(modifier = Modifier.width(16.dp))
+
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = firestoreUser?.name ?: user?.displayName ?: "Kullanıcı",
+                                style = MaterialTheme.typography.titleLarge,
+                                fontWeight = FontWeight.Bold,
+                                color = MaterialTheme.colorScheme.onSurface
+                            )
+                            Spacer(modifier = Modifier.height(4.dp))
+                            Text(
+                                text = user?.email ?: "",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+                        }
+                    }
+
+                    // Premium Status Badge
+                    if (firestoreUser?.isPremium == true) {
+                        val isTrial = firestoreUser?.isTrial == true
+                        val expiryDate = firestoreUser?.premiumExpiryDate
+                        val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale("tr"))
+
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(
+                                    brush = Brush.horizontalGradient(
+                                        colors = listOf(
+                                            DoziTurquoise.copy(alpha = 0.1f),
+                                            DoziTurquoise.copy(alpha = 0.05f)
+                                        )
+                                    )
+                                )
+                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        ) {
+                            Row(
+                                modifier = Modifier.fillMaxWidth(),
+                                verticalAlignment = Alignment.CenterVertically
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Star,
+                                    contentDescription = null,
+                                    tint = DoziTurquoise,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = if (isTrial) "Deneme Sürümü" else "Dozi Ekstra",
+                                        style = MaterialTheme.typography.bodyMedium,
+                                        fontWeight = FontWeight.SemiBold,
+                                        color = DoziTurquoise
+                                    )
+                                    if (expiryDate != null && expiryDate > 0) {
+                                        Text(
+                                            text = "Bitiş: ${dateFormat.format(Date(expiryDate))}",
+                                            style = MaterialTheme.typography.bodySmall,
+                                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
+            // Help & Support Section (Highlighted)
+            SectionHeader(title = "Yardım ve Destek")
+
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = DoziTurquoise.copy(alpha = 0.08f)
+                ),
+                onClick = onNavigateToSupport
             ) {
                 Row(
                     modifier = Modifier
@@ -179,52 +289,57 @@ private fun ProfileContent(
                 ) {
                     Box(
                         modifier = Modifier
-                            .size(64.dp)
+                            .size(40.dp)
                             .clip(CircleShape)
-                            .background(DoziTurquoise),
+                            .background(DoziTurquoise.copy(alpha = 0.15f)),
                         contentAlignment = Alignment.Center
                     ) {
-                        Text(
-                            text = (firestoreUser?.name?.firstOrNull()?.uppercase() ?: user?.email?.firstOrNull()?.uppercase() ?: "U").toString(),
-                            fontSize = 24.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
+                        Icon(
+                            imageVector = Icons.Default.HelpOutline,
+                            contentDescription = null,
+                            tint = DoziTurquoise,
+                            modifier = Modifier.size(24.dp)
                         )
                     }
-
-                    Spacer(modifier = Modifier.width(16.dp))
-
+                    Spacer(modifier = Modifier.width(12.dp))
                     Column(modifier = Modifier.weight(1f)) {
                         Text(
-                            text = firestoreUser?.name ?: user?.displayName ?: "Kullanıcı",
-                            style = MaterialTheme.typography.titleLarge,
+                            text = "Destek ve SSS",
+                            style = MaterialTheme.typography.bodyLarge,
                             fontWeight = FontWeight.Bold,
                             color = MaterialTheme.colorScheme.onSurface
                         )
-                        Spacer(modifier = Modifier.height(4.dp))
                         Text(
-                            text = user?.email ?: "",
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = "Sık sorulan sorular ve iletişim",
+                            style = MaterialTheme.typography.bodySmall,
                             color = MaterialTheme.colorScheme.onSurfaceVariant
                         )
                     }
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = DoziTurquoise
+                    )
                 }
             }
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Premium & Features Section
+            SectionHeader(title = "Özellikler")
+
+            ProfileMenuItem(
+                icon = Icons.Default.Star,
+                title = "Dozi Ekstra",
+                description = "Premium özelliklere erişin",
+                onClick = onNavigateToPremium
+            )
 
             ProfileMenuItem(
                 icon = Icons.Default.LocationOn,
                 title = "Konumlar",
                 description = "Konum tabanlı hatırlatmalar",
                 onClick = onNavigateToLocations
-            )
-
-            ProfileMenuItem(
-                icon = Icons.Default.Star,
-                title = "Dozi Ekstra",
-                description = "Dozi Ekstra özelliklere erişin",
-                onClick = onNavigateToPremium
             )
 
             if (firestoreUser?.familyPlanId != null) {
@@ -236,37 +351,51 @@ private fun ProfileContent(
                 )
             }
 
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Settings Section
+            SectionHeader(title = "Ayarlar")
+
             ProfileMenuItem(
                 icon = Icons.Default.Settings,
-                title = "Ayarlar",
-                description = "Uygulama ayarları",
+                title = "Uygulama Ayarları",
+                description = "Genel tercihler",
                 onClick = onNavigateToSettings
             )
 
             ProfileMenuItem(
                 icon = Icons.Default.Notifications,
                 title = "Bildirimler",
-                description = "Bildirim ayarları",
+                description = "Bildirim tercihleri",
                 onClick = onNavigateToNotifications
             )
+
+            Spacer(modifier = Modifier.height(16.dp))
+
+            // Info Section
+            SectionHeader(title = "Bilgi")
 
             ProfileMenuItem(
                 icon = Icons.Default.Info,
                 title = "Hakkında",
-                description = "Uygulama bilgileri",
+                description = "Uygulama bilgileri ve sürüm",
                 onClick = onNavigateToAbout
-            )
-
-            ProfileMenuItem(
-                icon = Icons.Default.HelpOutline,
-                title = "Destek",
-                description = "SSS ve iletisim",
-                onClick = onNavigateToSupport
             )
 
             Spacer(modifier = Modifier.height(32.dp))
         }
     }
+}
+
+@Composable
+private fun SectionHeader(title: String) {
+    Text(
+        text = title,
+        style = MaterialTheme.typography.titleSmall,
+        fontWeight = FontWeight.SemiBold,
+        color = MaterialTheme.colorScheme.onSurfaceVariant,
+        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
+    )
 }
 
 @Composable
