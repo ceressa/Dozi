@@ -3,17 +3,7 @@ package com.bardino.dozi.navigation
 sealed class Screen(val route: String) {
     // Auth
     object Login : Screen("login")
-
-    // Onboarding
-    object OnboardingWelcome : Screen("onboarding/welcome")
-    object OnboardingLogin : Screen("onboarding/login")
-    object OnboardingIntro : Screen("onboarding/intro")
-    object OnboardingMedicineReminder : Screen("onboarding/medicine_reminder")
-    object OnboardingMedicine : Screen("onboarding/medicine") // Deprecated - kept for backward compatibility
-    object OnboardingName : Screen("onboarding/name")
-    object OnboardingReminder : Screen("onboarding/reminder") // Deprecated - kept for backward compatibility
-    object OnboardingHomeTour : Screen("onboarding/home_tour")
-    object OnboardingPremium : Screen("onboarding/premium")
+    object PremiumIntro : Screen("premium_intro")
 
     // Main app
     object Home : Screen("home")

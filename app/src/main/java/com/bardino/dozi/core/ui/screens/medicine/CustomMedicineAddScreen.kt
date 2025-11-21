@@ -33,7 +33,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bardino.dozi.core.data.LocalMedicine
 import com.bardino.dozi.core.data.MedicineLookupRepository
-import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.model.MedicineColor
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
@@ -368,12 +367,6 @@ fun CustomMedicineAddScreen(
 
                                 // Local'e kaydet
                                 MedicineLookupRepository.saveLocalMedicine(context, localMedicine)
-
-                                // Onboarding state kontrolü
-                                if (OnboardingPreferences.isInOnboarding(context) &&
-                                    OnboardingPreferences.getOnboardingStep(context) == "medicine") {
-                                    OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
-                                }
 
                                 // Firestore'a kaydet (isCustom = true)
                                 kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {

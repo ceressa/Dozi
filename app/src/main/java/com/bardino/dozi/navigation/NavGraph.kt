@@ -5,14 +5,12 @@ import androidx.annotation.RequiresApi
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.platform.LocalContext
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.navArgument
-import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.components.DoziBottomBar
 import com.bardino.dozi.core.ui.screens.home.HomeScreen
 import com.bardino.dozi.core.ui.screens.medicine.CustomMedicineAddScreen
@@ -21,6 +19,7 @@ import com.bardino.dozi.core.ui.screens.medicine.MedicineEditScreen
 import com.bardino.dozi.core.ui.screens.medicine.MedicineListScreen
 import com.bardino.dozi.core.ui.screens.medicine.MedicineLookupScreen
 import com.bardino.dozi.core.ui.screens.premium.PremiumScreen
+import com.bardino.dozi.core.ui.screens.premium.PremiumIntroScreen
 import com.bardino.dozi.core.ui.screens.login.LoginScreen
 import com.bardino.dozi.core.ui.screens.profile.LocationsScreen
 import com.bardino.dozi.core.ui.screens.profile.ProfileScreen
@@ -36,13 +35,6 @@ import com.bardino.dozi.core.ui.screens.badi.BadiPermissionsScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
 import com.bardino.dozi.core.ui.screens.family.FamilyManagementScreen
-import com.bardino.dozi.onboarding.screens.OnboardingHomeTourScreen
-import com.bardino.dozi.onboarding.screens.OnboardingLoginScreen
-import com.bardino.dozi.onboarding.screens.OnboardingMedicineReminderScreen
-import com.bardino.dozi.onboarding.screens.OnboardingNameScreen
-import com.bardino.dozi.onboarding.screens.OnboardingPremiumScreen
-import com.bardino.dozi.onboarding.screens.OnboardingWelcomeScreen
-import kotlinx.coroutines.launch
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -60,7 +52,6 @@ fun NavGraph(
         Screen.BadiList.route,
         Screen.Profile.route
     )
-    val context = LocalContext.current
 
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -269,7 +260,8 @@ fun NavGraph(
             composable(Screen.Login.route) {
                 LoginScreen(
                     onLoginSuccess = {
-                        navController.navigate(Screen.Home.route) {
+                        // İlk kez giriş yapan kullanıcıları PremiumIntro'ya yönlendir
+                        navController.navigate(Screen.PremiumIntro.route) {
                             popUpTo(Screen.Login.route) { inclusive = true }
                         }
                     },
@@ -281,96 +273,12 @@ fun NavGraph(
                 )
             }
 
-            // Onboarding akışı - YENİ: Welcome → Login → MedicineReminder → Premium → Home
-            composable(Screen.OnboardingWelcome.route) {
-                OnboardingWelcomeScreen(
-                    onStartTour = { navController.navigate(Screen.OnboardingLogin.route) },
-                    onSkip = {
-                        OnboardingPreferences.skipOnboarding(context)
+            // 🎁 Premium Intro Ekranı (ilk kez giriş yapan kullanıcılar için)
+            composable(Screen.PremiumIntro.route) {
+                PremiumIntroScreen(
+                    onContinue = {
                         navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
-                        }
-                    }
-                )
-            }
-
-            composable(Screen.OnboardingLogin.route) {
-                OnboardingLoginScreen(
-                    onGoogleSignIn = {
-                        // Google giriş yap
-                        onGoogleSignInClick()
-
-                        // Giriş başarılı olunca ilaç ekleme ekranına git
-                        navController.navigate(Screen.OnboardingMedicineReminder.route) {
-                            popUpTo(Screen.OnboardingLogin.route) { inclusive = true }
-                        }
-                    },
-                    onSkip = {
-                        // Giriş yapmadan devam et
-                        navController.navigate(Screen.OnboardingMedicineReminder.route) {
-                            popUpTo(Screen.OnboardingLogin.route) { inclusive = true }
-                        }
-                    }
-                )
-            }
-
-            // OnboardingName artık kullanılmıyor ama backward compatibility için tutuluyor
-            composable(Screen.OnboardingName.route) {
-                OnboardingNameScreen(
-                    onNext = { name ->
-                        // ✅ SharedPreferences'a kaydet
-                        OnboardingPreferences.saveUserName(context, name)
-
-                        // ✅ Firebase User profiline de kaydet
-                        val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
-                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                            userRepository.updateUserField("name", name)
-                            android.util.Log.d("OnboardingName", "✅ User name saved to Firebase: $name")
-                        }
-
-                        navController.navigate(Screen.OnboardingMedicineReminder.route)
-                    }
-                )
-            }
-
-            composable(Screen.OnboardingMedicineReminder.route) {
-                OnboardingMedicineReminderScreen(
-                    onNext = { navController.navigate(Screen.OnboardingPremium.route) },
-                    onTryMedicine = {
-                        // İlaç ekleme ekranına git
-                        navController.navigate(Screen.MedicineLookup.route)
-                    },
-                    onTryReminder = {
-                        // Hatırlatma ekleme ekranına git (artık kullanılmıyor)
-                        navController.navigate(Screen.AddReminder.route)
-                    }
-                )
-            }
-
-            composable(Screen.OnboardingHomeTour.route) {
-                OnboardingHomeTourScreen(
-                    onNext = { navController.navigate(Screen.OnboardingPremium.route) }
-                )
-            }
-
-            composable(Screen.OnboardingPremium.route) {
-                OnboardingPremiumScreen(
-                    onFinish = {
-                        // Lokal olarak kaydet
-                        OnboardingPreferences.setFirstTimeComplete(context)
-                        // Onboarding state'ini temizle
-                        OnboardingPreferences.clearOnboardingState(context)
-
-                        // Firebase'e de kaydet
-                        val userRepository = com.bardino.dozi.core.data.repository.UserRepository()
-                        kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
-                            userRepository.updateUserField("onboardingCompleted", true)
-                            android.util.Log.d("OnboardingPremium", "✅ Onboarding completed saved to Firebase")
-                        }
-
-                        // Ana ekrana git
-                        navController.navigate(Screen.Home.route) {
-                            popUpTo(Screen.OnboardingWelcome.route) { inclusive = true }
+                            popUpTo(Screen.PremiumIntro.route) { inclusive = true }
                         }
                     }
                 )

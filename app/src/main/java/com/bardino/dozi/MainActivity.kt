@@ -29,8 +29,6 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.remember
 import androidx.core.content.ContextCompat
 import androidx.navigation.compose.rememberNavController
-import com.bardino.dozi.core.data.IlacRepository
-import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.ThemePreferences
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.data.repository.PremiumRepository
@@ -48,9 +46,7 @@ import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
-import kotlinx.coroutines.withContext
 import javax.inject.Inject
 
 @AndroidEntryPoint
@@ -101,17 +97,12 @@ class MainActivity : ComponentActivity() {
                                 // ✅ UserRepository ile Firestore kullanıcı kaydı
                                 CoroutineScope(Dispatchers.IO).launch {
                                     try {
+                                        // İlk kez giriş yapan kullanıcı mı kontrol et
+                                        val existingUser = userRepository.getUserData()
+                                        val isFirstTimeUser = existingUser == null
+
                                         userRepository.createUserIfNotExists()
                                         Log.d("GOOGLE_AUTH", "Kullanıcı Firestore'a kaydedildi/güncellendi")
-
-                                        // ✅ Onboarding tamamlandıysa kullanıcı belgesini güncelle
-                                        if (!OnboardingPreferences.isFirstTime(this@MainActivity)) {
-                                            userRepository.updateUserField("onboardingCompleted", true)
-                                            Log.d(
-                                                "GOOGLE_AUTH",
-                                                "Onboarding durumu Firestore'da tamamlandı olarak işaretlendi"
-                                            )
-                                        }
 
                                         // 📱 Device ID'yi kaydet
                                         val deviceId = Settings.Secure.getString(
@@ -121,17 +112,14 @@ class MainActivity : ComponentActivity() {
                                         userRepository.updateUserField("deviceId", deviceId)
                                         Log.d("GOOGLE_AUTH", "Device ID kaydedildi: $deviceId")
 
-                                        // 🎁 Onboarding tamamlandıysa 1 haftalık ücretsiz trial ver
-                                        if (!OnboardingPreferences.isFirstTime(this@MainActivity)) {
-                                            userRepository.activateTrialIfOnboarding()
-                                            Log.d("PREMIUM_TRIAL", "1 haftalık trial aktivasyonu yapıldı")
+                                        // 🎁 İlk kez giriş yapan kullanıcıya 3 günlük trial ver
+                                        if (isFirstTimeUser) {
+                                            userRepository.activateTrialForNewUser()
+                                            Log.d("PREMIUM_TRIAL", "3 günlük trial aktivasyonu yapıldı")
                                         }
 
                                         // ✅ FCM token'ı al ve kaydet (retry logic ile)
                                         saveFCMToken()
-
-                                        // ✅ Firestore onboarding bayrağı true ise yerel tercihi de güncelle
-                                        syncLocalOnboardingState()
                                     } catch (e: Exception) {
                                         Log.e("GOOGLE_AUTH", "Firestore kaydı başarısız: ${e.localizedMessage}")
                                     }
@@ -170,7 +158,6 @@ class MainActivity : ComponentActivity() {
                 )
                 userRepository.updateUserField("deviceId", deviceId)
                 saveFCMToken()
-                syncLocalOnboardingState()
             }
         }
 
@@ -203,50 +190,12 @@ class MainActivity : ComponentActivity() {
                 }
 
                 // 🔥 startDestination artık currentUser'a göre hesaplanıyor
+                // Basitleştirilmiş: Login varsa Home, yoksa Login
                 val startDestination = remember(currentUser) {
                     if (currentUser != null) {
-                        // Kullanıcı login → onboarding kontrolü
-                        try {
-                            val userData = runBlocking { userRepository.getUserData() }
-                            if (userData?.onboardingCompleted == true) {
-                                Screen.Home.route
-                            } else {
-                                Screen.OnboardingWelcome.route
-                            }
-                        } catch (e: Exception) {
-                            // Kullanıcı "bir daha gösterme" seçtiyse direkt Home'a git
-                            if (OnboardingPreferences.shouldNeverShowOnboardingAgain(this@MainActivity)) {
-                                Screen.Home.route
-                            } else if (OnboardingPreferences.isFirstTime(this@MainActivity)) {
-                                Screen.OnboardingWelcome.route
-                            } else {
-                                Screen.Home.route
-                            }
-                        }
+                        Screen.Home.route
                     } else {
-                        // Kullanıcı login değil → deviceId kontrolü
-                        val deviceId = Settings.Secure.getString(
-                            contentResolver,
-                            Settings.Secure.ANDROID_ID
-                        )
-                        runBlocking {
-                            // Kullanıcı "bir daha gösterme" seçtiyse direkt Login'e git
-                            if (OnboardingPreferences.shouldNeverShowOnboardingAgain(this@MainActivity)) {
-                                Screen.Login.route
-                            } else {
-                                val userWithDevice = userRepository.getUserByDeviceId(deviceId)
-
-                                when {
-                                    userWithDevice != null && userWithDevice.onboardingCompleted ->
-                                        Screen.Login.route
-
-                                    userWithDevice != null && !userWithDevice.onboardingCompleted ->
-                                        Screen.OnboardingWelcome.route
-
-                                    else -> Screen.OnboardingWelcome.route
-                                }
-                            }
-                        }
+                        Screen.Login.route
                     }
                 }
 
@@ -300,40 +249,6 @@ class MainActivity : ComponentActivity() {
             }
         } else {
             Log.d("MainActivity", "No navigation_route in intent extras")
-        }
-    }
-
-    private suspend fun syncLocalOnboardingState(forceRemoteFlag: Boolean? = null) {
-        if (!OnboardingPreferences.isFirstTime(this@MainActivity)) return
-
-        val onboardingCompleted = forceRemoteFlag ?: kotlin.runCatching {
-            userRepository.getUserData()?.onboardingCompleted
-        }.getOrNull()
-
-        if (onboardingCompleted == true) {
-            withContext(Dispatchers.Main) {
-                OnboardingPreferences.setFirstTimeComplete(this@MainActivity)
-            }
-            Log.d(
-                "GOOGLE_AUTH",
-                "Yerel onboarding tercihi Firestore verisiyle senkronize edildi"
-            )
-        }
-    }
-
-    /**
-     * Firestore'daki onboarding durumunu lokal SharedPreferences ile senkronize et
-     */
-    private suspend fun syncLocalOnboardingState() {
-        try {
-            val userData = userRepository.getUserData()
-            if (userData?.onboardingCompleted == true) {
-                // Firestore'da tamamlanmışsa lokal tercihi de güncelle
-                OnboardingPreferences.setFirstTimeComplete(this@MainActivity)
-                Log.d("ONBOARDING_SYNC", "✅ Onboarding durumu senkronize edildi")
-            }
-        } catch (e: Exception) {
-            Log.e("ONBOARDING_SYNC", "Senkronizasyon hatası: ${e.message}")
         }
     }
 
