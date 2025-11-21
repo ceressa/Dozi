@@ -2507,6 +2507,7 @@ private fun NotificationPermissionDialog(
 }
 
 // KAYDETME - Multiple Medicines to Firestore
+@RequiresApi(Build.VERSION_CODES.O)
 private fun saveMedicinesToFirestore(
     context: Context,
     medicines: List<MedicineEntry>,
