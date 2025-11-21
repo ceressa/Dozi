@@ -190,6 +190,7 @@ fun MedicineEditScreen(
                 }
             }
         }
+        Unit
     }
 
     // İlaç adı değiştiğinde stok'u otomatik güncelle
