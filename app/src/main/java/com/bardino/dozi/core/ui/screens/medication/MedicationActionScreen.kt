@@ -21,8 +21,8 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.repository.MedicineRepository
-import com.bardino.dozi.core.ui.screens.home.saveMedicineStatus
-import com.bardino.dozi.core.ui.screens.home.getCurrentDateString
+import com.bardino.dozi.core.utils.saveMedicineStatus
+import com.bardino.dozi.core.utils.getCurrentDateString
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.core.utils.SoundHelper
 import kotlinx.coroutines.CoroutineScope
