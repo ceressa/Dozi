@@ -107,8 +107,20 @@ private fun ProfileContent(
         scope.launch {
             try {
                 firestoreUser = userRepository.getUserData()
+                // Debug logging
+                firestoreUser?.let { u ->
+                    android.util.Log.d("ProfileScreen", "📊 User loaded:")
+                    android.util.Log.d("ProfileScreen", "  - isPremium: ${u.isPremium}")
+                    android.util.Log.d("ProfileScreen", "  - isTrial: ${u.isTrial}")
+                    android.util.Log.d("ProfileScreen", "  - planType: ${u.planType}")
+                    android.util.Log.d("ProfileScreen", "  - premiumExpiryDate: ${u.premiumExpiryDate}")
+                    android.util.Log.d("ProfileScreen", "  - isCurrentlyPremium(): ${u.isCurrentlyPremium()}")
+                    android.util.Log.d("ProfileScreen", "  - premiumDaysRemaining(): ${u.premiumDaysRemaining()}")
+                    android.util.Log.d("ProfileScreen", "  - getPremiumPlanType(): ${u.getPremiumPlanType()}")
+                }
                 isLoading = false
             } catch (e: Exception) {
+                android.util.Log.e("ProfileScreen", "Error loading user", e)
                 isLoading = false
             }
         }
