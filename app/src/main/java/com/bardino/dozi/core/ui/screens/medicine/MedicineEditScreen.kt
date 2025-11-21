@@ -14,6 +14,7 @@ import androidx.compose.material.icons.filled.*
 import androidx.compose.material3.*
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.*
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.shadow
@@ -29,8 +30,18 @@ import com.bardino.dozi.core.data.Ilac
 import com.bardino.dozi.core.data.LocalMedicine
 import com.bardino.dozi.core.data.MedicineLookupRepository
 import com.bardino.dozi.core.data.OnboardingPreferences
+import com.bardino.dozi.core.data.model.Medicine
+import com.bardino.dozi.core.data.model.MedicineColor
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
+import androidx.compose.foundation.lazy.LazyRow
+import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.border
+import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.ui.draw.clip
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import com.google.mlkit.vision.common.InputImage
 import com.google.mlkit.vision.text.TextRecognition
 import com.google.mlkit.vision.text.latin.TextRecognizerOptions
@@ -38,6 +49,12 @@ import kotlinx.coroutines.launch
 import java.io.File
 import java.io.IOException
 import java.util.UUID
+import androidx.compose.ui.unit.sp
+
+// Emoji ikonları for custom medicines
+private val medicineEmojis = listOf(
+    "💊", "💉", "🩹", "🧴", "🌿", "🍃", "✨", "❤️", "🧬", "🩺"
+)
 
 // --------------------------------------------------------------------
 // 🔍 Bellekten İlaç Doğrulama
@@ -123,6 +140,8 @@ fun MedicineEditScreen(
 ) {
     val context = LocalContext.current
     val focusManager = LocalFocusManager.current
+    val scope = rememberCoroutineScope()
+    val scrollState = rememberScrollState()
 
     // Lookup ekranından gelen ilaç bilgisi
     val selectedMedicine = savedStateHandle?.get<IlacSearchResultParcelable>("selectedMedicine")
@@ -141,6 +160,37 @@ fun MedicineEditScreen(
     var stock by remember { mutableStateOf(
         existing?.stock?.toString() ?: "0"
     ) }
+
+    // Custom medicine fields
+    var isCustomMedicine by remember { mutableStateOf(false) }
+    var selectedColor by remember { mutableStateOf(MedicineColor.BLUE) }
+    var selectedEmoji by remember { mutableStateOf("💊") }
+    var firestoreMedicine by remember { mutableStateOf<Medicine?>(null) }
+
+    // Load from Firestore for existing medicines
+    LaunchedEffect(medicineId) {
+        if (medicineId != "new") {
+            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.IO) {
+                try {
+                    val repo = com.bardino.dozi.core.data.repository.MedicineRepository()
+                    val medicine = repo.getMedicineById(medicineId)
+                    if (medicine != null) {
+                        kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                            firestoreMedicine = medicine
+                            name = medicine.name
+                            stock = medicine.stockCount.toString()
+                            isCustomMedicine = medicine.isCustom
+                            selectedColor = medicine.color
+                            selectedEmoji = medicine.icon
+                            android.util.Log.d("MedicineEditScreen", "✅ Loaded from Firestore: ${medicine.name}, isCustom: ${medicine.isCustom}")
+                        }
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("MedicineEditScreen", "❌ Failed to load from Firestore", e)
+                }
+            }
+        }
+    }
 
     // İlaç adı değiştiğinde stok'u otomatik güncelle
     LaunchedEffect(name) {
@@ -196,99 +246,191 @@ fun MedicineEditScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(padding)
-                .padding(horizontal = 20.dp, vertical = 16.dp)
                 .pointerInput(Unit) {
                     detectTapGestures(onTap = {
                         focusManager.clearFocus()
                     })
-                },
-            verticalArrangement = Arrangement.spacedBy(20.dp)
+                }
         ) {
-            // Başlık
-            AnimatedVisibility(visible = isVisible, enter = fadeIn()) {
-                Text(
-                    text = if (medicineId == "new") "✨ Yeni ilaç ekle" else "İlaç bilgilerini düzenle",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            AnimatedVisibility(visible = isVisible, enter = slideInVertically() + fadeIn()) {
-                Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
-
-                    // 🔹 İlaç Adı
-                    OutlinedTextField(
-                        value = name,
-                        onValueChange = { name = it; nameError = it.isBlank() },
-                        label = { Text("İlaç Adı *", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        leadingIcon = {
-                            Icon(Icons.Default.LocalPharmacy, null, tint = DoziCoralDark)
-                        },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFF9F9FB), RoundedCornerShape(12.dp))
-                            .padding(1.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = DoziTurquoise,
-                            unfocusedBorderColor = VeryLightGray,
-                            cursorColor = DoziTurquoise,
-                            focusedContainerColor = Color(0xFFF9F9FB),
-                            unfocusedContainerColor = Color(0xFFF9F9FB)
-                        ),
-                        singleLine = true,
-                        isError = nameError,
-                        placeholder = { Text("İlaç adını girin", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+            Column(
+                modifier = Modifier
+                    .weight(1f)
+                    .verticalScroll(scrollState)
+                    .padding(horizontal = 20.dp, vertical = 16.dp),
+                verticalArrangement = Arrangement.spacedBy(20.dp)
+            ) {
+                // Başlık
+                AnimatedVisibility(visible = isVisible, enter = fadeIn()) {
+                    Text(
+                        text = if (medicineId == "new") "✨ Yeni ilaç ekle" else "İlaç bilgilerini düzenle",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
                     )
+                }
 
-                    if (nameError) ErrorCard("İlaç adı boş bırakılamaz.")
+                AnimatedVisibility(visible = isVisible, enter = slideInVertically() + fadeIn()) {
+                    Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
-                    // 🔹 Stok
-                    OutlinedTextField(
-                        value = stock,
-                        onValueChange = { newValue ->
-                            if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
-                                val num = newValue.toIntOrNull()
-                                if (num == null || num in 1..999) {
-                                    stock = newValue
-                                    stockError = newValue.isEmpty()
+                        // 🔹 İlaç Adı
+                        OutlinedTextField(
+                            value = name,
+                            onValueChange = { name = it; nameError = it.isBlank() },
+                            label = { Text("İlaç Adı *", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            leadingIcon = {
+                                Icon(Icons.Default.LocalPharmacy, null, tint = DoziCoralDark)
+                            },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFF9F9FB), RoundedCornerShape(12.dp))
+                                .padding(1.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = DoziTurquoise,
+                                unfocusedBorderColor = VeryLightGray,
+                                cursorColor = DoziTurquoise,
+                                focusedContainerColor = Color(0xFFF9F9FB),
+                                unfocusedContainerColor = Color(0xFFF9F9FB)
+                            ),
+                            singleLine = true,
+                            isError = nameError,
+                            placeholder = { Text("İlaç adını girin", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        )
+
+                        if (nameError) ErrorCard("İlaç adı boş bırakılamaz.")
+
+                        // 🔹 Stok
+                        OutlinedTextField(
+                            value = stock,
+                            onValueChange = { newValue ->
+                                if (newValue.isEmpty() || newValue.all { it.isDigit() }) {
+                                    val num = newValue.toIntOrNull()
+                                    if (num == null || num in 1..999) {
+                                        stock = newValue
+                                        stockError = newValue.isEmpty()
+                                    }
+                                }
+                            },
+                            label = { Text("Evde Kaç Adet Var? (1–999) *", color = MaterialTheme.colorScheme.onSurfaceVariant) },
+                            leadingIcon = { Icon(Icons.Default.Inventory, null, tint = DoziCoralDark) },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .background(Color(0xFFF9F9FB), RoundedCornerShape(12.dp))
+                                .padding(1.dp),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = OutlinedTextFieldDefaults.colors(
+                                focusedBorderColor = DoziBlue,
+                                unfocusedBorderColor = VeryLightGray,
+                                cursorColor = DoziBlue,
+                                focusedContainerColor = Color(0xFFF9F9FB),
+                                unfocusedContainerColor = Color(0xFFF9F9FB)
+                            ),
+                            singleLine = true,
+                            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                            isError = stockError,
+                            placeholder = { Text("Örn: 20 (kaç tablet/kapsül var)", color = MaterialTheme.colorScheme.onSurfaceVariant) }
+                        )
+
+                        if (stockError) ErrorCard("Stok bilgisi geçersiz.")
+
+                        // 🎨 Custom medicine fields - Emoji ve Renk seçimi
+                        if (isCustomMedicine) {
+                            Spacer(Modifier.height(8.dp))
+
+                            // Emoji Seçimi
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "İkon Seç",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(medicineEmojis) { emoji ->
+                                        Surface(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape)
+                                                .border(
+                                                    width = if (selectedEmoji == emoji) 2.dp else 1.dp,
+                                                    color = if (selectedEmoji == emoji) DoziTurquoise else VeryLightGray,
+                                                    shape = CircleShape
+                                                )
+                                                .clickable { selectedEmoji = emoji },
+                                            color = if (selectedEmoji == emoji) DoziTurquoise.copy(alpha = 0.15f) else Color.Transparent
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                Text(text = emoji, fontSize = 24.sp)
+                                            }
+                                        }
+                                    }
                                 }
                             }
-                        },
-                        label = { Text("Evde Kaç Adet Var? (1–999) *", color = MaterialTheme.colorScheme.onSurfaceVariant) },
-                        leadingIcon = { Icon(Icons.Default.Inventory, null, tint = DoziCoralDark) },
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .background(Color(0xFFF9F9FB), RoundedCornerShape(12.dp))
-                            .padding(1.dp),
-                        shape = RoundedCornerShape(12.dp),
-                        colors = OutlinedTextFieldDefaults.colors(
-                            focusedBorderColor = DoziBlue,
-                            unfocusedBorderColor = VeryLightGray,
-                            cursorColor = DoziBlue,
-                            focusedContainerColor = Color(0xFFF9F9FB),
-                            unfocusedContainerColor = Color(0xFFF9F9FB)
-                        ),
-                        singleLine = true,
-                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
-                        isError = stockError,
-                        placeholder = { Text("Örn: 20 (kaç tablet/kapsül var)", color = MaterialTheme.colorScheme.onSurfaceVariant) }
-                    )
 
-                    if (stockError) ErrorCard("Stok bilgisi geçersiz.")
+                            // Renk Seçimi
+                            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                                Text(
+                                    text = "Renk Kategorisi",
+                                    style = MaterialTheme.typography.labelLarge,
+                                    fontWeight = FontWeight.Medium,
+                                    color = MaterialTheme.colorScheme.onSurface
+                                )
+                                LazyRow(
+                                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                ) {
+                                    items(MedicineColor.entries.toList()) { color ->
+                                        val colorValue = try {
+                                            Color(android.graphics.Color.parseColor(color.hexColor))
+                                        } catch (e: Exception) {
+                                            DoziTurquoise
+                                        }
+                                        Surface(
+                                            modifier = Modifier
+                                                .size(48.dp)
+                                                .clip(CircleShape)
+                                                .border(
+                                                    width = if (selectedColor == color) 3.dp else 1.dp,
+                                                    color = if (selectedColor == color) colorValue else VeryLightGray,
+                                                    shape = CircleShape
+                                                )
+                                                .clickable { selectedColor = color },
+                                            color = colorValue.copy(alpha = 0.3f)
+                                        ) {
+                                            Box(contentAlignment = Alignment.Center) {
+                                                if (selectedColor == color) {
+                                                    Icon(
+                                                        Icons.Default.Check,
+                                                        contentDescription = null,
+                                                        tint = colorValue,
+                                                        modifier = Modifier.size(20.dp)
+                                                    )
+                                                }
+                                            }
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
             }
 
-            Spacer(Modifier.weight(1f))
-
-            // 💾 Kaydet Butonu
-            AnimatedVisibility(
-                visible = isVisible,
-                enter = slideInVertically(initialOffsetY = { 100 }) + fadeIn()
+            // Save button at bottom
+            Surface(
+                modifier = Modifier.fillMaxWidth(),
+                shadowElevation = 8.dp,
+                color = MaterialTheme.colorScheme.background
             ) {
-                Button(
-                    onClick = {
+                // 💾 Kaydet Butonu
+                AnimatedVisibility(
+                    visible = isVisible,
+                    enter = slideInVertically(initialOffsetY = { 100 }) + fadeIn(),
+                    modifier = Modifier.padding(horizontal = 20.dp, vertical = 16.dp)
+                ) {
+                    Button(
+                        onClick = {
                         nameError = name.isBlank()
                         stockError = stock.isEmpty() || stock.toIntOrNull() == null
 
@@ -322,14 +464,36 @@ fun MedicineEditScreen(
                                     val existingMedicine = firestoreRepo.getMedicineById(newId)
 
                                     if (existingMedicine != null) {
-                                        // Mevcut ilacı güncelle, sadece stockCount'u değiştir
-                                        val success = firestoreRepo.updateMedicineField(newId, "stockCount", stock.toInt())
+                                        // Mevcut ilacı güncelle
+                                        var allSuccess = true
+
+                                        // Temel alanları güncelle
+                                        if (!firestoreRepo.updateMedicineField(newId, "stockCount", stock.toInt())) {
+                                            allSuccess = false
+                                        }
+                                        if (!firestoreRepo.updateMedicineField(newId, "name", name.trim())) {
+                                            allSuccess = false
+                                        }
+
+                                        // Custom medicine ise ek alanları da güncelle
+                                        if (isCustomMedicine) {
+                                            if (!firestoreRepo.updateMedicineField(newId, "color", selectedColor.name)) {
+                                                allSuccess = false
+                                            }
+                                            if (!firestoreRepo.updateMedicineField(newId, "icon", selectedEmoji)) {
+                                                allSuccess = false
+                                            }
+                                        }
+
                                         kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
-                                            if (success) {
-                                                android.util.Log.d("MedicineEditScreen", "✅ Firestore stockCount güncellendi: $newId -> ${stock.toInt()}")
+                                            if (allSuccess) {
+                                                android.util.Log.d("MedicineEditScreen", "✅ Firestore güncellendi: $newId -> ${name.trim()}, stock: ${stock.toInt()}")
+                                                if (isCustomMedicine) {
+                                                    android.util.Log.d("MedicineEditScreen", "✅ Custom fields güncellendi: color=${selectedColor.name}, icon=$selectedEmoji")
+                                                }
                                             } else {
-                                                android.util.Log.e("MedicineEditScreen", "❌ Firestore güncelleme başarısız: $newId")
-                                                Toast.makeText(context, "⚠️ İlaç yerel olarak kaydedildi ama sunucuya gönderilemedi", Toast.LENGTH_LONG).show()
+                                                android.util.Log.e("MedicineEditScreen", "❌ Firestore güncelleme kısmen başarısız: $newId")
+                                                Toast.makeText(context, "⚠️ Bazı değişiklikler kaydedilemedi", Toast.LENGTH_LONG).show()
                                             }
                                             // Mevcut ilaç güncelleme - geri dön
                                             onNavigateBack()
@@ -398,6 +562,7 @@ fun MedicineEditScreen(
                         fontWeight = FontWeight.Bold,
                         color = Color.White
                     )
+                }
                 }
             }
         }
