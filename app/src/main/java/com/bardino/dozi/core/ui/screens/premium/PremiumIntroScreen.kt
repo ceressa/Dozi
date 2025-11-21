@@ -173,7 +173,7 @@ fun PremiumIntroScreen(
 
                 // Info text
                 Text(
-                    text = "3 gunluk deneme sureniz bittiginde ucretsiz plana gecersiniz. Dilediginiz zaman premium'a yukseltebilirsiniz.",
+                    text = "3 gunluk ucretsiz deneme. Sonrasinda aylik 149₺ abonelik baslar. Istedigin zaman iptal edebilirsin.",
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.White.copy(alpha = 0.7f),
                     textAlign = TextAlign.Center,

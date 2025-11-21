@@ -162,7 +162,7 @@ fun PremiumScreen(
                         textAlign = TextAlign.Center
                     )
                     Text(
-                        text = "7 gün ücretsiz dene, sonra devam et",
+                        text = "3 gün ücretsiz dene, sonra 149₺/ay",
                         style = MaterialTheme.typography.bodyLarge,
                         color = TextSecondary,
                         textAlign = TextAlign.Center

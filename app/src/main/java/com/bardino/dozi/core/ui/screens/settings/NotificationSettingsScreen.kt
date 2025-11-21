@@ -23,6 +23,7 @@ import androidx.compose.ui.unit.dp
 import androidx.core.content.ContextCompat
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
+import com.bardino.dozi.notifications.PermissionHandler
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
@@ -40,6 +41,70 @@ fun NotificationSettingsScreen(
         ) == android.content.pm.PackageManager.PERMISSION_GRANTED
     } else {
         true // Android 13 öncesi için varsayılan olarak true
+    }
+
+    // Çin telefonu kontrolü
+    val isChinesePhone = PermissionHandler.isChineseManufacturer()
+    val manufacturerName = PermissionHandler.getManufacturerDisplayName()
+    var showBatteryDialog by remember { mutableStateOf(false) }
+
+    // Pil Optimizasyonu Dialog
+    if (showBatteryDialog) {
+        AlertDialog(
+            onDismissRequest = { showBatteryDialog = false },
+            icon = {
+                Icon(
+                    Icons.Default.BatteryAlert,
+                    contentDescription = null,
+                    tint = WarningOrange,
+                    modifier = Modifier.size(48.dp)
+                )
+            },
+            title = {
+                Text(
+                    text = "$manufacturerName Pil Ayarları",
+                    fontWeight = FontWeight.Bold
+                )
+            },
+            text = {
+                Column(
+                    verticalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Text(
+                        text = "Bildirimlerin düzgün çalışması için aşağıdaki ayarları yapmanız önerilir:",
+                        style = MaterialTheme.typography.bodyMedium
+                    )
+
+                    Card(
+                        colors = CardDefaults.cardColors(
+                            containerColor = DoziTurquoise.copy(alpha = 0.1f)
+                        )
+                    ) {
+                        Text(
+                            text = PermissionHandler.getBatteryOptimizationInstructions(),
+                            style = MaterialTheme.typography.bodySmall,
+                            modifier = Modifier.padding(12.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                Button(
+                    onClick = {
+                        PermissionHandler.openBatteryOptimizationSettings(context)
+                        showBatteryDialog = false
+                    },
+                    colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise)
+                ) {
+                    Text("Ayarlara Git")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showBatteryDialog = false }) {
+                    Text("Daha Sonra")
+                }
+            }
+        )
     }
 
     Scaffold(
@@ -161,6 +226,88 @@ fun NotificationSettingsScreen(
                     Icon(Icons.Default.Psychology, contentDescription = null)
                     Spacer(modifier = Modifier.width(8.dp))
                     Text("Gelişmiş Bildirim Ayarları")
+                }
+            }
+
+            // Çin Telefonu Uyarı Kartı
+            if (isChinesePhone) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(
+                        containerColor = Color.White
+                    ),
+                    shape = androidx.compose.foundation.shape.RoundedCornerShape(20.dp),
+                    elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .background(
+                                androidx.compose.ui.graphics.Brush.horizontalGradient(
+                                    listOf(WarningOrange.copy(alpha = 0.15f), DoziCoral.copy(alpha = 0.15f))
+                                )
+                            )
+                    ) {
+                        Column(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(20.dp),
+                            verticalArrangement = Arrangement.spacedBy(12.dp)
+                        ) {
+                            Row(
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            ) {
+                                Box(
+                                    modifier = Modifier
+                                        .size(48.dp)
+                                        .background(
+                                            brush = androidx.compose.ui.graphics.Brush.linearGradient(
+                                                listOf(WarningOrange, DoziCoral)
+                                            ),
+                                            shape = androidx.compose.foundation.shape.CircleShape
+                                        ),
+                                    contentAlignment = Alignment.Center
+                                ) {
+                                    Icon(
+                                        Icons.Default.BatteryAlert,
+                                        contentDescription = null,
+                                        tint = Color.White,
+                                        modifier = Modifier.size(28.dp)
+                                    )
+                                }
+                                Column(modifier = Modifier.weight(1f)) {
+                                    Text(
+                                        text = "$manufacturerName Kullanıcısı",
+                                        style = MaterialTheme.typography.titleMedium,
+                                        fontWeight = FontWeight.ExtraBold,
+                                        color = MaterialTheme.colorScheme.onSurface
+                                    )
+                                    Text(
+                                        text = "Pil optimizasyonu ayarı gerekebilir",
+                                        style = MaterialTheme.typography.bodySmall,
+                                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                                    )
+                                }
+                            }
+
+                            Text(
+                                text = "$manufacturerName telefonlarda pil tasarrufu özellikleri bildirimlerin gecikmesine veya gelmemesine neden olabilir.",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurfaceVariant
+                            )
+
+                            Button(
+                                onClick = { showBatteryDialog = true },
+                                modifier = Modifier.fillMaxWidth(),
+                                colors = ButtonDefaults.buttonColors(containerColor = WarningOrange)
+                            ) {
+                                Icon(Icons.Default.Settings, contentDescription = null)
+                                Spacer(modifier = Modifier.width(8.dp))
+                                Text("Ayarları Düzenle")
+                            }
+                        }
+                    }
                 }
             }
 
