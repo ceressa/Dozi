@@ -106,10 +106,14 @@ class EscalationManager(
             val badis = badiRepository.getBadisFlow().first()
 
             // Notification almak isteyen badileri filtrele
-            val notifiableBuddies = badis.filter {
-                it.badi.notificationPreferences.onMedicationMissed &&
-                it.badi.permissions.canReceiveNotifications
-            }
+            // 🔥 FIX: Self-buddy ve duplicate kontrolü ekle
+            val notifiableBuddies = badis
+                .filter {
+                    it.badi.notificationPreferences.onMedicationMissed &&
+                    it.badi.permissions.canReceiveNotifications &&
+                    it.badi.buddyUserId != userId // Self-buddy kontrolü
+                }
+                .distinctBy { it.badi.buddyUserId } // Duplicate kontrolü
 
             if (notifiableBuddies.isEmpty()) {
                 Log.d(TAG, "No badis to notify")
@@ -157,10 +161,14 @@ class EscalationManager(
             val badis = badiRepository.getBadisFlow().first()
 
             // Notification almak isteyen badileri filtrele
-            val notifiableBuddies = badis.filter {
-                it.badi.notificationPreferences.onMedicationMissed &&
-                it.badi.permissions.canReceiveNotifications
-            }
+            // 🔥 FIX: Self-buddy ve duplicate kontrolü ekle
+            val notifiableBuddies = badis
+                .filter {
+                    it.badi.notificationPreferences.onMedicationMissed &&
+                    it.badi.permissions.canReceiveNotifications &&
+                    it.badi.buddyUserId != userId // Self-buddy kontrolü
+                }
+                .distinctBy { it.badi.buddyUserId } // Duplicate kontrolü
 
             if (notifiableBuddies.isEmpty()) {
                 return
