@@ -534,7 +534,8 @@ fun AddReminderScreen(
                 } else {
                     onNavigateBack()
                 }
-            }
+            },
+            isOnboarding = OnboardingPreferences.isInOnboarding(context)
         )
     }
 
@@ -2347,7 +2348,8 @@ private fun NavigationButtons(
 @Composable
 private fun ReminderSuccessDialog(
     onAddAnother: () -> Unit,
-    onFinish: () -> Unit
+    onFinish: () -> Unit,
+    isOnboarding: Boolean = false
 ) {
     Dialog(onDismissRequest = {}) {
         Surface(
@@ -2393,27 +2395,42 @@ private fun ReminderSuccessDialog(
                     modifier = Modifier.fillMaxWidth(),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    // Başka ilaç ekle
-                    Button(
-                        onClick = onAddAnother,
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise),
-                        shape = MaterialTheme.shapes.medium
-                    ) {
-                        Icon(Icons.Default.Add, contentDescription = null)
-                        Spacer(Modifier.width(8.dp))
-                        Text("Başka İlaç Ekle", fontWeight = FontWeight.Bold)
-                    }
+                    if (isOnboarding) {
+                        // Onboarding sırasında sadece "Devam Et" butonu göster
+                        Button(
+                            onClick = onFinish,
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Text("Devam Et", fontWeight = FontWeight.Bold)
+                            Spacer(Modifier.width(8.dp))
+                            Icon(Icons.Default.ArrowForward, contentDescription = null)
+                        }
+                    } else {
+                        // Normal modda iki buton göster
+                        // Başka ilaç ekle
+                        Button(
+                            onClick = onAddAnother,
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            colors = ButtonDefaults.buttonColors(containerColor = DoziTurquoise),
+                            shape = MaterialTheme.shapes.medium
+                        ) {
+                            Icon(Icons.Default.Add, contentDescription = null)
+                            Spacer(Modifier.width(8.dp))
+                            Text("Başka İlaç Ekle", fontWeight = FontWeight.Bold)
+                        }
 
-                    // Bitir
-                    OutlinedButton(
-                        onClick = onFinish,
-                        modifier = Modifier.fillMaxWidth().height(56.dp),
-                        border = BorderStroke(2.dp, Gray200),
-                        shape = MaterialTheme.shapes.medium,
-                        colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
-                    ) {
-                        Text("Kapat", fontWeight = FontWeight.Bold)
+                        // Bitir
+                        OutlinedButton(
+                            onClick = onFinish,
+                            modifier = Modifier.fillMaxWidth().height(56.dp),
+                            border = BorderStroke(2.dp, Gray200),
+                            shape = MaterialTheme.shapes.medium,
+                            colors = ButtonDefaults.outlinedButtonColors(contentColor = MaterialTheme.colorScheme.onSurfaceVariant)
+                        ) {
+                            Text("Kapat", fontWeight = FontWeight.Bold)
+                        }
                     }
                 }
             }
