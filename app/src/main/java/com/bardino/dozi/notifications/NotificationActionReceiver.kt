@@ -441,6 +441,23 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     }
                     val scheduledTime = calendar.timeInMillis
 
+                    // 🔥 FIX: İlaç zaten alındı/atlandı/ertelendi mi kontrol et
+                    // Bu kontrol, kullanıcı uygulamadan "Aldım" işaretlediyse bildirimi engeller
+                    val medicationLogRepository = MedicationLogRepository(context)
+                    val alreadyLogged = medicationLogRepository.isMedicationLoggedForTime(medicineId, scheduledTime)
+
+                    if (alreadyLogged) {
+                        android.util.Log.d("NotificationActionReceiver", "✅ İlaç zaten işlendi, bildirim gösterilmiyor: $medicineName ($time)")
+                        // Sonraki alarmı yine de planla
+                        if (medicine.reminderEnabled) {
+                            if (medicine.endDate == null || medicine.endDate > System.currentTimeMillis()) {
+                                ReminderScheduler.scheduleReminders(context, medicine, isRescheduling = true)
+                                android.util.Log.d("NotificationActionReceiver", "✅ Sonraki alarm planlandı (ilaç zaten alındı): $medicineName")
+                            }
+                        }
+                        return@launch
+                    }
+
                     // Bildirim göster (medicineId, dosage, time note ve reminderName ile)
                     if (hasNotificationPermission(context)) {
                         val timeNote = parseTimeNoteFromMedicine(medicine.notes, time)
