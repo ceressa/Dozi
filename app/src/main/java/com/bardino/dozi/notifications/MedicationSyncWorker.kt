@@ -2,7 +2,13 @@ package com.bardino.dozi.notifications
 
 import android.content.Context
 import android.util.Log
-import androidx.work.*
+import androidx.work.BackoffPolicy
+import androidx.work.CoroutineWorker
+import androidx.work.ExistingWorkPolicy
+import androidx.work.OneTimeWorkRequestBuilder
+import androidx.work.WorkManager
+import androidx.work.WorkerParameters
+import androidx.work.workDataOf
 import com.bardino.dozi.core.data.repository.BadiRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.utils.SmartReminderHelper
@@ -145,13 +151,10 @@ class MedicationSyncWorker(
         }
 
         private fun enqueueWork(context: Context, uniqueWorkName: String, inputData: Data) {
-            val constraints = Constraints.Builder()
-                .setRequiredNetworkType(NetworkType.CONNECTED)
-                .build()
-
+            // Network constraint YOK - Firestore offline persistence kullanır
+            // İnternet yoksa cache'e yazar, gelince otomatik sync olur
             val workRequest = OneTimeWorkRequestBuilder<MedicationSyncWorker>()
                 .setInputData(inputData)
-                .setConstraints(constraints)
                 .setBackoffCriteria(
                     BackoffPolicy.EXPONENTIAL,
                     WorkRequest.MIN_BACKOFF_MILLIS,
