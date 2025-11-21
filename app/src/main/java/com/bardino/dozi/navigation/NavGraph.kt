@@ -35,6 +35,7 @@ import com.bardino.dozi.core.ui.screens.badi.BadiPermissionsScreen
 import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
 import com.bardino.dozi.core.ui.screens.family.FamilyManagementScreen
+import com.bardino.dozi.core.ui.screens.support.SupportScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -209,6 +210,7 @@ fun NavGraph(
                     onNavigateToSettings = { navController.navigate(Screen.Settings.route) },
                     onNavigateToNotifications = { navController.navigate(Screen.NotificationSettings.route) },
                     onNavigateToAbout = { navController.navigate(Screen.About.route) },
+                    onNavigateToSupport = { navController.navigate(Screen.Support.route) },
                     onNavigateToHome = {
                         navController.navigate(Screen.Home.route) {
                             popUpTo(Screen.Home.route) { inclusive = false }
@@ -313,6 +315,11 @@ fun NavGraph(
             // ℹ️ Hakkında
             composable(Screen.About.route) {
                 AboutScreen(onNavigateBack = { navController.popBackStack() })
+            }
+
+            // 🆘 Destek / SSS
+            composable(Screen.Support.route) {
+                SupportScreen(onNavigateBack = { navController.popBackStack() })
             }
 
             // 📊 İstatistikler

@@ -38,6 +38,7 @@ fun ProfileScreen(
     onNavigateToSettings: () -> Unit = {},
     onNavigateToNotifications: () -> Unit = {},
     onNavigateToAbout: () -> Unit = {},
+    onNavigateToSupport: () -> Unit = {},
     onNavigateToHome: () -> Unit = {},
     onGoogleSignInClick: () -> Unit
 ) {
@@ -66,6 +67,7 @@ fun ProfileScreen(
             onNavigateToSettings = onNavigateToSettings,
             onNavigateToNotifications = onNavigateToNotifications,
             onNavigateToAbout = onNavigateToAbout,
+            onNavigateToSupport = onNavigateToSupport,
             onLogout = {
                 auth.signOut()
                 onNavigateToHome()
@@ -84,6 +86,7 @@ private fun ProfileContent(
     onNavigateToSettings: () -> Unit,
     onNavigateToNotifications: () -> Unit,
     onNavigateToAbout: () -> Unit,
+    onNavigateToSupport: () -> Unit,
     onLogout: () -> Unit
 ) {
     val context = LocalContext.current
@@ -252,6 +255,13 @@ private fun ProfileContent(
                 title = "Hakkında",
                 description = "Uygulama bilgileri",
                 onClick = onNavigateToAbout
+            )
+
+            ProfileMenuItem(
+                icon = Icons.Default.HelpOutline,
+                title = "Destek",
+                description = "SSS ve iletisim",
+                onClick = onNavigateToSupport
             )
 
             Spacer(modifier = Modifier.height(32.dp))
