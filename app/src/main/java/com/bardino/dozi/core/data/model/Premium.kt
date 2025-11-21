@@ -80,7 +80,7 @@ enum class PremiumPlanType(
     AILE_MONTHLY("aile_monthly", "Aile Aylık", PlanCategory.AILE, "dozi_aile_monthly"),
     AILE_YEARLY("aile_yearly", "Aile Yıllık", PlanCategory.AILE, "dozi_aile_yearly");
 
-    fun isPremium(): Boolean = this != FREE && this != TRIAL
+    fun isPremium(): Boolean = this != FREE
 
     fun isFamilyPlan(): Boolean = category == PlanCategory.AILE
 

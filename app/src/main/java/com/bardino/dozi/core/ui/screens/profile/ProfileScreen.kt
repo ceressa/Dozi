@@ -107,8 +107,20 @@ private fun ProfileContent(
         scope.launch {
             try {
                 firestoreUser = userRepository.getUserData()
+                // Debug logging
+                firestoreUser?.let { u ->
+                    android.util.Log.d("ProfileScreen", "📊 User loaded:")
+                    android.util.Log.d("ProfileScreen", "  - isPremium: ${u.isPremium}")
+                    android.util.Log.d("ProfileScreen", "  - isTrial: ${u.isTrial}")
+                    android.util.Log.d("ProfileScreen", "  - planType: ${u.planType}")
+                    android.util.Log.d("ProfileScreen", "  - premiumExpiryDate: ${u.premiumExpiryDate}")
+                    android.util.Log.d("ProfileScreen", "  - isCurrentlyPremium(): ${u.isCurrentlyPremium()}")
+                    android.util.Log.d("ProfileScreen", "  - premiumDaysRemaining(): ${u.premiumDaysRemaining()}")
+                    android.util.Log.d("ProfileScreen", "  - getPremiumPlanType(): ${u.getPremiumPlanType()}")
+                }
                 isLoading = false
             } catch (e: Exception) {
+                android.util.Log.e("ProfileScreen", "Error loading user", e)
                 isLoading = false
             }
         }
@@ -239,7 +251,11 @@ private fun ProfileContent(
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Icon(
-                                imageVector = if (isCurrentlyPremium) Icons.Default.Star else Icons.Default.StarBorder,
+                                imageVector = when {
+                                    isLoading -> Icons.Default.Sync
+                                    isCurrentlyPremium -> Icons.Default.Star
+                                    else -> Icons.Default.StarBorder
+                                },
                                 contentDescription = null,
                                 tint = Color.White,
                                 modifier = Modifier.size(16.dp)
@@ -247,6 +263,7 @@ private fun ProfileContent(
                             Spacer(modifier = Modifier.width(6.dp))
                             Text(
                                 text = when {
+                                    isLoading -> "Yükleniyor..."
                                     isCurrentlyPremium && isTrial -> {
                                         if (daysRemaining > 0) "Deneme - $daysRemaining gün kaldı"
                                         else "Deneme Sürümü"
