@@ -96,7 +96,6 @@ data class User(
      * Plan tipini PremiumPlanType enum'a çevirir
      */
     fun premiumPlanType(): PremiumPlanType {
-    fun getPremiumPlanType(): PremiumPlanType {
         return premiumStatus().planType
     }
 
