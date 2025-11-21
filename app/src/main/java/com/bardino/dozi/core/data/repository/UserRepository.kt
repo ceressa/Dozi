@@ -1,6 +1,8 @@
 package com.bardino.dozi.core.data.repository
 
+import com.bardino.dozi.core.data.model.PremiumPlanType
 import com.bardino.dozi.core.data.model.User
+import com.bardino.dozi.core.premium.PremiumFields
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.tasks.await
@@ -105,15 +107,7 @@ class UserRepository(
         val now = System.currentTimeMillis()
         val expiryDate = now + (3 * 24 * 60 * 60 * 1000L) // 3 gün
 
-        val updates = hashMapOf<String, Any>(
-            "isPremium" to true,
-            "isTrial" to true,
-            "planType" to "trial",
-            "premiumStartDate" to now,
-            "premiumExpiryDate" to expiryDate
-        )
-
-        docRef.update(updates).await()
+        docRef.update(PremiumFields.activePlan(PremiumPlanType.TRIAL, now, expiryDate, isTrial = true)).await()
     }
 
     /**
@@ -127,7 +121,7 @@ class UserRepository(
         val userData = getUserData() ?: return false
 
         // 1. Bireysel premium kontrolü
-        if (userData.isCurrentlyPremium()) {
+        if (userData.premiumStatus().isActive) {
             return true
         }
 
