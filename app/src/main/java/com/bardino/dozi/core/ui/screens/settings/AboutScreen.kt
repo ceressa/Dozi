@@ -26,7 +26,8 @@ import com.bardino.dozi.core.ui.theme.*
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun AboutScreen(
-    onNavigateBack: () -> Unit
+    onNavigateBack: () -> Unit,
+    onNavigateToSupport: (() -> Unit)? = null
 ) {
     val context = LocalContext.current
     val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
@@ -169,7 +170,7 @@ fun AboutScreen(
                         contentColor = DoziTurquoise
                     )
                 ) {
-                    Text("Gizlilik Politikası")
+                    Text("Gizlilik Politikasi")
                 }
                 OutlinedButton(
                     onClick = { showTermsDialog = true },
@@ -178,7 +179,26 @@ fun AboutScreen(
                         contentColor = DoziTurquoise
                     )
                 ) {
-                    Text("Kullanım Şartları")
+                    Text("Kullanim Sartlari")
+                }
+            }
+
+            // Destek Butonu
+            if (onNavigateToSupport != null) {
+                Button(
+                    onClick = onNavigateToSupport,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = DoziTurquoise
+                    )
+                ) {
+                    Icon(
+                        Icons.Default.HelpOutline,
+                        contentDescription = null,
+                        modifier = Modifier.size(18.dp)
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    Text("Destek ve SSS")
                 }
             }
 
