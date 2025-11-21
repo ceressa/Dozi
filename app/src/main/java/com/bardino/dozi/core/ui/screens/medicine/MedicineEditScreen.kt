@@ -29,7 +29,6 @@ import androidx.core.content.FileProvider
 import com.bardino.dozi.core.data.Ilac
 import com.bardino.dozi.core.data.LocalMedicine
 import com.bardino.dozi.core.data.MedicineLookupRepository
-import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.MedicineColor
 import com.bardino.dozi.core.ui.components.DoziTopBar
@@ -463,12 +462,6 @@ fun MedicineEditScreen(
                             }
 
                             MedicineLookupRepository.saveLocalMedicine(context, updated)
-
-                            // Onboarding state kontrolü
-                            if (OnboardingPreferences.isInOnboarding(context) &&
-                                OnboardingPreferences.getOnboardingStep(context) == "medicine") {
-                                OnboardingPreferences.setOnboardingStep(context, "medicine_completed")
-                            }
 
                             // 🔥 Firestore'a da kaydet (stockCount ile)
                             kotlinx.coroutines.CoroutineScope(kotlinx.coroutines.Dispatchers.IO).launch {
