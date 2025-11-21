@@ -526,7 +526,14 @@ fun AddReminderScreen(
             },
             onFinish = {
                 showSuccess = false
-                onNavigateBack()
+                // Onboarding sırasında direkt Premium ekranına git
+                if (OnboardingPreferences.isInOnboarding(context)) {
+                    navController.navigate(Screen.OnboardingPremium.route) {
+                        popUpTo(Screen.OnboardingMedicineReminder.route) { inclusive = true }
+                    }
+                } else {
+                    onNavigateBack()
+                }
             }
         )
     }
