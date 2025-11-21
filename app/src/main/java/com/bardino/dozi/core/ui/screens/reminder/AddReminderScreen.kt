@@ -46,7 +46,6 @@ import androidx.navigation.NavHostController
 import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.R
 import com.bardino.dozi.core.data.MedicineLookupRepository
-import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.MedicineCriticality
 import com.bardino.dozi.core.data.repository.MedicineRepository
@@ -144,23 +143,8 @@ fun AddReminderScreen(
     val isEditMode = medicineId != null
     val isPreselectedMedicine = medicineId != null
 
-    // Onboarding'den hatırlatma eklendikten sonra geri dönme kontrolü
-    // Ekran her görünür olduğunda (back navigation dahil) state'i kontrol et
-    LaunchedEffect(lifecycleOwner) {
-        lifecycleOwner.lifecycle.repeatOnLifecycle(Lifecycle.State.RESUMED) {
-            if (OnboardingPreferences.isInOnboarding(context) &&
-                OnboardingPreferences.getOnboardingStep(context) == "reminder_completed") {
-                // Hatırlatma eklendi, onboarding'e geri dön
-                onNavigateBack()
-            }
-        }
-    }
-
     // 📊 Limit ve sayaçları yükle
     LaunchedEffect(Unit) {
-        // Onboarding'deyse limit kontrolü yapma
-        if (OnboardingPreferences.isInOnboarding(context)) return@LaunchedEffect
-
         try {
             val medicineRepository = MedicineRepository()
 
@@ -455,8 +439,8 @@ fun AddReminderScreen(
                                     }
                                 }
 
-                                // 📊 Limit kontrolü (Onboarding ve Edit mode hariç)
-                                if (!OnboardingPreferences.isInOnboarding(context) && !isEditMode) {
+                                // 📊 Limit kontrolü (Edit mode hariç)
+                                if (!isEditMode) {
                                     val newTimeSlotsCount = selectedTimes.size
 
                                     // İlaç limiti kontrolü
@@ -489,11 +473,6 @@ fun AddReminderScreen(
                                     onSuccess = {
                                         if (soundEnabled) playSuccessSound(context)
                                         showSuccess = true
-                                        // Onboarding state kontrolü
-                                        if (OnboardingPreferences.isInOnboarding(context) &&
-                                            OnboardingPreferences.getOnboardingStep(context) == "reminder") {
-                                            OnboardingPreferences.setOnboardingStep(context, "reminder_completed")
-                                        }
                                     },
                                     onError = {
                                         Toast.makeText(
@@ -526,16 +505,9 @@ fun AddReminderScreen(
             },
             onFinish = {
                 showSuccess = false
-                // Onboarding sırasında direkt Premium ekranına git
-                if (OnboardingPreferences.isInOnboarding(context)) {
-                    navController.navigate(Screen.OnboardingPremium.route) {
-                        popUpTo(Screen.OnboardingMedicineReminder.route) { inclusive = true }
-                    }
-                } else {
-                    onNavigateBack()
-                }
+                onNavigateBack()
             },
-            isOnboarding = OnboardingPreferences.isInOnboarding(context)
+            isOnboarding = false
         )
     }
 
@@ -2548,10 +2520,10 @@ private fun saveMedicinesToFirestore(
     onSuccess: () -> Unit,
     onError: () -> Unit
 ) {
-    // Onboarding'deyse veya kullanıcı giriş yapmamışsa LOCAL'e kaydet (Firebase yerine)
+    // Kullanıcı giriş yapmamışsa LOCAL'e kaydet (Firebase yerine)
     val isUserAuthenticated = com.google.firebase.auth.FirebaseAuth.getInstance().currentUser != null
-    if (OnboardingPreferences.isInOnboarding(context) || !isUserAuthenticated) {
-        android.util.Log.d("AddReminder", "✅ Saving to local storage (onboarding: ${OnboardingPreferences.isInOnboarding(context)}, authenticated: $isUserAuthenticated)")
+    if (!isUserAuthenticated) {
+        android.util.Log.d("AddReminder", "✅ Saving to local storage (authenticated: $isUserAuthenticated)")
         saveRemindersToLocal(context, medicines, selectedTimes, frequency, xValue, selectedDates, startDate)
         onSuccess()
         return
