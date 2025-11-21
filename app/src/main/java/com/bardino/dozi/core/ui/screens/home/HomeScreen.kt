@@ -491,14 +491,8 @@ fun HomeScreen(
 }
 
 
-
-// İlaç durumu kaydetme fonksiyonları
-fun saveMedicineStatus(context: Context, medicineId: String, date: String, time: String, status: String) {
-    val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)
-    val key = "dose_${medicineId}_${date}_${time}"
-    prefs.edit().putString(key, status).commit() // commit() senkron, hemen kaydet
-    android.util.Log.d("HomeScreen", "Status saved: $key = $status")
-}
+// TODO: Bu helper fonksiyonlar (getMedicineStatus, shouldMedicineShowOnDate, getMedicineRecordsForDate)
+// ViewModel'e veya Repository'e taşınmalıdır. UI katmanında business logic bulunmamalı.
 
 fun getMedicineStatus(context: Context, medicineId: String, date: String, time: String): String? {
     val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)

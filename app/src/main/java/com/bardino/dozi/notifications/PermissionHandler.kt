@@ -18,6 +18,152 @@ object PermissionHandler {
     const val REQUEST_CODE_OVERLAY = 1002
     const val REQUEST_CODE_EXACT_ALARM = 1003
 
+    // Çin menşeli telefon üreticileri
+    private val CHINESE_MANUFACTURERS = listOf(
+        "xiaomi", "redmi", "poco",
+        "huawei", "honor",
+        "oppo", "realme", "oneplus",
+        "vivo", "iqoo",
+        "meizu", "zte", "nubia",
+        "lenovo", "motorola"
+    )
+
+    /**
+     * Çin menşeli telefon mu kontrol eder
+     */
+    fun isChineseManufacturer(): Boolean {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        return CHINESE_MANUFACTURERS.any { manufacturer.contains(it) }
+    }
+
+    /**
+     * Üretici adını döndürür
+     */
+    fun getManufacturerDisplayName(): String {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+        return when {
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") -> "Xiaomi"
+            manufacturer.contains("huawei") || manufacturer.contains("honor") -> "Huawei"
+            manufacturer.contains("oppo") || manufacturer.contains("realme") -> "OPPO/Realme"
+            manufacturer.contains("oneplus") -> "OnePlus"
+            manufacturer.contains("vivo") || manufacturer.contains("iqoo") -> "Vivo"
+            manufacturer.contains("meizu") -> "Meizu"
+            manufacturer.contains("samsung") -> "Samsung"
+            else -> Build.MANUFACTURER
+        }
+    }
+
+    /**
+     * Pil optimizasyonu ayarlarını açar (üreticiye özel)
+     */
+    fun openBatteryOptimizationSettings(context: Context) {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+
+        val intent = when {
+            // Xiaomi / MIUI
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") -> {
+                Intent().apply {
+                    component = android.content.ComponentName(
+                        "com.miui.securitycenter",
+                        "com.miui.permcenter.autostart.AutoStartManagementActivity"
+                    )
+                }
+            }
+            // Huawei / EMUI
+            manufacturer.contains("huawei") || manufacturer.contains("honor") -> {
+                Intent().apply {
+                    component = android.content.ComponentName(
+                        "com.huawei.systemmanager",
+                        "com.huawei.systemmanager.startupmgr.ui.StartupNormalAppListActivity"
+                    )
+                }
+            }
+            // OPPO / ColorOS
+            manufacturer.contains("oppo") || manufacturer.contains("realme") -> {
+                Intent().apply {
+                    component = android.content.ComponentName(
+                        "com.coloros.safecenter",
+                        "com.coloros.safecenter.permission.startup.StartupAppListActivity"
+                    )
+                }
+            }
+            // OnePlus / OxygenOS
+            manufacturer.contains("oneplus") -> {
+                Intent().apply {
+                    component = android.content.ComponentName(
+                        "com.oneplus.security",
+                        "com.oneplus.security.chainlaunch.view.ChainLaunchAppListActivity"
+                    )
+                }
+            }
+            // Vivo / FuntouchOS
+            manufacturer.contains("vivo") || manufacturer.contains("iqoo") -> {
+                Intent().apply {
+                    component = android.content.ComponentName(
+                        "com.vivo.permissionmanager",
+                        "com.vivo.permissionmanager.activity.BgStartUpManagerActivity"
+                    )
+                }
+            }
+            // Samsung
+            manufacturer.contains("samsung") -> {
+                Intent().apply {
+                    component = android.content.ComponentName(
+                        "com.samsung.android.lool",
+                        "com.samsung.android.sm.battery.ui.BatteryActivity"
+                    )
+                }
+            }
+            // Fallback - Genel pil optimizasyonu ayarları
+            else -> {
+                Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+            }
+        }
+
+        try {
+            context.startActivity(intent)
+        } catch (e: Exception) {
+            // Üreticiye özel ayar bulunamazsa genel ayarlara git
+            try {
+                val fallbackIntent = Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)
+                context.startActivity(fallbackIntent)
+            } catch (e2: Exception) {
+                // Son çare: Uygulama ayarlarını aç
+                openAppSettings(context)
+            }
+        }
+    }
+
+    /**
+     * Çin telefonu için talimat metni
+     */
+    fun getBatteryOptimizationInstructions(): String {
+        val manufacturer = Build.MANUFACTURER.lowercase()
+
+        return when {
+            manufacturer.contains("xiaomi") || manufacturer.contains("redmi") || manufacturer.contains("poco") ->
+                "Ayarlar > Uygulamalar > Dozi > Pil tasarrufu > 'Kısıtlama yok' seçin.\n\nAyrıca: Güvenlik > Otomatik başlatma > Dozi'yi etkinleştirin."
+
+            manufacturer.contains("huawei") || manufacturer.contains("honor") ->
+                "Ayarlar > Pil > Uygulama başlatma > Dozi > 'Manuel olarak yönet' seçin ve tüm seçenekleri açın."
+
+            manufacturer.contains("oppo") || manufacturer.contains("realme") ->
+                "Ayarlar > Pil > Daha fazla pil ayarı > Uygulama hızlı dondurma > Dozi'yi kapatın."
+
+            manufacturer.contains("oneplus") ->
+                "Ayarlar > Pil > Pil optimizasyonu > Dozi > 'Optimize etme' seçin."
+
+            manufacturer.contains("vivo") || manufacturer.contains("iqoo") ->
+                "Ayarlar > Pil > Arka plan güç tüketimi > Dozi > 'Kısıtlama' seçin."
+
+            manufacturer.contains("samsung") ->
+                "Ayarlar > Pil > Arka plan kullanım sınırları > Hiçbir zaman uyku moduna alma > Dozi'yi ekleyin."
+
+            else ->
+                "Ayarlar > Pil > Pil optimizasyonu > Dozi > 'Optimize etme' seçin."
+        }
+    }
+
     /**
      * Tüm gerekli izinleri kontrol eder
      */
