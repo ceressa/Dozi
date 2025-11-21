@@ -3,6 +3,8 @@ package com.bardino.dozi.core.data.repository
 import android.util.Log
 import com.bardino.dozi.core.data.model.FamilyPlan
 import com.bardino.dozi.core.data.model.FamilyPlanStatus
+import com.bardino.dozi.core.data.model.PremiumPlanType
+import com.bardino.dozi.core.premium.PremiumFields
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -65,12 +67,15 @@ class FamilyPlanRepository(
             docRef.set(familyPlanWithId).await()
 
             // Kullanıcının familyPlanId ve familyRole'ünü güncelle
+            val planStart = familyPlan.createdAt?.toDate()?.time ?: System.currentTimeMillis()
+            val planExpiry = familyPlan.expiresAt?.toDate()?.time ?: 0L
+
             db.collection(COLLECTION_USERS).document(userId).update(
-                mapOf(
-                    "familyPlanId" to docRef.id,
-                    "familyRole" to "ORGANIZER",
-                    "planType" to "family_premium"
-                )
+                PremiumFields.activePlan(PremiumPlanType.AILE_YEARLY, planStart, planExpiry) +
+                    mapOf(
+                        "familyPlanId" to docRef.id,
+                        "familyRole" to "ORGANIZER"
+                    )
             ).await()
 
             Log.d(TAG, "✅ Aile planı oluşturuldu: ${docRef.id}")
@@ -163,14 +168,15 @@ class FamilyPlanRepository(
             ).await()
 
             // Kullanıcıyı güncelle
+            val planStart = familyPlan.createdAt?.toDate()?.time ?: System.currentTimeMillis()
+            val planExpiry = familyPlan.expiresAt?.toDate()?.time ?: 0L
+
             db.collection(COLLECTION_USERS).document(userId).update(
-                mapOf(
-                    "familyPlanId" to familyPlan.id,
-                    "familyRole" to "MEMBER",
-                    "isPremium" to true,
-                    "planType" to "family_premium",
-                    "premiumExpiryDate" to familyPlan.expiresAt?.toDate()?.time
-                )
+                PremiumFields.activePlan(PremiumPlanType.AILE_YEARLY, planStart, planExpiry) +
+                    mapOf(
+                        "familyPlanId" to familyPlan.id,
+                        "familyRole" to "MEMBER"
+                    )
             ).await()
 
             Log.d(TAG, "✅ Kullanıcı aile planına katıldı: ${familyPlan.id}")
@@ -278,13 +284,11 @@ class FamilyPlanRepository(
 
             // Üyenin planını kaldır
             db.collection(COLLECTION_USERS).document(memberId).update(
-                mapOf(
-                    "familyPlanId" to null,
-                    "familyRole" to null,
-                    "isPremium" to false,
-                    "planType" to "free",
-                    "premiumExpiryDate" to 0L
-                )
+                PremiumFields.reset() +
+                    mapOf(
+                        "familyPlanId" to null,
+                        "familyRole" to null
+                    )
             ).await()
 
             Log.d(TAG, "✅ Üye aile planından çıkarıldı: $memberId")
@@ -332,13 +336,11 @@ class FamilyPlanRepository(
 
             // Kullanıcıyı güncelle
             db.collection(COLLECTION_USERS).document(userId).update(
-                mapOf(
-                    "familyPlanId" to null,
-                    "familyRole" to null,
-                    "isPremium" to false,
-                    "planType" to "free",
-                    "premiumExpiryDate" to 0L
-                )
+                PremiumFields.reset() +
+                    mapOf(
+                        "familyPlanId" to null,
+                        "familyRole" to null
+                    )
             ).await()
 
             Log.d(TAG, "✅ Kullanıcı aile planından ayrıldı")
@@ -377,13 +379,11 @@ class FamilyPlanRepository(
 
             for (memberId in allMembers) {
                 db.collection(COLLECTION_USERS).document(memberId).update(
-                    mapOf(
-                        "familyPlanId" to null,
-                        "familyRole" to null,
-                        "isPremium" to false,
-                        "planType" to "free",
-                        "premiumExpiryDate" to 0L
-                    )
+                    PremiumFields.reset() +
+                        mapOf(
+                            "familyPlanId" to null,
+                            "familyRole" to null
+                        )
                 ).await()
             }
 
