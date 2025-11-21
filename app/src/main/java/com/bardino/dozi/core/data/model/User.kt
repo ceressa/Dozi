@@ -1,5 +1,6 @@
 package com.bardino.dozi.core.data.model
 
+import com.google.firebase.firestore.Exclude
 import com.google.firebase.firestore.PropertyName
 import java.util.Locale
 
@@ -81,6 +82,7 @@ data class User(
     /**
      * Kullanıcının şu anda premium olup olmadığını kontrol eder
      */
+    @get:Exclude
     fun isCurrentlyPremium(): Boolean {
         return premiumStatus().isActive
     }
@@ -88,6 +90,7 @@ data class User(
     /**
      * Premium'un kaç gün kaldığını hesaplar
      */
+    @get:Exclude
     fun premiumDaysRemaining(): Int {
         return premiumStatus().daysRemaining()
     }
@@ -95,6 +98,7 @@ data class User(
     /**
      * Plan tipini PremiumPlanType enum'a çevirir
      */
+    @get:Exclude
     fun premiumPlanType(): PremiumPlanType {
         return premiumStatus().planType
     }
@@ -102,6 +106,7 @@ data class User(
     /**
      * Premium durumunu normalize eder ve tek noktadan hesaplar
      */
+    @get:Exclude
     fun premiumStatus(now: Long = System.currentTimeMillis()): PremiumStatus {
         val planType = resolvePlanType()
         val expiry = premiumExpiryDate
