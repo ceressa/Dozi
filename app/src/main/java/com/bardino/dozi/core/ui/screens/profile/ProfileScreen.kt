@@ -169,282 +169,287 @@ private fun ProfileContent(
                 .padding(padding)
                 .verticalScroll(rememberScrollState())
         ) {
-            // User Profile Card with Premium Status
-            Card(
+            // User Profile Header with Gradient
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(16.dp),
-                colors = CardDefaults.cardColors(
-                    containerColor = MaterialTheme.colorScheme.surface
-                )
+                    .background(
+                        brush = Brush.verticalGradient(
+                            colors = listOf(
+                                DoziTurquoise,
+                                DoziTurquoise.copy(alpha = 0.8f)
+                            )
+                        )
+                    )
+                    .padding(24.dp)
             ) {
-                Column {
-                    Row(
+                Column(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    // Avatar
+                    Box(
                         modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically
+                            .size(80.dp)
+                            .clip(CircleShape)
+                            .background(Color.White.copy(alpha = 0.2f))
+                            .border(3.dp, Color.White, CircleShape),
+                        contentAlignment = Alignment.Center
                     ) {
-                        Box(
-                            modifier = Modifier
-                                .size(64.dp)
-                                .clip(CircleShape)
-                                .background(DoziTurquoise),
-                            contentAlignment = Alignment.Center
-                        ) {
-                            Text(
-                                text = (firestoreUser?.name?.firstOrNull()?.uppercase() ?: user?.email?.firstOrNull()?.uppercase() ?: "U").toString(),
-                                fontSize = 24.sp,
-                                fontWeight = FontWeight.Bold,
-                                color = Color.White
-                            )
-                        }
-
-                        Spacer(modifier = Modifier.width(16.dp))
-
-                        Column(modifier = Modifier.weight(1f)) {
-                            Text(
-                                text = firestoreUser?.name ?: user?.displayName ?: "Kullanıcı",
-                                style = MaterialTheme.typography.titleLarge,
-                                fontWeight = FontWeight.Bold,
-                                color = MaterialTheme.colorScheme.onSurface
-                            )
-                            Spacer(modifier = Modifier.height(4.dp))
-                            Text(
-                                text = user?.email ?: "",
-                                style = MaterialTheme.typography.bodyMedium,
-                                color = MaterialTheme.colorScheme.onSurfaceVariant
-                            )
-                        }
+                        Text(
+                            text = (firestoreUser?.name?.firstOrNull()?.uppercase()
+                                ?: user?.email?.firstOrNull()?.uppercase()
+                                ?: "U").toString(),
+                            fontSize = 32.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
                     }
 
-                    // Premium Status Badge
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    // Name
+                    Text(
+                        text = firestoreUser?.name ?: user?.displayName ?: "Kullanıcı",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White
+                    )
+
+                    // Email
+                    Text(
+                        text = user?.email ?: "",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = Color.White.copy(alpha = 0.8f)
+                    )
+
+                    // Premium Badge
                     if (firestoreUser?.isPremium == true) {
+                        Spacer(modifier = Modifier.height(12.dp))
+
                         val isTrial = firestoreUser?.isTrial == true
                         val expiryDate = firestoreUser?.premiumExpiryDate
-                        val dateFormat = SimpleDateFormat("dd MMM yyyy", Locale("tr"))
+                        val dateFormat = SimpleDateFormat("dd MMM", Locale("tr"))
 
-                        Box(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .background(
-                                    brush = Brush.horizontalGradient(
-                                        colors = listOf(
-                                            DoziTurquoise.copy(alpha = 0.1f),
-                                            DoziTurquoise.copy(alpha = 0.05f)
-                                        )
-                                    )
-                                )
-                                .padding(horizontal = 16.dp, vertical = 12.dp)
+                        Surface(
+                            shape = RoundedCornerShape(20.dp),
+                            color = Color.White.copy(alpha = 0.2f)
                         ) {
                             Row(
-                                modifier = Modifier.fillMaxWidth(),
+                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                                 verticalAlignment = Alignment.CenterVertically
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Star,
                                     contentDescription = null,
-                                    tint = DoziTurquoise,
-                                    modifier = Modifier.size(20.dp)
+                                    tint = Color.White,
+                                    modifier = Modifier.size(16.dp)
                                 )
-                                Spacer(modifier = Modifier.width(8.dp))
-                                Column(modifier = Modifier.weight(1f)) {
-                                    Text(
-                                        text = if (isTrial) "Deneme Sürümü" else "Dozi Ekstra",
-                                        style = MaterialTheme.typography.bodyMedium,
-                                        fontWeight = FontWeight.SemiBold,
-                                        color = DoziTurquoise
-                                    )
-                                    if (expiryDate != null && expiryDate > 0) {
-                                        Text(
-                                            text = "Bitiş: ${dateFormat.format(Date(expiryDate))}",
-                                            style = MaterialTheme.typography.bodySmall,
-                                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                                        )
-                                    }
-                                }
+                                Spacer(modifier = Modifier.width(6.dp))
+                                Text(
+                                    text = if (isTrial) {
+                                        if (expiryDate != null && expiryDate > 0) {
+                                            "Deneme - ${dateFormat.format(Date(expiryDate))}'e kadar"
+                                        } else "Deneme Sürümü"
+                                    } else "Dozi Ekstra",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
+                                )
                             }
                         }
                     }
                 }
             }
 
-            // Help & Support Section (Highlighted)
-            SectionHeader(title = "Yardım ve Destek")
+            Spacer(modifier = Modifier.height(16.dp))
 
+            // Quick Actions Grid
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickActionCard(
+                    icon = Icons.Default.HelpOutline,
+                    title = "Destek",
+                    backgroundColor = DoziTurquoise.copy(alpha = 0.1f),
+                    iconColor = DoziTurquoise,
+                    onClick = onNavigateToSupport,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionCard(
+                    icon = Icons.Default.Star,
+                    title = "Ekstra",
+                    backgroundColor = Color(0xFFFFF3E0),
+                    iconColor = Color(0xFFFF9800),
+                    onClick = onNavigateToPremium,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(12.dp))
+
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp),
+                horizontalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                QuickActionCard(
+                    icon = Icons.Default.LocationOn,
+                    title = "Konumlar",
+                    backgroundColor = Color(0xFFE3F2FD),
+                    iconColor = Color(0xFF2196F3),
+                    onClick = onNavigateToLocations,
+                    modifier = Modifier.weight(1f)
+                )
+                QuickActionCard(
+                    icon = Icons.Default.Settings,
+                    title = "Ayarlar",
+                    backgroundColor = Color(0xFFF3E5F5),
+                    iconColor = Color(0xFF9C27B0),
+                    onClick = onNavigateToSettings,
+                    modifier = Modifier.weight(1f)
+                )
+            }
+
+            Spacer(modifier = Modifier.height(20.dp))
+
+            // Other Options Card
             Card(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                    .padding(horizontal = 16.dp),
                 colors = CardDefaults.cardColors(
-                    containerColor = DoziTurquoise.copy(alpha = 0.08f)
+                    containerColor = MaterialTheme.colorScheme.surface
                 ),
-                onClick = onNavigateToSupport
+                shape = RoundedCornerShape(16.dp)
             ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Box(
-                        modifier = Modifier
-                            .size(40.dp)
-                            .clip(CircleShape)
-                            .background(DoziTurquoise.copy(alpha = 0.15f)),
-                        contentAlignment = Alignment.Center
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.HelpOutline,
-                            contentDescription = null,
-                            tint = DoziTurquoise,
-                            modifier = Modifier.size(24.dp)
+                Column {
+                    if (firestoreUser?.familyPlanId != null) {
+                        CompactMenuItem(
+                            icon = Icons.Default.FamilyRestroom,
+                            title = "Aile Yönetimi",
+                            onClick = onNavigateToFamilyManagement
+                        )
+                        HorizontalDivider(
+                            modifier = Modifier.padding(horizontal = 16.dp),
+                            color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
                         )
                     }
-                    Spacer(modifier = Modifier.width(12.dp))
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(
-                            text = "Destek ve SSS",
-                            style = MaterialTheme.typography.bodyLarge,
-                            fontWeight = FontWeight.Bold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                        Text(
-                            text = "Sık sorulan sorular ve iletişim",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
-                        )
-                    }
-                    Icon(
-                        imageVector = Icons.Default.ChevronRight,
-                        contentDescription = null,
-                        tint = DoziTurquoise
+
+                    CompactMenuItem(
+                        icon = Icons.Default.Notifications,
+                        title = "Bildirimler",
+                        onClick = onNavigateToNotifications
+                    )
+
+                    HorizontalDivider(
+                        modifier = Modifier.padding(horizontal = 16.dp),
+                        color = MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
+                    )
+
+                    CompactMenuItem(
+                        icon = Icons.Default.Info,
+                        title = "Hakkında",
+                        onClick = onNavigateToAbout
                     )
                 }
             }
 
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Premium & Features Section
-            SectionHeader(title = "Özellikler")
-
-            ProfileMenuItem(
-                icon = Icons.Default.Star,
-                title = "Dozi Ekstra",
-                description = "Premium özelliklere erişin",
-                onClick = onNavigateToPremium
-            )
-
-            ProfileMenuItem(
-                icon = Icons.Default.LocationOn,
-                title = "Konumlar",
-                description = "Konum tabanlı hatırlatmalar",
-                onClick = onNavigateToLocations
-            )
-
-            if (firestoreUser?.familyPlanId != null) {
-                ProfileMenuItem(
-                    icon = Icons.Default.FamilyRestroom,
-                    title = "Aile Yönetimi",
-                    description = "Aile üyelerini yönet",
-                    onClick = onNavigateToFamilyManagement
-                )
-            }
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Settings Section
-            SectionHeader(title = "Ayarlar")
-
-            ProfileMenuItem(
-                icon = Icons.Default.Settings,
-                title = "Uygulama Ayarları",
-                description = "Genel tercihler",
-                onClick = onNavigateToSettings
-            )
-
-            ProfileMenuItem(
-                icon = Icons.Default.Notifications,
-                title = "Bildirimler",
-                description = "Bildirim tercihleri",
-                onClick = onNavigateToNotifications
-            )
-
-            Spacer(modifier = Modifier.height(16.dp))
-
-            // Info Section
-            SectionHeader(title = "Bilgi")
-
-            ProfileMenuItem(
-                icon = Icons.Default.Info,
-                title = "Hakkında",
-                description = "Uygulama bilgileri ve sürüm",
-                onClick = onNavigateToAbout
-            )
-
-            Spacer(modifier = Modifier.height(32.dp))
+            // Bottom padding for navigation bar
+            Spacer(modifier = Modifier.height(100.dp))
         }
     }
 }
 
 @Composable
-private fun SectionHeader(title: String) {
-    Text(
-        text = title,
-        style = MaterialTheme.typography.titleSmall,
-        fontWeight = FontWeight.SemiBold,
-        color = MaterialTheme.colorScheme.onSurfaceVariant,
-        modifier = Modifier.padding(horizontal = 20.dp, vertical = 8.dp)
-    )
+private fun QuickActionCard(
+    icon: ImageVector,
+    title: String,
+    backgroundColor: Color,
+    iconColor: Color,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier
+) {
+    Card(
+        modifier = modifier,
+        colors = CardDefaults.cardColors(
+            containerColor = backgroundColor
+        ),
+        shape = RoundedCornerShape(16.dp),
+        onClick = onClick
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            horizontalAlignment = Alignment.CenterHorizontally
+        ) {
+            Box(
+                modifier = Modifier
+                    .size(48.dp)
+                    .clip(CircleShape)
+                    .background(iconColor.copy(alpha = 0.15f)),
+                contentAlignment = Alignment.Center
+            ) {
+                Icon(
+                    imageVector = icon,
+                    contentDescription = null,
+                    tint = iconColor,
+                    modifier = Modifier.size(24.dp)
+                )
+            }
+            Spacer(modifier = Modifier.height(8.dp))
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyMedium,
+                fontWeight = FontWeight.SemiBold,
+                color = MaterialTheme.colorScheme.onSurface
+            )
+        }
+    }
 }
 
 @Composable
-private fun ProfileMenuItem(
+private fun CompactMenuItem(
     icon: ImageVector,
     title: String,
-    description: String,
     onClick: () -> Unit
 ) {
-    Card(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 4.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = MaterialTheme.colorScheme.surface
-        ),
-        onClick = onClick
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        onClick = onClick,
+        color = Color.Transparent
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(16.dp),
+                .padding(horizontal = 16.dp, vertical = 14.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
             Icon(
                 imageVector = icon,
                 contentDescription = null,
-                tint = DoziTurquoise,
-                modifier = Modifier.size(24.dp)
+                tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                modifier = Modifier.size(22.dp)
             )
             Spacer(modifier = Modifier.width(16.dp))
-            Column(modifier = Modifier.weight(1f)) {
-                Text(
-                    text = title,
-                    style = MaterialTheme.typography.bodyLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    text = description,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant
-                )
-            }
+            Text(
+                text = title,
+                style = MaterialTheme.typography.bodyLarge,
+                color = MaterialTheme.colorScheme.onSurface,
+                modifier = Modifier.weight(1f)
+            )
             Icon(
                 imageVector = Icons.Default.ChevronRight,
                 contentDescription = null,
-                tint = MaterialTheme.colorScheme.onSurfaceVariant
+                tint = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.5f),
+                modifier = Modifier.size(20.dp)
             )
         }
     }
 }
+
