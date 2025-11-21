@@ -276,6 +276,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
             // İptal: Tüm escalation alarmları
             cancelAllEscalations(context, medicineId, time)
+
+            // 🔥 FIX: Bu saat için planlanmış reminder alarmını iptal et
+            ReminderScheduler.cancelReminders(context, medicineId, listOf(time))
+            android.util.Log.d("NotificationActionReceiver", "🔕 Reminder alarm iptal edildi: $medicineId @ $time")
         }
 
         showToast(context, "$medicineName alındı olarak işaretlendi ✅")
@@ -317,6 +321,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
             // İptal: Tüm escalation alarmları
             cancelAllEscalations(context, medicineId, time)
+
+            // 🔥 FIX: Bu saat için planlanmış reminder alarmını iptal et
+            ReminderScheduler.cancelReminders(context, medicineId, listOf(time))
+            android.util.Log.d("NotificationActionReceiver", "🔕 Reminder alarm iptal edildi: $medicineId @ $time")
         }
 
         showToast(context, "$medicineName atlandı 🚫")
