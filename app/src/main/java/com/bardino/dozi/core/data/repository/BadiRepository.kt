@@ -396,6 +396,12 @@ class BadiRepository(
 
             android.util.Log.d("BadiRepository", "acceptBadiRequest: From ${request.fromUserId} to $userId")
 
+            // 🔥 FIX: Self-buddy kontrolü - kendine badi isteği kabul edilemez
+            if (request.fromUserId == userId) {
+                android.util.Log.e("BadiRepository", "acceptBadiRequest: Cannot add yourself as badi (self-buddy)")
+                return Result.failure(Exception("Kendinizi badi olarak ekleyemezsiniz"))
+            }
+
             // Bu kullanıcılar arasında zaten badi ilişkisi var mı kontrol et
             val existingBadi = db.collection("buddies")
                 .whereEqualTo("userId", userId)
@@ -559,6 +565,49 @@ class BadiRepository(
             Result.success(deletedCount)
         } catch (e: Exception) {
             android.util.Log.e("BadiRepository", "cleanupDuplicateBadis: ❌ Error", e)
+            Result.failure(e)
+        }
+    }
+
+    /**
+     * Self-buddy kayıtlarını temizle
+     * (userId == buddyUserId olan hatalı kayıtları sil)
+     */
+    suspend fun cleanupSelfBuddies(): Result<Int> {
+        val userId = currentUserId ?: return Result.failure(Exception("User not logged in"))
+
+        return try {
+            android.util.Log.d("BadiRepository", "cleanupSelfBuddies: Starting cleanup for user $userId")
+
+            // Kullanıcının tüm badi kayıtlarını al
+            val badisSnapshot = db.collection("buddies")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            var deletedCount = 0
+            val batch = db.batch()
+
+            // Self-buddy kayıtlarını bul ve sil
+            badisSnapshot.documents.forEach { doc ->
+                val badi = doc.toObject(Badi::class.java)
+                if (badi != null && badi.userId == badi.buddyUserId) {
+                    android.util.Log.w("BadiRepository", "cleanupSelfBuddies: Found self-buddy record ${doc.id}")
+                    batch.delete(doc.reference)
+                    deletedCount++
+                }
+            }
+
+            if (deletedCount > 0) {
+                batch.commit().await()
+                android.util.Log.d("BadiRepository", "cleanupSelfBuddies: ✅ Deleted $deletedCount self-buddy records")
+            } else {
+                android.util.Log.d("BadiRepository", "cleanupSelfBuddies: No self-buddy records found")
+            }
+
+            Result.success(deletedCount)
+        } catch (e: Exception) {
+            android.util.Log.e("BadiRepository", "cleanupSelfBuddies: ❌ Error", e)
             Result.failure(e)
         }
     }

@@ -89,6 +89,17 @@ class BadiViewModel @Inject constructor(
                 .onFailure { error ->
                     android.util.Log.e("BadiViewModel", "Badi cleanup failed", error as? Throwable)
                 }
+
+            // 🔥 Self-buddy kayıtlarını temizle
+            badiRepository.cleanupSelfBuddies()
+                .onSuccess { deletedCount ->
+                    if (deletedCount > 0) {
+                        android.util.Log.d("BadiViewModel", "🧹 Cleaned up $deletedCount self-buddy records")
+                    }
+                }
+                .onFailure { error ->
+                    android.util.Log.e("BadiViewModel", "Self-buddy cleanup failed", error as? Throwable)
+                }
         }
     }
 

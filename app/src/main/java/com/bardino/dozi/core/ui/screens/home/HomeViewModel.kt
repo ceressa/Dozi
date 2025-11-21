@@ -20,6 +20,7 @@ import com.bardino.dozi.core.data.repository.AchievementRepository
 import com.bardino.dozi.core.data.repository.UserStatsRepository
 import com.bardino.dozi.core.data.repository.UserPreferencesRepository
 import com.bardino.dozi.core.utils.EscalationManager
+import com.bardino.dozi.notifications.ReminderScheduler
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -463,6 +464,10 @@ class HomeViewModel @Inject constructor(
 
             // 🚫 Escalation alarmlarını iptal et
             cancelEscalationAlarms(context, medicine.id, time)
+
+            // 🔥 FIX: Ana hatırlatma alarmını iptal et
+            // Bu olmadan, ilacı uygulamadan aldım işaretlesen bile saatinde bildirim gelir
+            ReminderScheduler.cancelReminders(context, medicine.id, listOf(time))
 
             // 🚫 Tüm bildirimleri iptal et (notification drawer'dan temizle)
             com.bardino.dozi.notifications.NotificationHelper.cancelAllNotificationsForMedicine(
