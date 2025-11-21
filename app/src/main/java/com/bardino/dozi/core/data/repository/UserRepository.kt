@@ -88,9 +88,9 @@ class UserRepository(
     }
 
     /**
-     * 🎁 Onboarding tamamlandıktan sonra 1 haftalık ücretsiz trial başlat
+     * 🎁 Yeni kullanıcıya 3 günlük ücretsiz trial başlat
      */
-    suspend fun activateTrialIfOnboarding() {
+    suspend fun activateTrialForNewUser() {
         val user = auth.currentUser ?: return
         val docRef = db.collection("users").document(user.uid)
         val snapshot = docRef.get().await()
@@ -101,17 +101,16 @@ class UserRepository(
             return
         }
 
-        // 1 haftalık trial ver
+        // 3 günlük trial ver
         val now = System.currentTimeMillis()
-        val expiryDate = now + (7 * 24 * 60 * 60 * 1000L) // 7 gün
+        val expiryDate = now + (3 * 24 * 60 * 60 * 1000L) // 3 gün
 
         val updates = hashMapOf<String, Any>(
             "isPremium" to true,
             "isTrial" to true,
             "planType" to "trial",
             "premiumStartDate" to now,
-            "premiumExpiryDate" to expiryDate,
-            "onboardingCompleted" to true
+            "premiumExpiryDate" to expiryDate
         )
 
         docRef.update(updates).await()
