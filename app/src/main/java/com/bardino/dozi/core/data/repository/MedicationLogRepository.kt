@@ -362,6 +362,62 @@ class MedicationLogRepository(
     }
 
     /**
+     * 🔥 Belirli bir ilaç için belirli bir zamanda log var mı kontrol et
+     * Escalation handler'ları için kullanılır (duplicate bildirim önleme)
+     *
+     * TAKEN, SKIPPED veya SNOOZED durumlarından biri varsa true döner
+     */
+    suspend fun isMedicationLoggedForTime(
+        medicineId: String,
+        scheduledTime: Long
+    ): Boolean {
+        val userId = currentUserId ?: return false
+
+        return try {
+            // 1. Önce Room DB'yi kontrol et (hızlı, offline)
+            val localLog = medicationLogDao.getLogForMedicineAndTime(
+                medicineId = medicineId,
+                scheduledTime = scheduledTime,
+                userId = userId
+            )
+
+            if (localLog != null && localLog.status in listOf("TAKEN", "SKIPPED", "SNOOZED")) {
+                Log.d(TAG, "✅ Local DB'de log bulundu: $medicineId - ${localLog.status}")
+                return true
+            }
+
+            // 2. Firestore'u kontrol et (online)
+            // scheduledTime ±5 dakika toleransla kontrol et
+            val tolerance = 5 * 60 * 1000 // 5 dakika
+            val startTime = Timestamp(Date(scheduledTime - tolerance))
+            val endTime = Timestamp(Date(scheduledTime + tolerance))
+
+            val snapshot = db.collection("medication_logs")
+                .whereEqualTo("userId", userId)
+                .whereEqualTo("medicineId", medicineId)
+                .whereGreaterThanOrEqualTo("scheduledTime", startTime)
+                .whereLessThanOrEqualTo("scheduledTime", endTime)
+                .get()
+                .await()
+
+            val hasLog = snapshot.documents.any { doc ->
+                val status = doc.getString("status")
+                status in listOf("TAKEN", "SKIPPED", "SNOOZED")
+            }
+
+            if (hasLog) {
+                Log.d(TAG, "✅ Firestore'da log bulundu: $medicineId")
+            }
+
+            hasLog
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ isMedicationLoggedForTime hatası", e)
+            // Hata durumunda false dön (bildirim gösterilsin)
+            false
+        }
+    }
+
+    /**
      * Bugünkü ilaç geçmişini getir
      */
     suspend fun getTodayMedicationLogs(): DailyMedicationLogs {

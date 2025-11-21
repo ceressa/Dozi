@@ -54,4 +54,23 @@ interface MedicationLogDao {
 
     @Query("SELECT COUNT(*) FROM medication_logs WHERE userId = :userId AND status = 'SKIPPED' AND scheduledTime >= :startTime AND scheduledTime < :endTime")
     suspend fun getSkippedCount(userId: String, startTime: Long, endTime: Long): Int
+
+    /**
+     * 🔥 Belirli bir ilaç için belirli bir zamanda log var mı kontrol et
+     * Escalation handler'ları için (duplicate bildirim önleme)
+     * ±5 dakika toleransla kontrol eder
+     */
+    @Query("""
+        SELECT * FROM medication_logs
+        WHERE medicineId = :medicineId
+        AND userId = :userId
+        AND scheduledTime >= :scheduledTime - 300000
+        AND scheduledTime <= :scheduledTime + 300000
+        LIMIT 1
+    """)
+    suspend fun getLogForMedicineAndTime(
+        medicineId: String,
+        scheduledTime: Long,
+        userId: String
+    ): MedicationLogEntity?
 }
