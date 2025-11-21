@@ -33,7 +33,7 @@ data class UserStats(
     // ⏰ En iyi/en kötü saatler
     val bestComplianceHour: Int = 9,      // En iyi uyumluluk saati (0-23)
     val worstComplianceHour: Int = 21,    // En kötü uyumluluk saati (0-23)
-    val hourlyCompliance: Map<Int, Float> = emptyMap(), // Saatlik uyumluluk (0-23 -> 0-100)
+    val hourlyCompliance: Map<String, Float> = emptyMap(), // Saatlik uyumluluk ("0"-"23" -> 0-100)
 
     @ServerTimestamp
     val createdAt: Timestamp? = null,
