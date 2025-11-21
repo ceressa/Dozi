@@ -314,7 +314,10 @@ fun NavGraph(
 
             // ℹ️ Hakkında
             composable(Screen.About.route) {
-                AboutScreen(onNavigateBack = { navController.popBackStack() })
+                AboutScreen(
+                    onNavigateBack = { navController.popBackStack() },
+                    onNavigateToSupport = { navController.navigate(Screen.Support.route) }
+                )
             }
 
             // 🆘 Destek / SSS

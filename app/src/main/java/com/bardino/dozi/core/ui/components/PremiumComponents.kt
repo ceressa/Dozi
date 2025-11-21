@@ -465,7 +465,8 @@ fun PremiumLimitDialog(
     maxCount: Int,
     requiredPlan: String,
     onDismiss: () -> Unit,
-    onUpgrade: () -> Unit
+    onUpgrade: () -> Unit,
+    onSupportClick: (() -> Unit)? = null
 ) {
     Dialog(onDismissRequest = onDismiss) {
         Card(
@@ -556,6 +557,24 @@ fun PremiumLimitDialog(
                     }
                 }
 
+                // Support link
+                if (onSupportClick != null) {
+                    TextButton(onClick = onSupportClick) {
+                        Icon(
+                            Icons.Default.HelpOutline,
+                            contentDescription = null,
+                            modifier = Modifier.size(16.dp),
+                            tint = TextSecondary
+                        )
+                        Spacer(Modifier.width(4.dp))
+                        Text(
+                            "Sorulariniz mi var? Destek'e bakin",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = TextSecondary
+                        )
+                    }
+                }
+
                 // Buttons
                 Row(
                     modifier = Modifier.fillMaxWidth(),
@@ -566,7 +585,7 @@ fun PremiumLimitDialog(
                         modifier = Modifier.weight(1f),
                         shape = RoundedCornerShape(12.dp)
                     ) {
-                        Text("Vazgeç")
+                        Text("Vazgec")
                     }
                     Button(
                         onClick = onUpgrade,
@@ -574,7 +593,7 @@ fun PremiumLimitDialog(
                         shape = RoundedCornerShape(12.dp),
                         colors = ButtonDefaults.buttonColors(containerColor = DoziGold)
                     ) {
-                        Text("Yükselt", color = Color.White, fontWeight = FontWeight.Bold)
+                        Text("Yukselt", color = Color.White, fontWeight = FontWeight.Bold)
                     }
                 }
             }
