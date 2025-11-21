@@ -542,7 +542,14 @@ object NotificationHelper {
             .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
             .build()
 
-        nm.notify(NOTIF_ID_ESCALATION_1, notification)
+        // 🔥 FIX: Unique notification ID kullan (her ilaç+zaman için ayrı bildirim)
+        val notificationId = if (medicineId.isNotEmpty()) {
+            getNotificationId(medicineId, time, 1)
+        } else {
+            NOTIF_ID_ESCALATION_1
+        }
+        nm.notify(notificationId, notification)
+        Log.d("NotificationHelper", "✅ Escalation 1 bildirimi gösterildi: ID=$notificationId (medicineId=$medicineId, time=$time)")
     }
 
     /**
@@ -594,7 +601,14 @@ object NotificationHelper {
             .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
             .build()
 
-        nm.notify(NOTIF_ID_ESCALATION_2, notification)
+        // 🔥 FIX: Unique notification ID kullan (her ilaç+zaman için ayrı bildirim)
+        val notificationId = if (medicineId.isNotEmpty()) {
+            getNotificationId(medicineId, time, 2)
+        } else {
+            NOTIF_ID_ESCALATION_2
+        }
+        nm.notify(notificationId, notification)
+        Log.d("NotificationHelper", "✅ Escalation 2 bildirimi gösterildi: ID=$notificationId (medicineId=$medicineId, time=$time)")
     }
 
     /**
@@ -645,7 +659,14 @@ object NotificationHelper {
             .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
             .build()
 
-        nm.notify(NOTIF_ID_ESCALATION_3, notification)
+        // 🔥 FIX: Unique notification ID kullan (her ilaç+zaman için ayrı bildirim)
+        val notificationId = if (medicineId.isNotEmpty()) {
+            getNotificationId(medicineId, time, 3)
+        } else {
+            NOTIF_ID_ESCALATION_3
+        }
+        nm.notify(notificationId, notification)
+        Log.d("NotificationHelper", "✅ Escalation 3 bildirimi gösterildi: ID=$notificationId (medicineId=$medicineId, time=$time)")
     }
 
     /**

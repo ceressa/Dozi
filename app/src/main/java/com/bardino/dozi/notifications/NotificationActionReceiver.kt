@@ -110,76 +110,130 @@ class NotificationActionReceiver : BroadcastReceiver() {
             }
             "ACTION_ESCALATION_1" -> {
                 // ⏰ Escalation Level 1 (10 dakika sonra)
-                if (hasNotificationPermission(context)) {
-                    NotificationHelper.showEscalationLevel1Notification(
-                        context = context,
-                        medicineName = med,
-                        medicineId = medicineId,
-                        dosage = dosage,
-                        time = time,
-                        scheduledTime = scheduledTime
-                    )
-                    android.util.Log.d("NotificationActionReceiver", "⏰ Escalation Level 1 bildirimi gösterildi: $med")
+                if (hasNotificationPermission(context) && medicineId.isNotEmpty()) {
+                    // 🔥 FIX: İlaç zaten alındı mı kontrol et
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val medicationLogRepository = MedicationLogRepository(
+                                context,
+                                FirebaseAuth.getInstance(),
+                                FirebaseFirestore.getInstance()
+                            )
+
+                            val alreadyLogged = medicationLogRepository.isMedicationLoggedForTime(
+                                medicineId = medicineId,
+                                scheduledTime = scheduledTime
+                            )
+
+                            if (alreadyLogged) {
+                                android.util.Log.d("NotificationActionReceiver", "⏭️ Escalation 1 atlandı - ilaç zaten loglandı: $med")
+                                return@launch
+                            }
+
+                            NotificationHelper.showEscalationLevel1Notification(
+                                context = context,
+                                medicineName = med,
+                                medicineId = medicineId,
+                                dosage = dosage,
+                                time = time,
+                                scheduledTime = scheduledTime
+                            )
+                            android.util.Log.d("NotificationActionReceiver", "⏰ Escalation Level 1 bildirimi gösterildi: $med")
+                        } catch (e: Exception) {
+                            android.util.Log.e("NotificationActionReceiver", "❌ Escalation 1 hatası", e)
+                        }
+                    }
                 }
             }
             "ACTION_ESCALATION_2" -> {
                 // 🚨 Escalation Level 2 (30 dakika sonra - kırmızı, urgent)
-                if (hasNotificationPermission(context)) {
-                    NotificationHelper.showEscalationLevel2Notification(
-                        context = context,
-                        medicineName = med,
-                        medicineId = medicineId,
-                        dosage = dosage,
-                        time = time,
-                        scheduledTime = scheduledTime
-                    )
-                    android.util.Log.d("NotificationActionReceiver", "🚨 Escalation Level 2 bildirimi gösterildi: $med")
+                if (hasNotificationPermission(context) && medicineId.isNotEmpty()) {
+                    // 🔥 FIX: İlaç zaten alındı mı kontrol et
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val medicationLogRepository = MedicationLogRepository(
+                                context,
+                                FirebaseAuth.getInstance(),
+                                FirebaseFirestore.getInstance()
+                            )
+
+                            val alreadyLogged = medicationLogRepository.isMedicationLoggedForTime(
+                                medicineId = medicineId,
+                                scheduledTime = scheduledTime
+                            )
+
+                            if (alreadyLogged) {
+                                android.util.Log.d("NotificationActionReceiver", "⏭️ Escalation 2 atlandı - ilaç zaten loglandı: $med")
+                                return@launch
+                            }
+
+                            NotificationHelper.showEscalationLevel2Notification(
+                                context = context,
+                                medicineName = med,
+                                medicineId = medicineId,
+                                dosage = dosage,
+                                time = time,
+                                scheduledTime = scheduledTime
+                            )
+                            android.util.Log.d("NotificationActionReceiver", "🚨 Escalation Level 2 bildirimi gösterildi: $med")
+                        } catch (e: Exception) {
+                            android.util.Log.e("NotificationActionReceiver", "❌ Escalation 2 hatası", e)
+                        }
+                    }
                 }
             }
             "ACTION_ESCALATION_3" -> {
                 // 🔴 Escalation Level 3 (60 dakika sonra - IMPORTANT)
-                if (hasNotificationPermission(context)) {
-                    NotificationHelper.showEscalationLevel3Notification(
-                        context = context,
-                        medicineName = med,
-                        medicineId = medicineId,
-                        dosage = dosage,
-                        time = time,
-                        scheduledTime = scheduledTime
-                    )
-                    android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 bildirimi gösterildi: $med")
+                if (hasNotificationPermission(context) && medicineId.isNotEmpty()) {
+                    // 🔥 FIX: İlaç zaten alındı mı kontrol et
+                    CoroutineScope(Dispatchers.IO).launch {
+                        try {
+                            val medicationLogRepository = MedicationLogRepository(
+                                context,
+                                FirebaseAuth.getInstance(),
+                                FirebaseFirestore.getInstance()
+                            )
 
-                    // 🔥 FIX: İlacı MISSED olarak logla ve buddy'lere bildir
-                    if (medicineId.isNotEmpty()) {
-                        CoroutineScope(Dispatchers.IO).launch {
-                            try {
-                                val medicationLogRepository = MedicationLogRepository(
-                                    context,
-                                    FirebaseAuth.getInstance(),
-                                    FirebaseFirestore.getInstance()
-                                )
+                            val alreadyLogged = medicationLogRepository.isMedicationLoggedForTime(
+                                medicineId = medicineId,
+                                scheduledTime = scheduledTime
+                            )
 
-                                // İlacı MISSED olarak logla
-                                medicationLogRepository.logMedicationMissed(
-                                    medicineId = medicineId,
-                                    medicineName = med,
-                                    dosage = dosage,
-                                    scheduledTime = scheduledTime,
-                                    reason = "1 saat boyunca cevap verilmedi"
-                                )
-                                android.util.Log.d("NotificationActionReceiver", "❌ İlaç MISSED olarak loglandı: $med")
-
-                                // Kritik ilaç ise buddy'lere bildir
-                                val medicineRepository = MedicineRepository()
-                                val medicine = medicineRepository.getMedicineById(medicineId)
-                                if (medicine != null) {
-                                    val escalationManager = EscalationManager(context)
-                                    escalationManager.notifyBuddiesForSingleCriticalMedicine(medicine)
-                                    android.util.Log.d("NotificationActionReceiver", "🚨 Buddy bildirimi gönderildi: $med")
-                                }
-                            } catch (e: Exception) {
-                                android.util.Log.e("NotificationActionReceiver", "❌ MISSED loglama hatası: ${e.message}", e)
+                            if (alreadyLogged) {
+                                android.util.Log.d("NotificationActionReceiver", "⏭️ Escalation 3 atlandı - ilaç zaten loglandı: $med")
+                                return@launch
                             }
+
+                            NotificationHelper.showEscalationLevel3Notification(
+                                context = context,
+                                medicineName = med,
+                                medicineId = medicineId,
+                                dosage = dosage,
+                                time = time,
+                                scheduledTime = scheduledTime
+                            )
+                            android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 bildirimi gösterildi: $med")
+
+                            // İlacı MISSED olarak logla
+                            medicationLogRepository.logMedicationMissed(
+                                medicineId = medicineId,
+                                medicineName = med,
+                                dosage = dosage,
+                                scheduledTime = scheduledTime,
+                                reason = "1 saat boyunca cevap verilmedi"
+                            )
+                            android.util.Log.d("NotificationActionReceiver", "❌ İlaç MISSED olarak loglandı: $med")
+
+                            // Kritik ilaç ise buddy'lere bildir
+                            val medicineRepository = MedicineRepository()
+                            val medicine = medicineRepository.getMedicineById(medicineId)
+                            if (medicine != null) {
+                                val escalationManager = EscalationManager(context)
+                                escalationManager.notifyBuddiesForSingleCriticalMedicine(medicine)
+                                android.util.Log.d("NotificationActionReceiver", "🚨 Buddy bildirimi gönderildi: $med")
+                            }
+                        } catch (e: Exception) {
+                            android.util.Log.e("NotificationActionReceiver", "❌ Escalation 3 hatası: ${e.message}", e)
                         }
                     }
                 }
