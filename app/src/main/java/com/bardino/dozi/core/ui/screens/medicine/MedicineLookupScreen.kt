@@ -35,7 +35,6 @@ import androidx.navigation.NavController
 import com.bardino.dozi.core.data.Ilac
 import com.bardino.dozi.core.data.IlacJsonRepository
 import com.bardino.dozi.core.data.IlacSearchResult
-import com.bardino.dozi.core.data.OnboardingPreferences
 import com.bardino.dozi.core.ui.components.DoziTopBar
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.navigation.Screen
@@ -68,15 +67,8 @@ fun MedicineLookupScreen(
     var isSearching by remember { mutableStateOf(false) }
     var searchMode by remember { mutableStateOf("text") } // "text", "barcode", "voice"
 
-    // Onboarding'den ilaç eklendikten sonra geri dönme kontrolü
+    // Cache durumunu kontrol et
     LaunchedEffect(Unit) {
-        if (OnboardingPreferences.isInOnboarding(context) &&
-            OnboardingPreferences.getOnboardingStep(context) == "medicine_completed") {
-            // İlaç eklendi, onboarding'e geri dön
-            onNavigateBack()
-        }
-
-        // Cache durumunu kontrol et
         if (!com.bardino.dozi.core.data.MedicineLookupRepository.isInitialized()) {
             android.util.Log.w("MedicineLookupScreen", "⚠️ Medicine repository not initialized on screen load!")
             com.bardino.dozi.core.data.MedicineLookupRepository.initialize(context)
