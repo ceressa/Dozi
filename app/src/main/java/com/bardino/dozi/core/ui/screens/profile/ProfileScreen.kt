@@ -224,39 +224,43 @@ private fun ProfileContent(
                     )
 
                     // Premium Badge
-                    if (firestoreUser?.isPremium == true) {
-                        Spacer(modifier = Modifier.height(12.dp))
+                    Spacer(modifier = Modifier.height(12.dp))
 
-                        val isTrial = firestoreUser?.isTrial == true
-                        val expiryDate = firestoreUser?.premiumExpiryDate
-                        val dateFormat = SimpleDateFormat("dd MMM", Locale("tr"))
+                    val isCurrentlyPremium = firestoreUser?.isCurrentlyPremium() == true
+                    val isTrial = firestoreUser?.isTrial == true
+                    val daysRemaining = firestoreUser?.premiumDaysRemaining() ?: 0
 
-                        Surface(
-                            shape = RoundedCornerShape(20.dp),
-                            color = Color.White.copy(alpha = 0.2f)
+                    Surface(
+                        shape = RoundedCornerShape(20.dp),
+                        color = if (isCurrentlyPremium) Color.White.copy(alpha = 0.2f) else Color.White.copy(alpha = 0.15f)
+                    ) {
+                        Row(
+                            modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
-                            Row(
-                                modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
-                                verticalAlignment = Alignment.CenterVertically
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Star,
-                                    contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(16.dp)
-                                )
-                                Spacer(modifier = Modifier.width(6.dp))
-                                Text(
-                                    text = if (isTrial) {
-                                        if (expiryDate != null && expiryDate > 0) {
-                                            "Deneme - ${dateFormat.format(Date(expiryDate))}'e kadar"
-                                        } else "Deneme Sürümü"
-                                    } else "Dozi Ekstra",
-                                    style = MaterialTheme.typography.bodySmall,
-                                    fontWeight = FontWeight.SemiBold,
-                                    color = Color.White
-                                )
-                            }
+                            Icon(
+                                imageVector = if (isCurrentlyPremium) Icons.Default.Star else Icons.Default.StarBorder,
+                                contentDescription = null,
+                                tint = Color.White,
+                                modifier = Modifier.size(16.dp)
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = when {
+                                    isCurrentlyPremium && isTrial -> {
+                                        if (daysRemaining > 0) "Deneme - $daysRemaining gün kaldı"
+                                        else "Deneme Sürümü"
+                                    }
+                                    isCurrentlyPremium -> {
+                                        if (daysRemaining > 0) "Dozi Ekstra - $daysRemaining gün"
+                                        else "Dozi Ekstra"
+                                    }
+                                    else -> "Ücretsiz Plan"
+                                },
+                                style = MaterialTheme.typography.bodySmall,
+                                fontWeight = FontWeight.SemiBold,
+                                color = Color.White
+                            )
                         }
                     }
                 }
