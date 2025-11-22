@@ -118,18 +118,10 @@ class StreakManager(
             val newTotalMissed = currentStats.totalMedicationsMissed + missedCount
             val newTotalSkipped = currentStats.totalMedicationsSkipped + skippedCount
 
-            val totalAttempts = newTotalTaken + newTotalMissed + newTotalSkipped
-            val newComplianceRate = if (totalAttempts > 0) {
-                (newTotalTaken.toFloat() / totalAttempts.toFloat()) * 100
-            } else {
-                0f
-            }
-
             val updatedStats = currentStats.copy(
                 totalMedicationsTaken = newTotalTaken,
                 totalMedicationsMissed = newTotalMissed,
-                totalMedicationsSkipped = newTotalSkipped,
-                complianceRate = newComplianceRate
+                totalMedicationsSkipped = newTotalSkipped
             )
 
             firestore.collection(COLLECTION_USER_STATS)
@@ -137,7 +129,7 @@ class StreakManager(
                 .set(updatedStats)
                 .await()
 
-            Log.d(TAG, "✅ Stats updated: Taken=$newTotalTaken, Compliance=${newComplianceRate}%")
+            Log.d(TAG, "✅ Stats updated: Taken=$newTotalTaken, Missed=$newTotalMissed, Skipped=$newTotalSkipped")
         } catch (e: Exception) {
             Log.e(TAG, "Error updating stats", e)
         }
@@ -162,20 +154,14 @@ class StreakManager(
             }
 
             if (stats.currentStreak >= 365 && !stats.achievements.contains("year_streak")) {
-                newAchievements.add("year_streak" to ("Bir Yıl" to "365 gün üst üste ilaçlarınızı aldınız! İnanılmaz!"))
+                newAchievements.add("year_streak" to ("Bir Yıl" to "365 gün üst üste hatırlatmalarınızı kaçırmadınız! İnanılmaz!"))
                 Log.d(TAG, "🏆 Achievement unlocked: Bir Yıl!")
             }
 
-            // İlaç sayısı bazlı achievement'lar
-            if (stats.totalMedicationsTaken >= 100 && !stats.achievements.contains("hundred_meds")) {
-                newAchievements.add("hundred_meds" to ("Yüzlük Kulüp" to "Toplam 100 ilaç aldınız!"))
-                Log.d(TAG, "💯 Achievement unlocked: Yüzlük Kulüp!")
-            }
-
-            // Uyumluluk oranı bazlı achievement'lar
-            if (stats.complianceRate >= 100f && !stats.achievements.contains("perfect_month")) {
-                newAchievements.add("perfect_month" to ("Mükemmel Ay" to "%100 uyum oranına ulaştınız!"))
-                Log.d(TAG, "👑 Achievement unlocked: Mükemmel Ay!")
+            // 100 gün streak başarımı
+            if (stats.currentStreak >= 100 && !stats.achievements.contains("hundred_days")) {
+                newAchievements.add("hundred_days" to ("Efsane" to "100 gün üst üste hatırlatmalarınızı kaçırmadınız!"))
+                Log.d(TAG, "🌟 Achievement unlocked: Efsane!")
             }
 
             // Yeni achievement'lar varsa kaydet

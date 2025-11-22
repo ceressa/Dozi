@@ -24,8 +24,8 @@ class ShareCardGenerator @Inject constructor(
         val title: String,
         val description: String,
         val streak: Int,
-        val complianceRate: Int,
-        val totalDoses: Int
+        val longestStreak: Int,
+        val quickResponseCount: Int
     )
 
     /**
@@ -112,17 +112,17 @@ class ShareCardGenerator @Inject constructor(
                 alpha = 200
             }
 
-            // Sol stat - Seri
+            // Sol stat - Mevcut Seri
             canvas.drawText("${data.streak}", 200f, 700f, statsPaint)
             canvas.drawText("gün seri", 200f, 740f, statsLabelPaint)
 
-            // Orta stat - Uyumluluk
-            canvas.drawText("%${data.complianceRate}", width / 2f, 700f, statsPaint)
-            canvas.drawText("uyumluluk", width / 2f, 740f, statsLabelPaint)
+            // Orta stat - Rekor Seri
+            canvas.drawText("${data.longestStreak}", width / 2f, 700f, statsPaint)
+            canvas.drawText("rekor seri", width / 2f, 740f, statsLabelPaint)
 
-            // Sağ stat - Toplam doz
-            canvas.drawText("${data.totalDoses}", 880f, 700f, statsPaint)
-            canvas.drawText("doz", 880f, 740f, statsLabelPaint)
+            // Sağ stat - Hızlı Yanıt
+            canvas.drawText("${data.quickResponseCount}", 880f, 700f, statsPaint)
+            canvas.drawText("hızlı yanıt", 880f, 740f, statsLabelPaint)
 
             // Dozi branding
             val brandPaint = Paint().apply {
