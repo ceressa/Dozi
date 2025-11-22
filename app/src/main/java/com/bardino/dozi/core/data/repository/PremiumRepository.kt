@@ -78,9 +78,31 @@ class PremiumRepository @Inject constructor(
 
     /**
      * 3 günlük ücretsiz deneme başlat (onboarding için)
+     * NOT: Trial sadece bir kez verilebilir! trialUsedAt ile kontrol edilir.
      */
     suspend fun activateTrialPeriod(userId: String): Boolean {
         return try {
+            // Önce kullanıcının trial kullanıp kullanmadığını kontrol et
+            val userDoc = firestore.collection(USERS_COLLECTION)
+                .document(userId)
+                .get()
+                .await()
+
+            val trialUsedAt = userDoc.getLong("trialUsedAt")
+            val premiumExpiryDate = userDoc.getLong("premiumExpiryDate") ?: 0L
+
+            // Trial daha önce kullanıldıysa, tekrar verme
+            if (trialUsedAt != null) {
+                android.util.Log.d("PremiumRepository", "❌ Trial daha önce kullanılmış: $trialUsedAt")
+                return false
+            }
+
+            // Daha önce premium kullanıldıysa, trial verme
+            if (premiumExpiryDate > 0) {
+                android.util.Log.d("PremiumRepository", "❌ Daha önce premium kullanılmış")
+                return false
+            }
+
             val now = System.currentTimeMillis()
             val expiryDate = now + (com.bardino.dozi.core.common.Constants.TRIAL_DURATION_DAYS * 24 * 60 * 60 * 1000L)
 
@@ -92,8 +114,10 @@ class PremiumRepository @Inject constructor(
             // Analytics güncelle
             incrementTrialStarts()
 
+            android.util.Log.d("PremiumRepository", "✅ Trial aktivasyonu başarılı")
             true
         } catch (e: Exception) {
+            android.util.Log.e("PremiumRepository", "❌ Trial aktivasyonu hatası: ${e.message}")
             false
         }
     }

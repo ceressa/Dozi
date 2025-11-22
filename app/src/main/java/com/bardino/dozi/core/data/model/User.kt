@@ -37,6 +37,7 @@ val legacyPremiumPlanType: String? = null,
 
 val premiumExpiryDate: Long = 0L,            // Premium bitiş tarihi (timestamp)
     val premiumStartDate: Long = 0L,             // Premium başlangıç tarihi
+    val trialUsedAt: Long? = null,               // Trial ilk kez kullanıldığı tarih (null = hiç kullanmadı)
 
     // 🚫 Ban sistemi
     @PropertyName("isBanned")
