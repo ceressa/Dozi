@@ -24,6 +24,8 @@ import com.bardino.dozi.core.data.model.BadiRequestWithUser
 import com.bardino.dozi.core.ui.viewmodel.BadiViewModel
 import coil.compose.AsyncImage
 
+// Info Bottom Sheet için state
+
 /**
  * Badi Listesi Ekranı
  * Kullanıcının badilerini ve bekleyen isteklerini gösterir
@@ -38,10 +40,18 @@ fun BadiListScreen(
     viewModel: BadiViewModel = hiltViewModel()
 ) {
     val uiState by viewModel.uiState.collectAsState()
+    var showInfoSheet by remember { mutableStateOf(false) }
 
     // Log UI state changes
     LaunchedEffect(uiState.pendingRequests.size, uiState.badis.size) {
         android.util.Log.d("BadiListScreen", "UI State - Pending requests: ${uiState.pendingRequests.size}, Badis: ${uiState.badis.size}")
+    }
+
+    // Badi Info Bottom Sheet
+    if (showInfoSheet) {
+        BadiInfoBottomSheet(
+            onDismiss = { showInfoSheet = false }
+        )
     }
 
     Scaffold(
@@ -66,6 +76,9 @@ fun BadiListScreen(
                     }
                 },
                 actions = {
+                    IconButton(onClick = { showInfoSheet = true }) {
+                        Icon(Icons.Default.Info, "Badi Nedir?", tint = Color.White)
+                    }
                     IconButton(onClick = onNavigateToAddBadi) {
                         Icon(Icons.Default.PersonAdd, "Badi Ekle", tint = Color.White)
                     }

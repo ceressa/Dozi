@@ -27,6 +27,7 @@ import androidx.compose.ui.unit.dp
 import com.bardino.dozi.core.data.model.UserStats
 import com.bardino.dozi.core.data.model.Achievement
 import com.bardino.dozi.core.ui.components.DoziTopBar
+import com.bardino.dozi.core.ui.components.base.DoziInsightCard
 import com.bardino.dozi.core.ui.theme.*
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.unit.sp
@@ -81,6 +82,9 @@ fun StatsScreen(
                     // 🔥 Streak Kartı
                     StreakCard(stats = uiState.stats)
 
+                    // 💡 Öngörüler (Insights)
+                    InsightsSection(stats = uiState.stats)
+
                     // 📊 Haftalık Özet
                     WeeklySummaryCard(weeklyData = uiState.weeklyLogs)
 
@@ -89,6 +93,92 @@ fun StatsScreen(
 
                     // 📈 Uyumluluk Oranı
                     ComplianceCard(stats = uiState.stats)
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun InsightsSection(stats: UserStats?) {
+    val complianceRate = stats?.complianceRate ?: 0f
+    val currentStreak = stats?.currentStreak ?: 0
+
+    // Basit insight'lar oluştur (gerçek uygulamada GenerateInsightsUseCase kullanılır)
+    val insights = remember(stats) {
+        mutableListOf<Triple<String, String, String>>().apply {
+            // Trend analizi
+            when {
+                complianceRate >= 90f -> add(Triple(
+                    "Mükemmel Performans!",
+                    "%${complianceRate.toInt()} uyumluluk oranı ile harikasınız",
+                    "INFO"
+                ))
+                complianceRate >= 70f -> add(Triple(
+                    "İyi İlerleme",
+                    "Uyumluluğunuz %${complianceRate.toInt()}. Biraz daha dikkat ile mükemmel olabilirsiniz",
+                    "INFO"
+                ))
+                complianceRate >= 50f -> add(Triple(
+                    "Dikkat Gerekli",
+                    "Uyumluluğunuz %${complianceRate.toInt()}. Hatırlatma saatlerinizi gözden geçirin",
+                    "WARNING"
+                ))
+                complianceRate > 0f -> add(Triple(
+                    "Uyumluluk Düşük",
+                    "Uyumluluğunuz %${complianceRate.toInt()}. İlaçlarınızı almayı unutmayın",
+                    "CRITICAL"
+                ))
+            }
+
+            // Seri analizi
+            if (currentStreak >= 7) {
+                add(Triple(
+                    "Seri Başarısı!",
+                    "$currentStreak gündür hiç aksatmadınız. Harika!",
+                    "INFO"
+                ))
+            } else if (currentStreak == 0 && complianceRate > 0) {
+                add(Triple(
+                    "Seriyi Başlatın",
+                    "Bugün ilaçlarınızı alarak yeni bir seri başlatın",
+                    "WARNING"
+                ))
+            }
+        }
+    }
+
+    if (insights.isNotEmpty()) {
+        Card(
+            modifier = Modifier.fillMaxWidth(),
+            colors = CardDefaults.cardColors(containerColor = Color.White),
+            shape = RoundedCornerShape(20.dp),
+            elevation = CardDefaults.cardElevation(4.dp)
+        ) {
+            Column(
+                modifier = Modifier.padding(20.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
+            ) {
+                Text(
+                    "💡 Öngörüler",
+                    style = MaterialTheme.typography.titleLarge,
+                    fontWeight = FontWeight.Bold,
+                    color = MaterialTheme.colorScheme.onSurface
+                )
+
+                Spacer(Modifier.height(4.dp))
+
+                insights.forEach { (title, description, severity) ->
+                    DoziInsightCard(
+                        title = title,
+                        description = description,
+                        severity = severity,
+                        recommendation = when (severity) {
+                            "WARNING" -> "Hatırlatma ayarlarınızı kontrol edin"
+                            "CRITICAL" -> "İlaç rutininizi gözden geçirin"
+                            else -> null
+                        }
+                    )
                 }
             }
         }

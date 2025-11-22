@@ -1,6 +1,10 @@
 package com.bardino.dozi.navigation
 
 sealed class Screen(val route: String) {
+    // Onboarding
+    object Welcome : Screen("welcome")
+    object FirstMedicineWizard : Screen("first_medicine_wizard")
+
     // Auth
     object Login : Screen("login")
     object PremiumIntro : Screen("premium_intro")
