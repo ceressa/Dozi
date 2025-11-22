@@ -34,17 +34,19 @@ class GetUserSegmentUseCase @Inject constructor(
                 badis.size >= 2 -> UserSegment.FAMILY_USER
 
                 medicines.any { medicine ->
-                    medicine.endDate == null ||
-                    (medicine.endDate - medicine.startDate) > 90L * 24 * 60 * 60 * 1000
+                    val start = medicine.startDate
+                    val end = medicine.endDate
+                    end == null || (end - start) > 90L * 24 * 60 * 60 * 1000
                 } -> UserSegment.CHRONIC_USER
 
                 medicines.sumOf { it.times.size } >= 10 -> UserSegment.HIGH_FREQUENCY
 
-                medicines.all { medicine ->
-                    medicine.name.contains("vitamin", ignoreCase = true) ||
-                    medicine.name.contains("takviye", ignoreCase = true) ||
-                    medicine.name.contains("C vitamini", ignoreCase = true) ||
-                    medicine.name.contains("D vitamini", ignoreCase = true)
+                medicines.isNotEmpty() && medicines.all { medicine ->
+                    val n = medicine.name.lowercase()
+                    n.contains("vitamin") ||
+                            n.contains("takviye") ||
+                            n.contains("c vitamini") ||
+                            n.contains("d vitamini")
                 } -> UserSegment.VITAMIN_USER
 
                 else -> UserSegment.NEW_USER

@@ -104,6 +104,8 @@ dependencies {
     implementation("androidx.lifecycle:lifecycle-runtime-compose:2.8.6") // ✅ collectAsState için
     implementation(libs.play.services.code.scanner)
     implementation(libs.androidx.material3)
+    implementation ("com.google.firebase:firebase-perf-ktx")
+
 
     // 🎨 Compose
     val composeBom = platform("androidx.compose:compose-bom:2024.06.00")

@@ -35,6 +35,19 @@ class MedicineRepository @Inject constructor() {
         db.collection("users").document(user.uid).collection("medicines")
     }
 
+    suspend fun getMedicinesForUser(userId: String): List<Medicine> {
+        return if (FirebaseAuth.getInstance().currentUser?.uid == userId) {
+            getAllMedicines()
+        } else {
+            emptyList() // başka kullanıcıya erişim yok
+        }
+    }
+
+    suspend fun getMedicineCount(userId: String): Int {
+        return getMedicinesForUser(userId).size
+    }
+
+
     /**
      * Get all medicines for current user
      */

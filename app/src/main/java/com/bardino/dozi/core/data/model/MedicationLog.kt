@@ -3,40 +3,65 @@ package com.bardino.dozi.core.data.model
 import com.google.firebase.Timestamp
 import com.google.firebase.firestore.DocumentId
 import com.google.firebase.firestore.GeoPoint
-import com.google.firebase.firestore.ServerTimestamp
 
 /**
  * İlaç alma geçmişini temsil eder
+ *
+ * Firestore'da status STRING olarak saklanır (örn: "TAKEN").
+ * Uygulama içinde ENUM gibi kullanmak için statusEnum getter'ı tanımlıdır.
  */
 data class MedicationLog(
     @DocumentId
     val id: String = "",
-    val userId: String = "",                    // İlaç alan kullanıcı
-    val medicineId: String = "",                // İlaç ID
+
+    val userId: String = "",            // İlaç alan kullanıcı
+    val medicineId: String = "",        // İlaç ID
     val medicineName: String = "",
     val dosage: String = "",
-    val scheduledTime: Timestamp? = null,       // Planlanmış zaman
-    val takenAt: Timestamp? = null,             // Gerçek alma zamanı
-    val status: MedicationStatus = MedicationStatus.PENDING,
+
+    val scheduledTime: Timestamp? = null,   // Planlanmış zaman
+    val takenAt: Timestamp? = null,         // Gerçek alma zamanı
+
+    // Firestore STRING field (ENUM değil!)
+    val status: String = "PENDING",
+
     val notes: String? = null,
-    val sideEffects: List<String> = emptyList(), // Yan etkiler
-    val mood: String? = null,                   // Ruh hali
-    val location: GeoPoint? = null,             // Konum
-    @ServerTimestamp
-    val createdAt: Timestamp? = null,
-    @ServerTimestamp
-    val updatedAt: Timestamp? = null
-)
+    val sideEffects: List<String> = emptyList(),
+    val mood: String? = null,
+
+    val location: GeoPoint? = null,
+    val locationLat: Double? = null,
+    val locationLng: Double? = null,
+
+    // Timestamp değil Long (GenerateInsights / WeeklyReport için gerekli)
+    val createdAt: Long? = null,
+    val updatedAt: Long? = null
+) {
+    /**
+     * Uygulama içinde ENUM olarak kullanılır.
+     *
+     * Örnek:
+     * log.statusEnum == MedicationStatus.TAKEN
+     */
+    val statusEnum: MedicationStatus
+        get() = MedicationStatus.from(status)
+}
 
 /**
- * İlaç alma durumu
+ * ENUM – uygulamanın geri kalanı hâlâ ENUM ile çalışıyor
  */
 enum class MedicationStatus {
-    PENDING,    // Beklemede (henüz zaman gelmedi)
-    TAKEN,      // Alındı
-    SKIPPED,    // Atlandı (kullanıcı atlayı dedi)
-    MISSED,     // Kaçırıldı (zaman geçti, alınmadı)
-    SNOOZED     // Ertelendi
+    PENDING,
+    TAKEN,
+    SKIPPED,
+    MISSED,
+    SNOOZED;
+
+    companion object {
+        fun from(value: String?): MedicationStatus {
+            return entries.firstOrNull { it.name == value } ?: PENDING
+        }
+    }
 }
 
 /**
@@ -73,7 +98,7 @@ data class MedicationLogWithMedicine(
  * Günlük ilaç geçmişi
  */
 data class DailyMedicationLogs(
-    val date: String,                           // "2025-11-14"
+    val date: String,               // "2025-11-14"
     val logs: List<MedicationLog>,
     val takenCount: Int,
     val missedCount: Int,

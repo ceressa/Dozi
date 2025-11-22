@@ -114,9 +114,9 @@ private fun ProfileContent(
                     android.util.Log.d("ProfileScreen", "  - isTrial: ${u.isTrial}")
                     android.util.Log.d("ProfileScreen", "  - planType: ${u.planType}")
                     android.util.Log.d("ProfileScreen", "  - premiumExpiryDate: ${u.premiumExpiryDate}")
-                    android.util.Log.d("ProfileScreen", "  - isCurrentlyPremium(): ${u.isCurrentlyPremium()}")
-                    android.util.Log.d("ProfileScreen", "  - premiumDaysRemaining(): ${u.premiumDaysRemaining()}")
-                    android.util.Log.d("ProfileScreen", "  - premiumPlanType(): ${u.premiumPlanType()}")
+                    android.util.Log.d("ProfileScreen", "  - isCurrentlyPremium(): ${u.currentlyPremium()}")
+                    android.util.Log.d("ProfileScreen", "  - premiumDaysRemaining(): ${u.remainingPremiumDays()}")
+                    android.util.Log.d("ProfileScreen", "  - premiumPlanType(): ${u.resolvedPremiumPlanType()}")
                 }
                 isLoading = false
             } catch (e: Exception) {

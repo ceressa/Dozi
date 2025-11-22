@@ -168,9 +168,9 @@ fun BadiInfoCard(badi: BadiWithUser) {
 
 @Composable
 fun MedicationStatsCard(logs: List<MedicationLog>) {
-    val takenCount = logs.count { it.status == MedicationStatus.TAKEN }
-    val missedCount = logs.count { it.status == MedicationStatus.MISSED }
-    val skippedCount = logs.count { it.status == MedicationStatus.SKIPPED }
+    val takenCount = logs.count { it.status == MedicationStatus.TAKEN.name }
+    val missedCount = logs.count { it.status == MedicationStatus.MISSED.name }
+    val skippedCount = logs.count { it.status == MedicationStatus.SKIPPED.name }
     val totalCount = logs.size
 
     val adherenceRate = if (totalCount > 0) {
@@ -290,14 +290,14 @@ fun MedicationLogCard(log: MedicationLog) {
             Surface(
                 shape = CircleShape,
                 color = when (log.status) {
-                    MedicationStatus.TAKEN -> MaterialTheme.colorScheme.primaryContainer
-                    MedicationStatus.MISSED -> MaterialTheme.colorScheme.errorContainer
-                    MedicationStatus.SKIPPED -> MaterialTheme.colorScheme.tertiaryContainer
+                    MedicationStatus.TAKEN.name -> MaterialTheme.colorScheme.primaryContainer
+                    MedicationStatus.MISSED.name -> MaterialTheme.colorScheme.errorContainer
+                    MedicationStatus.SKIPPED.name -> MaterialTheme.colorScheme.tertiaryContainer
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
             ) {
                 Text(
-                    log.status.toEmoji(),
+                    MedicationStatus.valueOf(log.status).toEmoji(),
                     modifier = Modifier.padding(12.dp),
                     style = MaterialTheme.typography.headlineSmall
                 )
@@ -328,14 +328,14 @@ fun MedicationLogCard(log: MedicationLog) {
             Surface(
                 shape = RoundedCornerShape(8.dp),
                 color = when (log.status) {
-                    MedicationStatus.TAKEN -> MaterialTheme.colorScheme.primaryContainer
-                    MedicationStatus.MISSED -> MaterialTheme.colorScheme.errorContainer
-                    MedicationStatus.SKIPPED -> MaterialTheme.colorScheme.tertiaryContainer
+                    MedicationStatus.TAKEN.name -> MaterialTheme.colorScheme.primaryContainer
+                    MedicationStatus.MISSED.name -> MaterialTheme.colorScheme.errorContainer
+                    MedicationStatus.SKIPPED.name -> MaterialTheme.colorScheme.tertiaryContainer
                     else -> MaterialTheme.colorScheme.surfaceVariant
                 }
             ) {
                 Text(
-                    log.status.toTurkish(),
+                    MedicationStatus.valueOf(log.status).toTurkish(),
                     modifier = Modifier.padding(horizontal = 12.dp, vertical = 6.dp),
                     style = MaterialTheme.typography.labelMedium,
                     fontWeight = FontWeight.Bold

@@ -45,7 +45,7 @@ object SmartReminderHelper {
             // Son 14 gün içinde bu ilaç için alınan/ertelenen logları al
             val startTime = System.currentTimeMillis() - (ANALYSIS_DAYS * 24 * 60 * 60 * 1000L)
             val logs = logRepository.getLogsForMedicine(medicineId, startTime)
-            val snoozedLogs = logs.filter { it.status == MedicationStatus.SNOOZED }
+            val snoozedLogs = logs.filter { it.status == MedicationStatus.SNOOZED.name }
 
             // Eğer yeterli örnek varsa, pattern analizi yap
             if (snoozedLogs.size >= MIN_SAMPLES) {
@@ -117,7 +117,7 @@ object SmartReminderHelper {
             // Son N hatırlatmayı analiz et
             val startTime = System.currentTimeMillis() - (ANALYSIS_DAYS * 24 * 60 * 60 * 1000L)
             val logs = logRepository.getLogsForMedicine(medicineId, startTime)
-            val takenLogs = logs.filter { it.status == MedicationStatus.TAKEN && it.takenAt != null && it.scheduledTime != null }
+            val takenLogs = logs.filter { it.status == MedicationStatus.TAKEN.name && it.takenAt != null && it.scheduledTime != null }
 
             // Eğer yeterli örnek varsa, gecikme analizi yap
             if (takenLogs.size >= MIN_SAMPLES) {

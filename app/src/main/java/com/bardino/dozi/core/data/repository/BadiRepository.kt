@@ -104,6 +104,22 @@ class BadiRepository(
         }
     }
 
+    suspend fun getBadisForUser(userId: String): List<Badi> {
+        return try {
+            val snapshot = db.collection("buddies")
+                .whereEqualTo("userId", userId)
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(Badi::class.java)?.copy(id = doc.id)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+
     /**
      * İki kullanıcı arasında badi ilişkisi var mı kontrol et
      */

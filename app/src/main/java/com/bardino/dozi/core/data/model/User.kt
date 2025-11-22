@@ -25,16 +25,17 @@ data class User(
     @PropertyName("isTrial")
     val isTrial: Boolean = false,                // Deneme sürümü mü?
 
-    @get:PropertyName("premiumPlanType")
-    val legacyPremiumPlanType: String? = null,   // V1/V2 plan alanı
+    @Exclude
+    val legacyPremiumFlag: Boolean = false,
 
-    @get:PropertyName("premium")
-    val legacyPremiumFlag: Boolean = false,      // Legacy premium bayrağı
+    @Exclude
+val legacyCurrentlyPremium: Boolean = false,
 
-    @get:PropertyName("currentlyPremium")
-    val legacyCurrentlyPremium: Boolean = false, // Legacy aktif premium bayrağı
+@Exclude
+val legacyPremiumPlanType: String? = null,
 
-    val premiumExpiryDate: Long = 0L,            // Premium bitiş tarihi (timestamp)
+
+val premiumExpiryDate: Long = 0L,            // Premium bitiş tarihi (timestamp)
     val premiumStartDate: Long = 0L,             // Premium başlangıç tarihi
 
     // 🚫 Ban sistemi
@@ -80,38 +81,42 @@ data class User(
     val locations: List<Map<String, Any>> = emptyList()  // Kayıtlı konumlar listesi
 ) {
     /**
-     * Kullanıcının şu anda premium olup olmadığını kontrol eder
+     * Kullanıcının şu anda premium olup olmadığını döndürür.
+     * Getter conflict yaşamamak için is-prefiksli değildir.
      */
-    @get:Exclude
-    fun isCurrentlyPremium(): Boolean {
+    @Exclude
+    fun currentlyPremium(): Boolean {
         return premiumStatus().isActive
     }
 
     /**
-     * Premium'un kaç gün kaldığını hesaplar
+     * Premium'un kaç gün kaldığını hesaplar.
+     * Getter olarak algılanmaması için renamed.
      */
-    @get:Exclude
-    fun premiumDaysRemaining(): Int {
+    @Exclude
+    fun remainingPremiumDays(): Int {
         return premiumStatus().daysRemaining()
     }
 
     /**
-     * Plan tipini PremiumPlanType enum'a çevirir
+     * Plan tipini PremiumPlanType olarak döndürür.
      */
-    @get:Exclude
-    fun premiumPlanType(): PremiumPlanType {
+    @Exclude
+    fun resolvedPremiumPlanType(): PremiumPlanType {
         return premiumStatus().planType
     }
 
     /**
-     * Premium durumunu normalize eder ve tek noktadan hesaplar
+     * Premium durumunu normalize eder ve tek noktadan hesaplar.
      */
-    @get:Exclude
+    @Exclude
     fun premiumStatus(now: Long = System.currentTimeMillis()): PremiumStatus {
         val planType = resolvePlanType()
         val expiry = premiumExpiryDate
 
-        val hasPremiumFlag = isPremium || legacyPremiumFlag || legacyCurrentlyPremium || planType.isPremium()
+        val hasPremiumFlag =
+            isPremium || legacyPremiumFlag || legacyCurrentlyPremium || planType.isPremium()
+
         val isActive = hasPremiumFlag && expiry > now && planType != PremiumPlanType.FREE
         val isTrialActive = isTrial && isActive
 
@@ -131,6 +136,8 @@ data class User(
             source = source
         )
     }
+
+
 
     private fun resolvePlanType(): PremiumPlanType {
         val normalizedPlanId = normalizePlanId(planType)

@@ -1,140 +1,142 @@
-package com.bardino.dozi.core.ui.components
+package com.bardino.dozi.core.sync.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.material3.Card
+import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.runtime.*
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.unit.dp
+import com.bardino.dozi.core.data.repository.MedicationLogRepository
+import com.bardino.dozi.core.data.repository.UserStatsRepository
 import com.bardino.dozi.core.sync.SyncMonitor
-import com.bardino.dozi.core.ui.components.base.*
 import kotlinx.coroutines.launch
 
-/**
- * Admin Dashboard için senkronizasyon durumu paneli
- */
 @Composable
 fun SyncMonitorPanel(
-    syncMonitor: SyncMonitor,
+    medicationLogRepository: MedicationLogRepository,
+    userStatsRepository: UserStatsRepository,
     modifier: Modifier = Modifier
 ) {
-    var metrics by remember { mutableStateOf<SyncMonitor.SyncMetrics?>(null) }
-    var health by remember { mutableStateOf(SyncMonitor.SyncHealth.HEALTHY) }
     val scope = rememberCoroutineScope()
 
+    var metrics by remember { mutableStateOf<SyncMonitor.SyncMetrics?>(null) }
+    var health by remember { mutableStateOf(SyncMonitor.SyncHealth.EXCELLENT) }
+    var loading by remember { mutableStateOf(true) }
+
     LaunchedEffect(Unit) {
-        scope.launch {
-            metrics = syncMonitor.getMetrics()
-            health = syncMonitor.checkHealth()
-        }
+        loading = true
+        val m = SyncMonitor.getMetrics(medicationLogRepository)
+        metrics = m
+        health = SyncMonitor.checkHealth(m)
+        loading = false
     }
 
-    DoziCard(modifier = modifier.fillMaxWidth()) {
-        Column {
-            // Başlık
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween
-            ) {
-                Text(
-                    text = "Senkronizasyon Durumu",
-                    style = DoziTypography.subtitle1,
-                    color = DoziColors.OnSurface
-                )
+    Card(
+        modifier = modifier
+            .fillMaxWidth()
+            .padding(16.dp),
+        colors = CardDefaults.cardColors(
+            containerColor = MaterialTheme.colorScheme.surface
+        ),
+        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp)
+    ) {
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp)
+        ) {
+            Text(
+                text = "Sync Monitor",
+                style = MaterialTheme.typography.titleMedium
+            )
 
-                // Sağlık göstergesi
-                Text(
-                    text = when (health) {
-                        SyncMonitor.SyncHealth.HEALTHY -> "✅ Sağlıklı"
-                        SyncMonitor.SyncHealth.WARNING -> "⚠️ Uyarı"
-                        SyncMonitor.SyncHealth.CRITICAL -> "🔴 Kritik"
-                    },
-                    style = DoziTypography.caption,
-                    color = when (health) {
-                        SyncMonitor.SyncHealth.HEALTHY -> DoziColors.Success
-                        SyncMonitor.SyncHealth.WARNING -> DoziColors.Warning
-                        SyncMonitor.SyncHealth.CRITICAL -> DoziColors.Error
+            Spacer(modifier = Modifier.height(8.dp))
+
+            if (loading || metrics == null) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    CircularProgressIndicator(
+                        modifier = Modifier.size(20.dp),
+                        strokeWidth = 2.dp
+                    )
+                    Text("Senkronizasyon durumu yükleniyor…")
+                }
+            } else {
+                val m = metrics!!
+
+                val healthText: String
+                val healthColor = when (health) {
+                    SyncMonitor.SyncHealth.EXCELLENT -> {
+                        healthText = "Mükemmel"
+                        MaterialTheme.colorScheme.primary
                     }
-                )
-            }
+                    SyncMonitor.SyncHealth.GOOD -> {
+                        healthText = "İyi"
+                        MaterialTheme.colorScheme.tertiary
+                    }
+                    SyncMonitor.SyncHealth.WARNING -> {
+                        healthText = "Uyarı"
+                        MaterialTheme.colorScheme.error
+                    }
+                    SyncMonitor.SyncHealth.CRITICAL -> {
+                        healthText = "Kritik"
+                        MaterialTheme.colorScheme.error
+                    }
+                }
 
-            Spacer(modifier = Modifier.height(DoziSpacing.md))
-
-            metrics?.let { m ->
-                // Metrikler
                 Row(
                     modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
                 ) {
-                    MetricItem(
-                        label = "Bekleyen",
-                        value = m.pendingCount.toString()
-                    )
-                    MetricItem(
-                        label = "Başarısız (24s)",
-                        value = m.failedLast24h.toString(),
-                        valueColor = if (m.failedLast24h > 5) DoziColors.Error else DoziColors.OnSurface
-                    )
-                    MetricItem(
-                        label = "Ort. Gecikme",
-                        value = "${m.averageDelayMs / 1000}s"
-                    )
+                    Column {
+                        Text(
+                            text = "Sağlık Durumu",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        Text(
+                            text = healthText,
+                            color = healthColor,
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
+
+                    Column(horizontalAlignment = Alignment.End) {
+                        Text(
+                            text = "Bekleyen log sayısı",
+                            style = MaterialTheme.typography.labelMedium
+                        )
+                        Text(
+                            text = "${m.unsyncedCount}",
+                            style = MaterialTheme.typography.bodyLarge
+                        )
+                    }
                 }
 
-                // Uyarılar
-                if (m.failedLast24h > 10) {
-                    Spacer(modifier = Modifier.height(DoziSpacing.sm))
-                    Text(
-                        text = "⚠️ Yüksek hata oranı tespit edildi",
-                        style = DoziTypography.caption,
-                        color = DoziColors.Error
-                    )
-                }
+                Spacer(modifier = Modifier.height(12.dp))
 
-                if (m.oldestPendingAge > 60 * 60 * 1000) { // 1 saat
-                    Spacer(modifier = Modifier.height(DoziSpacing.xs))
-                    Text(
-                        text = "⏱️ En eski bekleyen ${m.oldestPendingAge / 60000} dakikadır kuyrukta",
-                        style = DoziTypography.caption,
-                        color = DoziColors.Warning
-                    )
+                // Gerekirse manuel yeniden hesaplama butonu vs. ekleyebilirsin
+                // Örneğin:
+                /*
+                Button(onClick = {
+                    scope.launch {
+                        SyncMonitor.recalculateStats(medicationLogRepository, userStatsRepository)
+                        val newMetrics = SyncMonitor.getMetrics(medicationLogRepository)
+                        metrics = newMetrics
+                        health = SyncMonitor.checkHealth(newMetrics)
+                    }
+                }) {
+                    Text("İstatistikleri Yeniden Hesapla")
                 }
-
-                // Son senkronizasyon
-                if (m.lastSyncTime > 0) {
-                    Spacer(modifier = Modifier.height(DoziSpacing.sm))
-                    val minutesAgo = (System.currentTimeMillis() - m.lastSyncTime) / 60000
-                    Text(
-                        text = "Son senkronizasyon: $minutesAgo dakika önce",
-                        style = DoziTypography.caption,
-                        color = DoziColors.OnSurface.copy(alpha = 0.7f)
-                    )
-                }
-            } ?: run {
-                Text(
-                    text = "Yükleniyor...",
-                    style = DoziTypography.body2,
-                    color = DoziColors.OnSurface.copy(alpha = 0.5f)
-                )
+                */
             }
         }
-    }
-}
-
-@Composable
-private fun MetricItem(
-    label: String,
-    value: String,
-    valueColor: androidx.compose.ui.graphics.Color = DoziColors.OnSurface
-) {
-    Column {
-        Text(
-            text = value,
-            style = DoziTypography.h3,
-            color = valueColor
-        )
-        Text(
-            text = label,
-            style = DoziTypography.caption,
-            color = DoziColors.OnSurface.copy(alpha = 0.7f)
-        )
     }
 }

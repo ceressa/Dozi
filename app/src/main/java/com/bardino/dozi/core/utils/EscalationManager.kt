@@ -86,7 +86,7 @@ class EscalationManager(
         for (medicine in criticalMedicines) {
             // İlacın loglarını kontrol et
             val logs = medicationLogRepository.getLogsForMedicine(medicine.id, startTime)
-            val missedLogs = logs.filter { it.status == MedicationStatus.MISSED }
+            val missedLogs = logs.filter { it.status == MedicationStatus.MISSED.name }
             missedCount += missedLogs.size
         }
 

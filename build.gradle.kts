@@ -20,6 +20,8 @@ plugins {
 
     // Hilt (Dependency Injection)
     id("com.google.dagger.hilt.android") version "2.51.1" apply false
+
+    id("com.google.firebase.firebase-perf") version "2.0.2" apply false
 }
 
 // Clean task

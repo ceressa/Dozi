@@ -1,16 +1,21 @@
 package com.bardino.dozi.core.data.repository
 
 import android.content.Context
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
 import com.bardino.dozi.core.data.local.DoziDatabase
 import com.bardino.dozi.core.data.local.entity.MedicationLogEntity
-import com.bardino.dozi.core.data.local.entity.SyncQueueEntity
 import com.bardino.dozi.core.data.local.entity.SyncActionType
-import com.bardino.dozi.core.data.model.*
+import com.bardino.dozi.core.data.local.entity.SyncQueueEntity
+import com.bardino.dozi.core.data.model.DailyMedicationLogs
+import com.bardino.dozi.core.data.model.MedicationLog
+import com.bardino.dozi.core.data.model.MedicationStatus
+import com.bardino.dozi.core.data.model.MedicationStats
+import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
-import com.google.firebase.Timestamp
 import com.google.gson.Gson
 import kotlinx.coroutines.channels.awaitClose
 import kotlinx.coroutines.flow.Flow
@@ -19,7 +24,10 @@ import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.time.LocalDate
 import java.time.ZoneId
-import java.util.*
+import java.util.Calendar
+import java.util.Date
+import java.util.Locale
+import java.util.UUID
 
 /**
  * İlaç alma geçmişini yöneten repository (Offline-first with Room DB)
@@ -55,7 +63,6 @@ class MedicationLogRepository(
             val logId = UUID.randomUUID().toString()
             val now = System.currentTimeMillis()
 
-            // 1. ✅ Save to Room DB immediately (offline support)
             val entity = MedicationLogEntity(
                 id = logId,
                 userId = userId,
@@ -64,26 +71,24 @@ class MedicationLogRepository(
                 dosage = log.dosage,
                 scheduledTime = log.scheduledTime?.toDate()?.time ?: now,
                 takenAt = log.takenAt?.toDate()?.time,
-                status = log.status.name,
+                status = log.status, // String
                 notes = log.notes,
                 sideEffects = gson.toJson(log.sideEffects),
                 mood = log.mood,
-                locationLat = log.location?.latitude,
-                locationLng = log.location?.longitude,
+                locationLat = log.locationLat ?: log.location?.latitude,
+                locationLng = log.locationLng ?: log.location?.longitude,
                 createdAt = now,
                 updatedAt = now,
                 isSynced = false
             )
             medicationLogDao.insert(entity)
 
-            // 2. ✅ Queue for Firestore sync
             val syncData = mapOf(
                 "logId" to logId,
                 "log" to gson.toJson(log.copy(id = logId, userId = userId))
             )
             queueForSync(SyncActionType.MEDICATION_TAKEN, syncData)
 
-            // 3. ✅ Try to sync immediately (if online)
             syncPendingLogs()
 
             Log.d(TAG, "✅ Medication log created: $logId")
@@ -94,9 +99,6 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * Quick helpers for common actions (used by HomeScreen)
-     */
     suspend fun logMedicationTaken(
         medicineId: String,
         medicineName: String,
@@ -110,7 +112,7 @@ class MedicationLogRepository(
             dosage = dosage,
             scheduledTime = Timestamp(Date(scheduledTime)),
             takenAt = Timestamp(Date()),
-            status = MedicationStatus.TAKEN,
+            status = MedicationStatus.TAKEN.name,
             notes = notes
         )
         return createMedicationLog(log)
@@ -128,7 +130,7 @@ class MedicationLogRepository(
             medicineName = medicineName,
             dosage = dosage,
             scheduledTime = Timestamp(Date(scheduledTime)),
-            status = MedicationStatus.SKIPPED,
+            status = MedicationStatus.SKIPPED.name,
             notes = reason
         )
         return createMedicationLog(log)
@@ -146,7 +148,7 @@ class MedicationLogRepository(
             medicineName = medicineName,
             dosage = dosage,
             scheduledTime = Timestamp(Date(scheduledTime)),
-            status = MedicationStatus.MISSED,
+            status = MedicationStatus.MISSED.name,
             notes = reason
         )
         return createMedicationLog(log)
@@ -164,15 +166,12 @@ class MedicationLogRepository(
             medicineName = medicineName,
             dosage = dosage,
             scheduledTime = Timestamp(Date(scheduledTime)),
-            status = MedicationStatus.SNOOZED,
+            status = MedicationStatus.SNOOZED.name,
             notes = "Snoozed for $snoozeMinutes minutes"
         )
         return createMedicationLog(log)
     }
 
-    /**
-     * Queue action for Firestore sync
-     */
     private suspend fun queueForSync(actionType: String, data: Map<String, Any?>) {
         try {
             val userId = currentUserId ?: return
@@ -190,9 +189,6 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * Sync pending logs to Firestore
-     */
     suspend fun syncPendingLogs(): Int {
         val userId = currentUserId ?: return 0
 
@@ -209,16 +205,12 @@ class MedicationLogRepository(
                     if (logJson != null && logId != null) {
                         val log = gson.fromJson(logJson, MedicationLog::class.java)
 
-                        // Sync to Firestore
                         db.collection("medication_logs")
                             .document(logId)
                             .set(log)
                             .await()
 
-                        // Mark as synced in Room
                         medicationLogDao.markAsSynced(logId)
-
-                        // Remove from sync queue
                         syncQueueDao.deleteById(action.id)
                         syncedCount++
 
@@ -242,17 +234,11 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * Get unsynced logs count
-     */
     suspend fun getUnsyncedCount(): Int {
         val userId = currentUserId ?: return 0
         return syncQueueDao.getPendingCount(userId)
     }
 
-    /**
-     * İlaç log'unu güncelle
-     */
     suspend fun updateMedicationLog(logId: String, updates: Map<String, Any>): Result<Unit> {
         return try {
             db.collection("medication_logs")
@@ -265,9 +251,6 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * İlaç durumunu güncelle (Alındı, Atlandı, vb.)
-     */
     suspend fun updateMedicationStatus(
         logId: String,
         status: MedicationStatus,
@@ -276,7 +259,7 @@ class MedicationLogRepository(
         return try {
             val updates = mutableMapOf<String, Any>(
                 "status" to status.name,
-                "updatedAt" to com.google.firebase.firestore.FieldValue.serverTimestamp()
+                "updatedAt" to System.currentTimeMillis()
             )
 
             if (takenAt != null) {
@@ -285,7 +268,7 @@ class MedicationLogRepository(
 
             db.collection("medication_logs")
                 .document(logId)
-                .update(updates)
+                .update(updates as Map<String, Any>)
                 .await()
             Result.success(Unit)
         } catch (e: Exception) {
@@ -293,9 +276,6 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * Kullanıcının tüm ilaç geçmişini real-time dinle
-     */
     fun getMedicationLogsFlow(): Flow<List<MedicationLog>> = callbackFlow {
         val userId = currentUserId ?: run {
             close()
@@ -322,9 +302,6 @@ class MedicationLogRepository(
         awaitClose { listener.remove() }
     }
 
-    /**
-     * Belirli bir tarih aralığındaki ilaç geçmişini getir
-     */
     suspend fun getMedicationLogsByDateRange(
         startDate: Timestamp,
         endDate: Timestamp
@@ -348,9 +325,7 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * Belirli bir LocalDate için ilaç loglarını getir
-     */
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun getMedicationLogsForDate(date: LocalDate): List<MedicationLog> {
         val startOfDay = date.atStartOfDay(ZoneId.systemDefault())
         val endOfDay = date.plusDays(1).atStartOfDay(ZoneId.systemDefault())
@@ -361,12 +336,6 @@ class MedicationLogRepository(
         return getMedicationLogsByDateRange(startTimestamp, endTimestamp)
     }
 
-    /**
-     * 🔥 Belirli bir ilaç için belirli bir zamanda log var mı kontrol et
-     * Escalation handler'ları için kullanılır (duplicate bildirim önleme)
-     *
-     * TAKEN, SKIPPED veya SNOOZED durumlarından biri varsa true döner
-     */
     suspend fun isMedicationLoggedForTime(
         medicineId: String,
         scheduledTime: Long
@@ -374,21 +343,23 @@ class MedicationLogRepository(
         val userId = currentUserId ?: return false
 
         return try {
-            // 1. Önce Room DB'yi kontrol et (hızlı, offline)
             val localLog = medicationLogDao.getLogForMedicineAndTime(
                 medicineId = medicineId,
                 scheduledTime = scheduledTime,
                 userId = userId
             )
 
-            if (localLog != null && localLog.status in listOf("TAKEN", "SKIPPED", "SNOOZED")) {
+            if (localLog != null && localLog.status in listOf(
+                    MedicationStatus.TAKEN.name,
+                    MedicationStatus.SKIPPED.name,
+                    MedicationStatus.SNOOZED.name
+                )
+            ) {
                 Log.d(TAG, "✅ Local DB'de log bulundu: $medicineId - ${localLog.status}")
                 return true
             }
 
-            // 2. Firestore'u kontrol et (online)
-            // scheduledTime ±5 dakika toleransla kontrol et
-            val tolerance = 5 * 60 * 1000 // 5 dakika
+            val tolerance = 5 * 60 * 1000
             val startTime = Timestamp(Date(scheduledTime - tolerance))
             val endTime = Timestamp(Date(scheduledTime + tolerance))
 
@@ -402,7 +373,11 @@ class MedicationLogRepository(
 
             val hasLog = snapshot.documents.any { doc ->
                 val status = doc.getString("status")
-                status in listOf("TAKEN", "SKIPPED", "SNOOZED")
+                status in listOf(
+                    MedicationStatus.TAKEN.name,
+                    MedicationStatus.SKIPPED.name,
+                    MedicationStatus.SNOOZED.name
+                )
             }
 
             if (hasLog) {
@@ -412,14 +387,10 @@ class MedicationLogRepository(
             hasLog
         } catch (e: Exception) {
             Log.e(TAG, "❌ isMedicationLoggedForTime hatası", e)
-            // Hata durumunda false dön (bildirim gösterilsin)
             false
         }
     }
 
-    /**
-     * Bugünkü ilaç geçmişini getir
-     */
     suspend fun getTodayMedicationLogs(): DailyMedicationLogs {
         val today = Calendar.getInstance().apply {
             set(Calendar.HOUR_OF_DAY, 0)
@@ -441,16 +412,13 @@ class MedicationLogRepository(
         return DailyMedicationLogs(
             date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(today.time),
             logs = logs,
-            takenCount = logs.count { it.status == MedicationStatus.TAKEN },
-            missedCount = logs.count { it.status == MedicationStatus.MISSED },
-            skippedCount = logs.count { it.status == MedicationStatus.SKIPPED },
+            takenCount = logs.count { it.status == MedicationStatus.TAKEN.name },
+            missedCount = logs.count { it.status == MedicationStatus.MISSED.name },
+            skippedCount = logs.count { it.status == MedicationStatus.SKIPPED.name },
             totalCount = logs.size
         )
     }
 
-    /**
-     * Son 7 günlük ilaç geçmişini getir
-     */
     suspend fun getWeeklyMedicationLogs(): List<DailyMedicationLogs> {
         val result = mutableListOf<DailyMedicationLogs>()
 
@@ -477,9 +445,9 @@ class MedicationLogRepository(
                 DailyMedicationLogs(
                     date = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault()).format(day.time),
                     logs = logs,
-                    takenCount = logs.count { it.status == MedicationStatus.TAKEN },
-                    missedCount = logs.count { it.status == MedicationStatus.MISSED },
-                    skippedCount = logs.count { it.status == MedicationStatus.SKIPPED },
+                    takenCount = logs.count { it.status == MedicationStatus.TAKEN.name },
+                    missedCount = logs.count { it.status == MedicationStatus.MISSED.name },
+                    skippedCount = logs.count { it.status == MedicationStatus.SKIPPED.name },
                     totalCount = logs.size
                 )
             )
@@ -488,9 +456,6 @@ class MedicationLogRepository(
         return result
     }
 
-    /**
-     * Belirli bir ilaç için geçmişi getir
-     */
     suspend fun getMedicationLogsByMedicineId(medicineId: String): List<MedicationLog> {
         val userId = currentUserId ?: return emptyList()
 
@@ -511,10 +476,6 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * Belirli bir ilaç için belirli bir zamandan sonraki logları getir
-     * EscalationManager ve SmartReminderHelper tarafından kullanılır
-     */
     suspend fun getLogsForMedicine(medicineId: String, startTime: Long): List<MedicationLog> {
         val userId = currentUserId ?: return emptyList()
 
@@ -538,9 +499,6 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * Badinin ilaç geçmişini getir (buddy permission kontrolü yapılmalı)
-     */
     suspend fun getBuddyMedicationLogs(buddyUserId: String): List<MedicationLog> {
         return try {
             val snapshot = db.collection("medication_logs")
@@ -558,9 +516,6 @@ class MedicationLogRepository(
         }
     }
 
-    /**
-     * İlaç alma istatistikleri
-     */
     suspend fun getMedicationStats(days: Int = 30): MedicationStats {
         val userId = currentUserId ?: return MedicationStats()
 
@@ -573,9 +528,9 @@ class MedicationLogRepository(
             Timestamp(Date())
         )
 
-        val takenCount = logs.count { it.status == MedicationStatus.TAKEN }
-        val missedCount = logs.count { it.status == MedicationStatus.MISSED }
-        val skippedCount = logs.count { it.status == MedicationStatus.SKIPPED }
+        val takenCount = logs.count { it.status == MedicationStatus.TAKEN.name }
+        val missedCount = logs.count { it.status == MedicationStatus.MISSED.name }
+        val skippedCount = logs.count { it.status == MedicationStatus.SKIPPED.name }
         val totalCount = logs.size
 
         return MedicationStats(
@@ -586,15 +541,65 @@ class MedicationLogRepository(
             adherenceRate = if (totalCount > 0) takenCount.toFloat() / totalCount else 0f
         )
     }
-}
 
-/**
- * İlaç alma istatistikleri
- */
-data class MedicationStats(
-    val totalCount: Int = 0,
-    val takenCount: Int = 0,
-    val missedCount: Int = 0,
-    val skippedCount: Int = 0,
-    val adherenceRate: Float = 0f // 0.0 - 1.0 arası (uyum oranı)
-)
+    /**
+     * Belirli kullanıcı + tarih aralığı için log listesi (insights & raporlar için)
+     */
+    suspend fun getLogsBetweenDates(
+        userId: String,
+        startMillis: Long,
+        endMillis: Long
+    ): List<MedicationLog> {
+        return try {
+            val snapshot = db.collection("medication_logs")
+                .whereEqualTo("userId", userId)
+                .whereGreaterThanOrEqualTo("scheduledTime", Timestamp(Date(startMillis)))
+                .whereLessThanOrEqualTo("scheduledTime", Timestamp(Date(endMillis)))
+                .get()
+                .await()
+
+            snapshot.documents.mapNotNull { doc ->
+                doc.toObject(MedicationLog::class.java)?.copy(id = doc.id)
+            }
+        } catch (e: Exception) {
+            emptyList()
+        }
+    }
+
+    /**
+     * Son 7 günde kaç MISSED log var
+     */
+    suspend fun getMissedCountLast7Days(userId: String): Int {
+        val end = System.currentTimeMillis()
+        val start = end - 7L * 24 * 60 * 60 * 1000
+
+        val logs = getLogsBetweenDates(userId, start, end)
+        return logs.count { it.status == MedicationStatus.MISSED.name }
+    }
+
+    /**
+     * İlk log'dan bu yana kaç gün geçti
+     */
+    suspend fun getDaysSinceFirstLog(userId: String): Int {
+        return try {
+            val snapshot = db.collection("medication_logs")
+                .whereEqualTo("userId", userId)
+                .orderBy("scheduledTime", Query.Direction.ASCENDING)
+                .limit(1)
+                .get()
+                .await()
+
+            val doc = snapshot.documents.firstOrNull() ?: return 0
+
+            val ts = doc.getTimestamp("scheduledTime")
+                ?: doc.getTimestamp("createdAt")
+                ?: return 0
+
+            val first = ts.toDate().time
+            val diff = System.currentTimeMillis() - first
+            (diff / (24L * 60 * 60 * 1000)).toInt().coerceAtLeast(0)
+        } catch (e: Exception) {
+            0
+        }
+    }
+}

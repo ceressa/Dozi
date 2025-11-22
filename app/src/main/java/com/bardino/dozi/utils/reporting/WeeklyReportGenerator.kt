@@ -3,7 +3,10 @@ package com.bardino.dozi.utils.reporting
 import android.content.Context
 import android.graphics.*
 import android.graphics.pdf.PdfDocument
+import android.os.Build
 import android.util.Log
+import androidx.annotation.RequiresApi
+import com.bardino.dozi.core.data.model.MedicationStatus
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.MedicineRepository
 import dagger.hilt.android.qualifiers.ApplicationContext
@@ -43,9 +46,7 @@ class WeeklyReportGenerator @Inject constructor(
         val recommendations: List<String>
     )
 
-    /**
-     * Haftalık rapor oluştur
-     */
+    @RequiresApi(Build.VERSION_CODES.O)
     suspend fun generateReport(userId: String): WeeklyReport {
         return withContext(Dispatchers.IO) {
             try {
@@ -55,23 +56,27 @@ class WeeklyReportGenerator @Inject constructor(
                 val startTimestamp = startDate.toEpochDay() * 86400000
                 val endTimestamp = (endDate.toEpochDay() + 1) * 86400000
 
-                val logs = medicationLogRepository.getLogsBetweenDates(userId, startTimestamp, endTimestamp)
-                val medicines = medicineRepository.getMedicinesForUser(userId)
+                val logs = medicationLogRepository.getLogsBetweenDates(
+                    userId = userId,
+                    startMillis = startTimestamp,
+                    endMillis = endTimestamp
+                )
+                val medicines = medicineRepository.getAllMedicines()
 
-                // Toplam beklenen dozları hesapla
                 val totalDoses = logs.size.coerceAtLeast(1)
-                val takenDoses = logs.count { it.status == "TAKEN" }
-                val missedDoses = logs.count { it.status == "MISSED" }
-                val skippedDoses = logs.count { it.status == "SKIPPED" }
+                val takenDoses = logs.count { it.status == MedicationStatus.TAKEN.name }
+                val missedDoses = logs.count { it.status == MedicationStatus.MISSED.name }
+                val skippedDoses = logs.count { it.status == MedicationStatus.SKIPPED.name }
 
                 val overallCompliance = if (totalDoses > 0) {
                     (takenDoses * 100) / totalDoses
                 } else 0
 
-                // Günlere göre grupla
                 val dayFormatter = DateTimeFormatter.ofPattern("EEEE", java.util.Locale("tr"))
                 val logsByDay = logs.groupBy { log ->
-                    java.time.Instant.ofEpochMilli(log.timestamp)
+                    val ts = log.scheduledTime ?: log.takenAt
+                    val millis = ts?.toDate()?.time ?: 0L
+                    java.time.Instant.ofEpochMilli(millis)
                         .atZone(java.time.ZoneId.systemDefault())
                         .toLocalDate()
                         .format(dayFormatter)
@@ -79,26 +84,26 @@ class WeeklyReportGenerator @Inject constructor(
 
                 val complianceByDay = logsByDay.mapValues { (_, dayLogs) ->
                     if (dayLogs.isNotEmpty()) {
-                        dayLogs.count { it.status == "TAKEN" } * 100 / dayLogs.size
+                        dayLogs.count { it.status == MedicationStatus.TAKEN.name } * 100 / dayLogs.size
                     } else 0
                 }
 
                 val bestDay = complianceByDay.maxByOrNull { it.value }?.key ?: "N/A"
                 val worstDay = complianceByDay.minByOrNull { it.value }?.key ?: "N/A"
 
-                // En çok kaçırılan saat
                 val missedByHour = logs
-                    .filter { it.status == "MISSED" }
+                    .filter { it.status == MedicationStatus.MISSED.name }
                     .groupBy { log ->
+                        val ts = log.scheduledTime ?: log.takenAt
+                        val millis = ts?.toDate()?.time ?: 0L
                         java.util.Calendar.getInstance().apply {
-                            timeInMillis = log.timestamp
+                            timeInMillis = millis
                         }.get(java.util.Calendar.HOUR_OF_DAY)
                     }
                     .mapValues { it.value.size }
 
                 val mostMissedTime = missedByHour.maxByOrNull { it.value }?.let { "${it.key}:00" }
 
-                // Öneriler oluştur
                 val recommendations = generateRecommendations(
                     overallCompliance,
                     mostMissedTime,
@@ -138,20 +143,15 @@ class WeeklyReportGenerator @Inject constructor(
         }
     }
 
-    /**
-     * PDF raporu oluştur
-     */
     suspend fun generatePDF(report: WeeklyReport): File {
         return withContext(Dispatchers.IO) {
             val document = PdfDocument()
-            val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create() // A4
+            val pageInfo = PdfDocument.PageInfo.Builder(595, 842, 1).create()
             val page = document.startPage(pageInfo)
             val canvas = page.canvas
 
-            // Arkaplan
             canvas.drawColor(Color.WHITE)
 
-            // Başlık
             val titlePaint = Paint().apply {
                 color = Color.parseColor("#26C6DA")
                 textSize = 32f
@@ -160,7 +160,6 @@ class WeeklyReportGenerator @Inject constructor(
             }
             canvas.drawText("Dozi Haftalık Rapor", 50f, 80f, titlePaint)
 
-            // Tarih aralığı
             val datePaint = Paint().apply {
                 color = Color.GRAY
                 textSize = 14f
@@ -172,7 +171,6 @@ class WeeklyReportGenerator @Inject constructor(
                 50f, 110f, datePaint
             )
 
-            // Ana metrikler
             val metricPaint = Paint().apply {
                 color = Color.BLACK
                 textSize = 18f
@@ -186,18 +184,15 @@ class WeeklyReportGenerator @Inject constructor(
                 isAntiAlias = true
             }
 
-            // Uyumluluk yüzdesi
             canvas.drawText("%${report.overallCompliance}", 50f, 200f, boldPaint)
             canvas.drawText("Genel Uyumluluk", 50f, 230f, metricPaint)
 
-            // Doz bilgileri
             canvas.drawText("${report.takenDoses}", 250f, 200f, boldPaint)
             canvas.drawText("Alınan Doz", 250f, 230f, metricPaint)
 
             canvas.drawText("${report.missedDoses}", 400f, 200f, boldPaint)
             canvas.drawText("Kaçırılan Doz", 400f, 230f, metricPaint)
 
-            // Detaylar
             var yPos = 300f
             val detailPaint = Paint().apply {
                 color = Color.BLACK
@@ -215,7 +210,6 @@ class WeeklyReportGenerator @Inject constructor(
                 yPos += 25f
             }
 
-            // Öneriler
             yPos += 30f
             val sectionPaint = Paint().apply {
                 color = Color.parseColor("#26C6DA")
@@ -231,7 +225,6 @@ class WeeklyReportGenerator @Inject constructor(
                 yPos += 25f
             }
 
-            // Footer
             val footerPaint = Paint().apply {
                 color = Color.GRAY
                 textSize = 10f
@@ -241,7 +234,6 @@ class WeeklyReportGenerator @Inject constructor(
 
             document.finishPage(page)
 
-            // Dosyaya yaz
             val file = File(context.cacheDir, "dozi_weekly_report_${report.endDate}.pdf")
             FileOutputStream(file).use { out ->
                 document.writeTo(out)
@@ -264,9 +256,11 @@ class WeeklyReportGenerator @Inject constructor(
             compliance < 50 -> {
                 recommendations.add("Uyumluluğunuz düşük. Hatırlatma ayarlarınızı gözden geçirin.")
             }
+
             compliance < 80 -> {
                 recommendations.add("İyi ilerleme! Biraz daha dikkat ile mükemmel olabilirsiniz.")
             }
+
             else -> {
                 recommendations.add("Harika! Uyumluluğunuz çok iyi durumda.")
             }

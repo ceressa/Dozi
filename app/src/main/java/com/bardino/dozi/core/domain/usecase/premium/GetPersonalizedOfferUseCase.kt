@@ -21,7 +21,7 @@ class GetPersonalizedOfferUseCase @Inject constructor(
 
     suspend operator fun invoke(userId: String): PersonalizedOffer {
         val segment = getUserSegmentUseCase(userId)
-        val medicineCount = medicineRepository.getMedicineCount(userId)
+        val medicineCount = medicineRepository.getMedicineCount()
         val missedCount = medicationLogRepository.getMissedCountLast7Days(userId)
 
         return when (segment) {
