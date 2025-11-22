@@ -51,6 +51,21 @@ import java.util.UUID
 import androidx.compose.ui.unit.sp
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.withContext
+import com.bardino.dozi.core.premium.PremiumManager
+import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.bardino.dozi.core.ui.components.PremiumLimitDialog
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+
+// EntryPoint for accessing PremiumManager in Composable
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface MedicineEditEntryPoint {
+    fun premiumManager(): PremiumManager
+    fun medicineRepository(): MedicineRepository
+}
 
 // Emoji ikonları for custom medicines
 private val medicineEmojis = listOf(
@@ -143,6 +158,47 @@ fun MedicineEditScreen(
     val focusManager = LocalFocusManager.current
     val scope = rememberCoroutineScope()
     val scrollState = rememberScrollState()
+
+    // 💎 Premium Manager için EntryPoint erişimi
+    val entryPoint = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            MedicineEditEntryPoint::class.java
+        )
+    }
+    val premiumManager = entryPoint.premiumManager()
+    val medicineRepository = entryPoint.medicineRepository()
+
+    // 📊 Limit kontrolü için state'ler
+    var showLimitDialog by remember { mutableStateOf(false) }
+    var currentMedicineCount by remember { mutableStateOf(0) }
+    var medicineLimit by remember { mutableStateOf(0) }
+
+    // Yeni ilaç ekleniyorsa limit kontrolü yap
+    LaunchedEffect(medicineId) {
+        if (medicineId == "new") {
+            try {
+                currentMedicineCount = medicineRepository.getMedicineCount()
+                medicineLimit = premiumManager.getMedicineLimit()
+                android.util.Log.d("MedicineEditScreen", "📊 Medicine limits - Current: $currentMedicineCount, Limit: $medicineLimit")
+            } catch (e: Exception) {
+                android.util.Log.e("MedicineEditScreen", "Error loading medicine limits", e)
+            }
+        }
+    }
+
+    // Limit dialog'u
+    if (showLimitDialog) {
+        PremiumLimitDialog(
+            title = "İlaç Limiti",
+            message = "Ücretsiz planda en fazla $medicineLimit ilaç ekleyebilirsiniz. Sınırsız ilaç için Dozi Ekstra'ya geçin.",
+            onDismiss = { showLimitDialog = false },
+            onUpgrade = {
+                showLimitDialog = false
+                // TODO: Navigate to premium screen
+            }
+        )
+    }
 
     // Lookup ekranından gelen ilaç bilgisi
     val selectedMedicine = savedStateHandle?.get<IlacSearchResultParcelable>("selectedMedicine")
@@ -506,6 +562,14 @@ fun MedicineEditScreen(
                                             onNavigateBack()
                                         }
                                     } else {
+                                        // 📊 Yeni ilaç eklemeden önce limit kontrolü
+                                        if (medicineLimit > 0 && currentMedicineCount >= medicineLimit) {
+                                            kotlinx.coroutines.withContext(kotlinx.coroutines.Dispatchers.Main) {
+                                                showLimitDialog = true
+                                            }
+                                            return@launch
+                                        }
+
                                         // Yeni ilaç oluştur (temel bilgilerle)
                                         val firestoreMedicine = com.bardino.dozi.core.data.model.Medicine(
                                             id = "",

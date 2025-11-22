@@ -278,7 +278,10 @@ private fun MoreMenuBottomSheet(
             )
 
             menuItems.forEach { item ->
-                val requiresLogin = item is MoreMenuItem.Badis || item is MoreMenuItem.Reminders
+                // Stats, Badis ve Reminders login gerektirir
+                val requiresLogin = item is MoreMenuItem.Badis ||
+                                   item is MoreMenuItem.Reminders ||
+                                   item is MoreMenuItem.Stats
                 val requiresPremium = item is MoreMenuItem.Badis // Badi sistemi premium özellik
                 val isSelected = currentRoute == item.route
 

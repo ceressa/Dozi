@@ -394,7 +394,16 @@ fun AddReminderScreen(
 
                         3 -> TimeStep(
                             selectedTimes = selectedTimes,
-                            onTimesChange = { selectedTimes = it },
+                            onTimesChange = { newTimes ->
+                                // 📊 Zaman limiti kontrolü (FREE_REMINDER_LIMIT = 2)
+                                if (reminderLimit == -1 || newTimes.size <= reminderLimit) {
+                                    selectedTimes = newTimes
+                                } else {
+                                    // Limit aşıldı - dialog göster
+                                    showLimitDialog = true
+                                    limitDialogType = "reminder"
+                                }
+                            },
                             context = context
                         )
 
