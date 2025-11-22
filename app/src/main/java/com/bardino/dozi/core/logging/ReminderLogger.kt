@@ -413,6 +413,258 @@ object ReminderLogger {
         logcat(ReminderEventType.DOSE_SNOOZED, description)
     }
 
+    /**
+     * İlaç kaçırıldı (otomatik - 1 saat cevap verilmedi)
+     */
+    fun logDoseMissed(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        time: String,
+        reason: String
+    ) {
+        val description = "$medicineName - $time kaçırıldı: $reason"
+
+        log(
+            eventType = ReminderEventType.DOSE_MISSED,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            reminderTime = time,
+            description = description,
+            actualTime = System.currentTimeMillis(),
+            success = false,
+            metadata = mapOf("reason" to reason)
+        )
+
+        logcat(ReminderEventType.DOSE_MISSED, description)
+    }
+
+    // ============================================================
+    // SNOOZE İŞLEMLERİ
+    // ============================================================
+
+    /**
+     * Erteleme süresi doldu, yeni bildirim gösterildi
+     */
+    fun logSnoozeTriggered(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        time: String
+    ) {
+        val description = "$medicineName - $time erteleme süresi doldu, yeni bildirim gösteriliyor"
+
+        log(
+            eventType = ReminderEventType.SNOOZE_TRIGGERED,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            reminderTime = time,
+            description = description,
+            actualTime = System.currentTimeMillis()
+        )
+
+        logcat(ReminderEventType.SNOOZE_TRIGGERED, description)
+    }
+
+    // ============================================================
+    // ESCALATION İŞLEMLERİ
+    // ============================================================
+
+    /**
+     * Escalation planlandı
+     */
+    fun logEscalationScheduled(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        time: String,
+        level: Int, // 1, 2, 3
+        scheduledTimeMillis: Long
+    ) {
+        val dateFormat = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
+        val scheduledTimeStr = dateFormat.format(Date(scheduledTimeMillis))
+        val description = "$medicineName - $time için Escalation $level planlandı: $scheduledTimeStr"
+
+        log(
+            eventType = ReminderEventType.ESCALATION_SCHEDULED,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            reminderTime = time,
+            description = description,
+            scheduledTime = scheduledTimeMillis,
+            metadata = mapOf(
+                "level" to level.toString(),
+                "scheduledTimeStr" to scheduledTimeStr
+            )
+        )
+
+        logcat(ReminderEventType.ESCALATION_SCHEDULED, description)
+    }
+
+    /**
+     * Escalation iptal edildi
+     */
+    fun logEscalationCancelled(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        time: String,
+        level: Int? = null // null ise tümü iptal edildi
+    ) {
+        val levelStr = level?.let { "Level $it" } ?: "Tüm seviyeleri"
+        val description = "$medicineName - $time için Escalation $levelStr iptal edildi"
+
+        log(
+            eventType = ReminderEventType.ESCALATION_CANCELLED,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            reminderTime = time,
+            description = description,
+            metadata = level?.let { mapOf("level" to it.toString()) } ?: emptyMap()
+        )
+
+        logcat(ReminderEventType.ESCALATION_CANCELLED, description)
+    }
+
+    /**
+     * Escalation Level 1 tetiklendi (10 dakika)
+     */
+    fun logEscalation1Triggered(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        time: String
+    ) {
+        val description = "$medicineName - $time Escalation Level 1 (10 dk) tetiklendi"
+
+        log(
+            eventType = ReminderEventType.ESCALATION_1_TRIGGERED,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            reminderTime = time,
+            description = description,
+            actualTime = System.currentTimeMillis()
+        )
+
+        logcat(ReminderEventType.ESCALATION_1_TRIGGERED, description)
+    }
+
+    /**
+     * Escalation Level 2 tetiklendi (30 dakika)
+     */
+    fun logEscalation2Triggered(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        time: String
+    ) {
+        val description = "$medicineName - $time Escalation Level 2 (30 dk) tetiklendi"
+
+        log(
+            eventType = ReminderEventType.ESCALATION_2_TRIGGERED,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            reminderTime = time,
+            description = description,
+            actualTime = System.currentTimeMillis()
+        )
+
+        logcat(ReminderEventType.ESCALATION_2_TRIGGERED, description)
+    }
+
+    /**
+     * Escalation Level 3 tetiklendi (60 dakika - MISSED)
+     */
+    fun logEscalation3Triggered(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        time: String
+    ) {
+        val description = "$medicineName - $time Escalation Level 3 (60 dk) tetiklendi - İlaç MISSED olarak işaretleniyor"
+
+        log(
+            eventType = ReminderEventType.ESCALATION_3_TRIGGERED,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            reminderTime = time,
+            description = description,
+            actualTime = System.currentTimeMillis()
+        )
+
+        logcat(ReminderEventType.ESCALATION_3_TRIGGERED, description)
+    }
+
+    // ============================================================
+    // BADİ (BUDDY) İŞLEMLERİ
+    // ============================================================
+
+    /**
+     * Badi isteği kabul edildi
+     */
+    fun logBuddyRequestAccepted(
+        context: Context,
+        requestId: String,
+        fromUserName: String
+    ) {
+        val description = "$fromUserName'in badi isteği kabul edildi"
+
+        log(
+            eventType = ReminderEventType.BUDDY_REQUEST_ACCEPTED,
+            description = description,
+            metadata = mapOf(
+                "requestId" to requestId,
+                "fromUserName" to fromUserName
+            )
+        )
+
+        logcat(ReminderEventType.BUDDY_REQUEST_ACCEPTED, description)
+    }
+
+    /**
+     * Badi isteği reddedildi
+     */
+    fun logBuddyRequestRejected(
+        context: Context,
+        requestId: String,
+        fromUserName: String
+    ) {
+        val description = "$fromUserName'in badi isteği reddedildi"
+
+        log(
+            eventType = ReminderEventType.BUDDY_REQUEST_REJECTED,
+            description = description,
+            metadata = mapOf(
+                "requestId" to requestId,
+                "fromUserName" to fromUserName
+            )
+        )
+
+        logcat(ReminderEventType.BUDDY_REQUEST_REJECTED, description)
+    }
+
+    /**
+     * Badi'ye kritik ilaç kaçırma bildirimi gönderildi
+     */
+    fun logBuddyNotificationSent(
+        context: Context,
+        medicineId: String,
+        medicineName: String,
+        buddyCount: Int
+    ) {
+        val description = "$medicineName için $buddyCount badi'ye bildirim gönderildi"
+
+        log(
+            eventType = ReminderEventType.BUDDY_NOTIFICATION_SENT,
+            medicineId = medicineId,
+            medicineName = medicineName,
+            description = description,
+            metadata = mapOf("buddyCount" to buddyCount.toString())
+        )
+
+        logcat(ReminderEventType.BUDDY_NOTIFICATION_SENT, description)
+    }
+
     // ============================================================
     // SİSTEM OLAYLARI
     // ============================================================

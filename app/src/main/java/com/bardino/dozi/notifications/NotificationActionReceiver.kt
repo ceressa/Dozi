@@ -62,6 +62,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
             }
             "ACTION_SNOOZE_TRIGGER" -> {
                 // ⏰ Erteleme süresi doldu, yeni bildirim göster + escalation/auto-missed planla
+                // 📝 Log: Erteleme tetiklendi
+                ReminderLogger.logSnoozeTriggered(context, medicineId, med, time)
+
                 if (hasNotificationPermission(context)) {
                     // 📅 Medicine bilgisini al ve endDate kontrolü yap
                     CoroutineScope(Dispatchers.IO).launch {
@@ -87,6 +90,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 isCritical = isCritical
                             )
 
+                            // 📝 Log: Bildirim gönderildi
+                            val notificationId = "${medicineId}_$time".hashCode()
+                            ReminderLogger.logNotificationSent(context, medicineId, med, time, notificationId)
+
                             // ⏰ Escalation sistemi: 10dk, 30dk, 60dk (endDate geçmemişse)
                             if (medicineId.isNotEmpty() && (medicine?.endDate == null || medicine.endDate > System.currentTimeMillis())) {
                                 scheduleEscalation1(context, medicineId, med, dosage, time, scheduledTime) // 10 dk
@@ -97,6 +104,7 @@ class NotificationActionReceiver : BroadcastReceiver() {
                             android.util.Log.d("NotificationActionReceiver", "⏰ Erteleme sonrası bildirim + escalation/auto-missed planlandı: $med")
                         } catch (e: Exception) {
                             android.util.Log.e("NotificationActionReceiver", "❌ Erteleme tetiklemesi işlenirken hata", e)
+                            ReminderLogger.logError(context, "Erteleme tetiklemesi hatası", e, medicineId, med, time)
                         }
                     }
                 }
@@ -131,6 +139,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 return@launch
                             }
 
+                            // 📝 Log: Escalation 1 tetiklendi
+                            ReminderLogger.logEscalation1Triggered(context, medicineId, med, time)
+
                             NotificationHelper.showEscalationLevel1Notification(
                                 context = context,
                                 medicineName = med,
@@ -139,9 +150,15 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 time = time,
                                 scheduledTime = scheduledTime
                             )
+
+                            // 📝 Log: Bildirim gönderildi
+                            val notificationId = "esc1_${medicineId}_$time".hashCode()
+                            ReminderLogger.logNotificationSent(context, medicineId, med, time, notificationId)
+
                             android.util.Log.d("NotificationActionReceiver", "⏰ Escalation Level 1 bildirimi gösterildi: $med")
                         } catch (e: Exception) {
                             android.util.Log.e("NotificationActionReceiver", "❌ Escalation 1 hatası", e)
+                            ReminderLogger.logError(context, "Escalation 1 hatası", e, medicineId, med, time)
                         }
                     }
                 }
@@ -168,6 +185,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 return@launch
                             }
 
+                            // 📝 Log: Escalation 2 tetiklendi
+                            ReminderLogger.logEscalation2Triggered(context, medicineId, med, time)
+
                             NotificationHelper.showEscalationLevel2Notification(
                                 context = context,
                                 medicineName = med,
@@ -176,9 +196,15 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 time = time,
                                 scheduledTime = scheduledTime
                             )
+
+                            // 📝 Log: Bildirim gönderildi
+                            val notificationId = "esc2_${medicineId}_$time".hashCode()
+                            ReminderLogger.logNotificationSent(context, medicineId, med, time, notificationId)
+
                             android.util.Log.d("NotificationActionReceiver", "🚨 Escalation Level 2 bildirimi gösterildi: $med")
                         } catch (e: Exception) {
                             android.util.Log.e("NotificationActionReceiver", "❌ Escalation 2 hatası", e)
+                            ReminderLogger.logError(context, "Escalation 2 hatası", e, medicineId, med, time)
                         }
                     }
                 }
@@ -205,6 +231,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 return@launch
                             }
 
+                            // 📝 Log: Escalation 3 tetiklendi
+                            ReminderLogger.logEscalation3Triggered(context, medicineId, med, time)
+
                             NotificationHelper.showEscalationLevel3Notification(
                                 context = context,
                                 medicineName = med,
@@ -213,6 +242,11 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 time = time,
                                 scheduledTime = scheduledTime
                             )
+
+                            // 📝 Log: Bildirim gönderildi
+                            val notificationId = "esc3_${medicineId}_$time".hashCode()
+                            ReminderLogger.logNotificationSent(context, medicineId, med, time, notificationId)
+
                             android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 bildirimi gösterildi: $med")
 
                             // İlacı MISSED olarak logla
@@ -223,18 +257,27 @@ class NotificationActionReceiver : BroadcastReceiver() {
                                 scheduledTime = scheduledTime,
                                 reason = "1 saat boyunca cevap verilmedi"
                             )
+
+                            // 📝 Log: İlaç kaçırıldı
+                            ReminderLogger.logDoseMissed(context, medicineId, med, time, "1 saat boyunca cevap verilmedi")
+
                             android.util.Log.d("NotificationActionReceiver", "❌ İlaç MISSED olarak loglandı: $med")
 
                             // Kritik ilaç ise buddy'lere bildir
                             val medicineRepository = MedicineRepository()
                             val medicine = medicineRepository.getMedicineById(medicineId)
-                            if (medicine != null) {
+                            if (medicine != null && medicine.criticalityLevel == com.bardino.dozi.core.data.model.MedicineCriticality.CRITICAL) {
                                 val escalationManager = EscalationManager(context)
                                 escalationManager.notifyBuddiesForSingleCriticalMedicine(medicine)
+
+                                // 📝 Log: Buddy bildirimi gönderildi (kritik ilaç için)
+                                ReminderLogger.logBuddyNotificationSent(context, medicineId, med, 1)
+
                                 android.util.Log.d("NotificationActionReceiver", "🚨 Buddy bildirimi gönderildi: $med")
                             }
                         } catch (e: Exception) {
                             android.util.Log.e("NotificationActionReceiver", "❌ Escalation 3 hatası: ${e.message}", e)
+                            ReminderLogger.logError(context, "Escalation 3 hatası", e, medicineId, med, time)
                         }
                     }
                 }
@@ -397,6 +440,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
         // Bildirimi kapat
         nm.cancel(requestId.hashCode())
 
+        // 📝 Log: Badi isteği kabul edildi
+        ReminderLogger.logBuddyRequestAccepted(context, requestId, fromUserName)
+
         // Badi isteğini kabul et (WorkManager ile garantili)
         MedicationSyncWorker.enqueueBuddyAccept(context, requestId)
         showToast(context, "✅ $fromUserName buddy isteği işleniyor...")
@@ -411,6 +457,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
     ) {
         // Bildirimi kapat
         nm.cancel(requestId.hashCode())
+
+        // 📝 Log: Badi isteği reddedildi
+        ReminderLogger.logBuddyRequestRejected(context, requestId, fromUserName)
 
         // Badi isteğini reddet (WorkManager ile garantili)
         MedicationSyncWorker.enqueueBuddyReject(context, requestId)
@@ -601,6 +650,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
         }
 
+        // 📝 Log: Escalation 1 planlandı
+        ReminderLogger.logEscalationScheduled(context, medicineId, medicineName, time, 1, escalationTime)
+
         android.util.Log.d("NotificationActionReceiver", "⏰ Escalation Level 1 planlandı: $medicineName - 10 dk sonra")
     }
 
@@ -644,6 +696,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
         } else {
             alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
         }
+
+        // 📝 Log: Escalation 2 planlandı
+        ReminderLogger.logEscalationScheduled(context, medicineId, medicineName, time, 2, escalationTime)
 
         android.util.Log.d("NotificationActionReceiver", "🚨 Escalation Level 2 planlandı: $medicineName - 30 dk sonra")
     }
@@ -702,9 +757,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
                     alarmManager.setExact(AlarmManager.RTC_WAKEUP, escalationTime, pendingIntent)
                 }
 
+                // 📝 Log: Escalation 3 planlandı
+                ReminderLogger.logEscalationScheduled(context, medicineId, medicineName, time, 3, escalationTime)
+
                 android.util.Log.d("NotificationActionReceiver", "🔴 Escalation Level 3 planlandı: $medicineName - 60 dk sonra")
             } catch (e: Exception) {
                 android.util.Log.e("NotificationActionReceiver", "❌ Level 3 planlanırken hata", e)
+                ReminderLogger.logError(context, "Escalation 3 planlama hatası", e, medicineId, medicineName, time)
             }
         }
     }
@@ -781,6 +840,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
             esc3PendingIntent.cancel()
             android.util.Log.d("NotificationActionReceiver", "✅ Escalation 3 iptal edildi: $medicineId")
         }
+
+        // 📝 Log: Tüm escalation'lar iptal edildi
+        ReminderLogger.logEscalationCancelled(context, medicineId, "", time, null)
 
         android.util.Log.d("NotificationActionReceiver", "🚫 Tüm escalation alarmları iptal edildi: $medicineId - $time")
     }
