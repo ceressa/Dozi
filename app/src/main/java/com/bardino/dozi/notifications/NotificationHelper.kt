@@ -22,10 +22,12 @@ object NotificationHelper {
 
     const val CHANNEL_ID = "dozi_med_channel"
     const val CHANNEL_ID_IMPORTANT = "dozi_med_important_channel"
+    const val CHANNEL_ID_ACHIEVEMENT = "dozi_achievement_channel"
     const val NOTIF_ID = 2025
     const val NOTIF_ID_ESCALATION_1 = 2026  // 10 dk sonraki bildirim
     const val NOTIF_ID_ESCALATION_2 = 2027  // 30 dk sonraki bildirim
     const val NOTIF_ID_ESCALATION_3 = 2028  // 60 dk sonraki bildirim (important)
+    const val NOTIF_ID_ACHIEVEMENT = 3000   // Başarı bildirimleri için
 
     /**
      * İlaç ve zamana özel unique notification ID oluştur
@@ -836,5 +838,72 @@ object NotificationHelper {
             .build()
 
         nm.notify(NOTIF_ID + 100, notification)
+    }
+
+    /**
+     * 🏆 Başarı bildirimi için kanal oluştur
+     */
+    private fun createAchievementChannel(context: Context) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            val channel = NotificationChannel(
+                CHANNEL_ID_ACHIEVEMENT,
+                "Başarılar",
+                NotificationManager.IMPORTANCE_HIGH
+            ).apply {
+                description = "Kazandığınız rozetler ve başarılar"
+                enableLights(true)
+                lightColor = Color.YELLOW
+                enableVibration(true)
+                vibrationPattern = longArrayOf(0, 200, 100, 200)
+            }
+            val nm = context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            nm.createNotificationChannel(channel)
+        }
+    }
+
+    /**
+     * 🏆 Başarı bildirimi göster
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showAchievementNotification(
+        context: Context,
+        achievementName: String,
+        achievementDescription: String,
+        achievementEmoji: String,
+        achievementId: String
+    ) {
+        createAchievementChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "stats")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val title = "🏆 Başarı Kazandın!"
+        val content = "$achievementEmoji $achievementName: $achievementDescription"
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID_ACHIEVEMENT)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#FFD700")) // Altın rengi
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_HIGH)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(contentIntent)
+            .setDefaults(NotificationCompat.DEFAULT_ALL)
+            .build()
+
+        // Her başarı için unique ID kullan
+        val notificationId = NOTIF_ID_ACHIEVEMENT + achievementId.hashCode().and(0xFFFF)
+        nm.notify(notificationId, notification)
+
+        Log.d("NotificationHelper", "🏆 Başarı bildirimi gösterildi: $achievementName (ID: $notificationId)")
     }
 }

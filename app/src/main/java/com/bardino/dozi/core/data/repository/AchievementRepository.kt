@@ -1,7 +1,14 @@
 package com.bardino.dozi.core.data.repository
 
+import android.Manifest
+import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
 import android.util.Log
+import androidx.core.content.ContextCompat
+import com.bardino.dozi.DoziApplication
 import com.bardino.dozi.core.data.model.*
+import com.bardino.dozi.notifications.NotificationHelper
 import com.google.firebase.Timestamp
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
@@ -312,6 +319,8 @@ class AchievementRepository @Inject constructor() {
     private suspend fun sendAchievementUnlockedNotification(achievement: Achievement) {
         try {
             val userId = auth.currentUser?.uid ?: return
+
+            // Firebase'e kaydet
             val notification = mapOf(
                 "userId" to userId,
                 "type" to "ACHIEVEMENT",
@@ -323,9 +332,38 @@ class AchievementRepository @Inject constructor() {
             )
 
             firestore.collection("notifications").add(notification).await()
-            Log.d(TAG, "Achievement notification sent")
+            Log.d(TAG, "Achievement notification saved to Firestore")
+
+            // Cihaza bildirim gönder
+            val context = DoziApplication.instance
+            if (context != null && hasNotificationPermission(context)) {
+                NotificationHelper.showAchievementNotification(
+                    context = context,
+                    achievementName = achievement.type.displayName,
+                    achievementDescription = achievement.type.description,
+                    achievementEmoji = achievement.type.emoji,
+                    achievementId = achievement.id
+                )
+                Log.d(TAG, "🏆 Achievement device notification sent: ${achievement.type.displayName}")
+            } else {
+                Log.w(TAG, "⚠️ Cannot send device notification - context null or no permission")
+            }
         } catch (e: Exception) {
             Log.e(TAG, "Error sending achievement notification", e)
+        }
+    }
+
+    /**
+     * Bildirim izni kontrolü
+     */
+    private fun hasNotificationPermission(context: Context): Boolean {
+        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            ContextCompat.checkSelfPermission(
+                context,
+                Manifest.permission.POST_NOTIFICATIONS
+            ) == PackageManager.PERMISSION_GRANTED
+        } else {
+            true
         }
     }
 }
