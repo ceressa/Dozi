@@ -335,6 +335,51 @@ fun MedicineEditScreen(
                     )
                 }
 
+                // 📊 Free kullanıcı için limit bilgisi
+                if (medicineId == "new" && medicineLimit > 0) {
+                    AnimatedVisibility(visible = isVisible, enter = fadeIn()) {
+                        Card(
+                            modifier = Modifier.fillMaxWidth(),
+                            shape = RoundedCornerShape(12.dp),
+                            colors = CardDefaults.cardColors(
+                                containerColor = if (currentMedicineCount >= medicineLimit)
+                                    Color(0xFFFFEBEE) // Kırmızı arka plan
+                                else
+                                    Color(0xFFF3E5F5) // Mor arka plan
+                            )
+                        ) {
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(12.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Icon(
+                                    imageVector = Icons.Default.Info,
+                                    contentDescription = null,
+                                    tint = if (currentMedicineCount >= medicineLimit)
+                                        Color(0xFFE53935)
+                                    else
+                                        DoziPurple,
+                                    modifier = Modifier.size(20.dp)
+                                )
+                                Text(
+                                    text = if (currentMedicineCount >= medicineLimit)
+                                        "İlaç limitinize ulaştınız ($currentMedicineCount/$medicineLimit). Daha fazla ilaç için Dozi Ekstra'ya geçin."
+                                    else
+                                        "Ücretsiz planda $medicineLimit ilaç ekleyebilirsiniz. ($currentMedicineCount/$medicineLimit kullanıldı)",
+                                    style = MaterialTheme.typography.bodySmall,
+                                    color = if (currentMedicineCount >= medicineLimit)
+                                        Color(0xFFE53935)
+                                    else
+                                        Color(0xFF7B1FA2)
+                                )
+                            }
+                        }
+                    }
+                }
+
                 AnimatedVisibility(visible = isVisible, enter = slideInVertically() + fadeIn()) {
                     Column(verticalArrangement = Arrangement.spacedBy(16.dp)) {
 
