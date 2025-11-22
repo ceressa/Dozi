@@ -36,6 +36,8 @@ import com.bardino.dozi.core.ui.screens.badi.BadiMedicationTrackingScreen
 import com.bardino.dozi.core.ui.screens.stats.StatsScreen
 import com.bardino.dozi.core.ui.screens.family.FamilyManagementScreen
 import com.bardino.dozi.core.ui.screens.support.SupportScreen
+import com.bardino.dozi.core.ui.screens.onboarding.WelcomeScreen
+import com.bardino.dozi.core.ui.screens.onboarding.FirstMedicineWizardScreen
 
 @RequiresApi(Build.VERSION_CODES.O)
 @Composable
@@ -253,6 +255,38 @@ fun NavGraph(
                     onNavigateToReminder = { savedMedicineId ->
                         navController.navigate(Screen.EditReminder.createRoute(savedMedicineId)) {
                             popUpTo(Screen.MedicineList.route)
+                        }
+                    }
+                )
+            }
+
+            // 🎉 Welcome Ekranı (Onboarding)
+            composable(Screen.Welcome.route) {
+                WelcomeScreen(
+                    onContinue = {
+                        navController.navigate(Screen.FirstMedicineWizard.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
+                    },
+                    onSkip = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.Welcome.route) { inclusive = true }
+                        }
+                    }
+                )
+            }
+
+            // 💊 İlk İlaç Wizard (Onboarding)
+            composable(Screen.FirstMedicineWizard.route) {
+                FirstMedicineWizardScreen(
+                    onAddMedicine = {
+                        navController.navigate(Screen.MedicineLookup.route) {
+                            popUpTo(Screen.FirstMedicineWizard.route) { inclusive = true }
+                        }
+                    },
+                    onSkip = {
+                        navController.navigate(Screen.Home.route) {
+                            popUpTo(Screen.FirstMedicineWizard.route) { inclusive = true }
                         }
                     }
                 )
