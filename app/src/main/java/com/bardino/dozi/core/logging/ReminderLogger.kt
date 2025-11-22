@@ -3,7 +3,6 @@ package com.bardino.dozi.core.logging
 import android.content.Context
 import android.os.Build
 import android.util.Log
-import com.bardino.dozi.BuildConfig
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.model.ReminderEventType
 import com.bardino.dozi.core.data.model.ReminderLog
@@ -33,10 +32,20 @@ object ReminderLogger {
     // Cihaz bilgileri (bir kez hesaplanır)
     private val deviceModel = "${Build.MANUFACTURER} ${Build.MODEL}"
     private val androidVersion = "Android ${Build.VERSION.RELEASE} (API ${Build.VERSION.SDK_INT})"
-    private val appVersion = try {
-        BuildConfig.VERSION_NAME
-    } catch (e: Exception) {
-        "unknown"
+
+    // App version - context ile alınacak
+    private var appVersion = "unknown"
+
+    private fun getAppVersion(context: Context): String {
+        if (appVersion == "unknown") {
+            try {
+                val packageInfo = context.packageManager.getPackageInfo(context.packageName, 0)
+                appVersion = packageInfo.versionName ?: "unknown"
+            } catch (e: Exception) {
+                appVersion = "unknown"
+            }
+        }
+        return appVersion
     }
 
     // ============================================================
@@ -56,6 +65,7 @@ object ReminderLogger {
 
         times.forEach { time ->
             log(
+                context = context,
                 eventType = ReminderEventType.REMINDER_CREATED,
                 medicineId = medicine.id,
                 medicineName = medicine.name,
@@ -524,6 +534,7 @@ object ReminderLogger {
     // ============================================================
 
     private fun log(
+        context: Context? = null,
         eventType: ReminderEventType,
         medicineId: String = "",
         medicineName: String = "",
@@ -553,7 +564,7 @@ object ReminderLogger {
             actualTime = actualTime,
             deviceModel = deviceModel,
             androidVersion = androidVersion,
-            appVersion = appVersion,
+            appVersion = context?.let { getAppVersion(it) } ?: appVersion,
             metadata = metadata,
             requestCode = requestCode,
             frequency = frequency,
