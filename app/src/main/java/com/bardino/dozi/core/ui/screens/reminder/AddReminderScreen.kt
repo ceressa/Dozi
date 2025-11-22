@@ -66,6 +66,7 @@ import com.bardino.dozi.core.premium.PremiumManager
 import com.bardino.dozi.core.ui.components.PremiumLimitDialog
 import com.bardino.dozi.core.ui.components.LimitIndicator
 import com.bardino.dozi.core.common.Constants
+import com.bardino.dozi.core.logging.ReminderLogger
 
 // EntryPoint for accessing PremiumManager in Composable
 @EntryPoint
@@ -2734,6 +2735,32 @@ private fun saveMedicinesToFirestore(
                 android.util.Log.d("AddReminderScreen", "✅ ${savedMedicine.name} kaydedildi (ID: ${savedMedicine.id})")
                 com.bardino.dozi.notifications.ReminderScheduler.scheduleReminders(context, savedMedicine)
                 android.util.Log.d("AddReminderScreen", "✅ ${savedMedicine.name} için alarmlar planlandı")
+
+                // 📝 Log kaydı
+                if (medicineId != null) {
+                    // Edit mode - güncelleme
+                    ReminderLogger.logReminderUpdated(
+                        context = context,
+                        medicine = savedMedicine,
+                        changes = "Saatler: ${times.joinToString(", ")}, Sıklık: $frequency",
+                        metadata = mapOf(
+                            "medicineId" to savedMedicine.id,
+                            "timesCount" to times.size.toString()
+                        )
+                    )
+                } else {
+                    // Yeni hatırlatma oluşturma
+                    ReminderLogger.logReminderCreated(
+                        context = context,
+                        medicine = savedMedicine,
+                        times = times,
+                        metadata = mapOf(
+                            "medicineId" to savedMedicine.id,
+                            "frequency" to frequency,
+                            "frequencyValue" to calculatedFrequencyValue.toString()
+                        )
+                    )
+                }
             }
         }
 
