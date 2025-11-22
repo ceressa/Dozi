@@ -54,7 +54,34 @@ class AchievementRepository @Inject constructor() {
                 return getAllAchievements() // Recursive call after initialization
             }
 
-            snapshot.documents.mapNotNull { it.toObject(Achievement::class.java) }
+            // Eski/kaldırılmış başarıları temizle ve geçerli olanları al
+            val achievements = mutableListOf<Achievement>()
+            val docsToDelete = mutableListOf<String>()
+
+            snapshot.documents.forEach { doc ->
+                try {
+                    val achievement = doc.toObject(Achievement::class.java)
+                    if (achievement != null) {
+                        achievements.add(achievement)
+                    }
+                } catch (e: Exception) {
+                    // Eski enum değeri - bu dokümanı sil
+                    Log.w(TAG, "Old achievement type found, will delete: ${doc.id}")
+                    docsToDelete.add(doc.id)
+                }
+            }
+
+            // Eski başarıları sil
+            docsToDelete.forEach { docId ->
+                try {
+                    collection.document(docId).delete().await()
+                    Log.d(TAG, "Deleted old achievement: $docId")
+                } catch (e: Exception) {
+                    Log.e(TAG, "Error deleting old achievement: $docId", e)
+                }
+            }
+
+            achievements
         } catch (e: Exception) {
             Log.e(TAG, "Error getting achievements", e)
             emptyList()
@@ -81,9 +108,18 @@ class AchievementRepository @Inject constructor() {
                     return@addSnapshotListener
                 }
 
-                val achievements = snapshot?.documents?.mapNotNull {
-                    it.toObject(Achievement::class.java)
-                } ?: emptyList()
+                // Eski/kaldırılmış başarıları filtrele
+                val achievements = mutableListOf<Achievement>()
+                snapshot?.documents?.forEach { doc ->
+                    try {
+                        val achievement = doc.toObject(Achievement::class.java)
+                        if (achievement != null) {
+                            achievements.add(achievement)
+                        }
+                    } catch (e: Exception) {
+                        Log.w(TAG, "Skipping old achievement type: ${doc.id}")
+                    }
+                }
 
                 trySend(achievements)
             }
