@@ -192,11 +192,11 @@ fun MedicineEditScreen(
         PremiumLimitDialog(
             title = "İlaç Limiti",
             message = "Ücretsiz planda en fazla $medicineLimit ilaç ekleyebilirsiniz. Sınırsız ilaç için Dozi Ekstra'ya geçin.",
+            currentCount = currentMedicineCount,
+            maxCount = medicineLimit,
+            requiredPlan = "Dozi Ekstra",
             onDismiss = { showLimitDialog = false },
-            onUpgrade = {
-                showLimitDialog = false
-                // TODO: Navigate to premium screen
-            }
+            onUpgrade = { showLimitDialog = false }
         )
     }
 
