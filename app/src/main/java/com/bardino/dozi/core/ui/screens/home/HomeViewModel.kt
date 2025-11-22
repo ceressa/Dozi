@@ -21,6 +21,7 @@ import com.bardino.dozi.core.data.repository.UserStatsRepository
 import com.bardino.dozi.core.data.repository.UserPreferencesRepository
 import com.bardino.dozi.core.utils.EscalationManager
 import com.bardino.dozi.notifications.ReminderScheduler
+import com.google.firebase.auth.FirebaseAuth
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.delay
@@ -77,7 +78,23 @@ class HomeViewModel @Inject constructor(
     private val _uiState = MutableStateFlow(HomeUiState())
     val uiState: StateFlow<HomeUiState> = _uiState.asStateFlow()
 
+    // Auth state listener for login/logout events
+    private val authStateListener = FirebaseAuth.AuthStateListener { auth ->
+        val currentUser = auth.currentUser
+        val wasLoggedIn = _uiState.value.isLoggedIn
+        val isNowLoggedIn = currentUser != null
+
+        // Login state changed - reload data
+        if (wasLoggedIn != isNowLoggedIn) {
+            Log.d(TAG, "🔄 Auth state changed: wasLoggedIn=$wasLoggedIn, isNowLoggedIn=$isNowLoggedIn")
+            loadData()
+        }
+    }
+
     init {
+        // Add auth state listener
+        FirebaseAuth.getInstance().addAuthStateListener(authStateListener)
+
         loadData()
         // 🔥 Medicines Flow'u dinle (polling yerine)
         observeMedicinesFlow()
@@ -85,6 +102,12 @@ class HomeViewModel @Inject constructor(
         startSnoozeTimer()
         // 🔥 FIX: Kritik ilaç eskalasyonlarını kontrol et
         checkEscalations()
+    }
+
+    override fun onCleared() {
+        super.onCleared()
+        // Remove auth state listener when ViewModel is destroyed
+        FirebaseAuth.getInstance().removeAuthStateListener(authStateListener)
     }
 
     /**
