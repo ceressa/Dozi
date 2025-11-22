@@ -5,6 +5,8 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.graphics.Color
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
 
 import androidx.compose.foundation.ExperimentalFoundationApi
 import com.bardino.dozi.core.common.Constants.BUDDY_CHANNEL_ID
@@ -16,6 +18,10 @@ import com.google.android.libraries.places.api.Places
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.FirebaseFirestoreSettings
 import dagger.hilt.android.HiltAndroidApp
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.delay
+import kotlinx.coroutines.launch
 
 @HiltAndroidApp
 class DoziApplication : Application() {
@@ -34,15 +40,20 @@ class DoziApplication : Application() {
             .build()
         android.util.Log.d("DoziApplication", "✅ Firestore offline persistence enabled")
 
-        // 💊 Uygulama açıldığında ilaç veritabanını belleğe yükle (ilaclar.json lookup için)
-        MedicineLookupRepository.initialize(this)
-
-        // 🔔 Bildirim kanallarını oluştur
+        // 🔔 Bildirim kanallarını oluştur (kritik - hemen yapılmalı)
         createNotificationChannels()
 
         // 🔄 Periyodik sync worker'ı başlat (offline-first support)
         SyncWorker.schedulePeriodicSync(this)
         android.util.Log.d("DoziApplication", "✅ Periodic sync worker scheduled")
+
+        // 💊 Lazy initialization - ilaç veritabanını 3 saniye sonra yükle
+        // Bu sayede uygulama açılış süresi kısalır
+        CoroutineScope(Dispatchers.IO).launch {
+            delay(3000) // 3 saniye bekle
+            MedicineLookupRepository.initialize(this@DoziApplication)
+            android.util.Log.d("DoziApplication", "✅ Medicine lookup database loaded (lazy)")
+        }
     }
 
     private fun createNotificationChannels() {
