@@ -158,6 +158,21 @@ class MainActivity : ComponentActivity() {
                 )
                 userRepository.updateUserField("deviceId", deviceId)
                 saveFCMToken()
+
+                // 📱 Uygulama versiyonunu ve son aktif zamanı güncelle
+                try {
+                    val packageInfo = packageManager.getPackageInfo(packageName, 0)
+                    val versionName = packageInfo.versionName ?: "1"
+                    val versionCode = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.P) {
+                        packageInfo.longVersionCode
+                    } else {
+                        @Suppress("DEPRECATION")
+                        packageInfo.versionCode.toLong()
+                    }
+                    userRepository.updateAppVersionAndActivity(versionName, versionCode)
+                } catch (e: Exception) {
+                    Log.e("MainActivity", "Error updating app version: ${e.message}")
+                }
             }
         }
 

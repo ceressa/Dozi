@@ -51,6 +51,9 @@ val premiumExpiryDate: Long = 0L,            // Premium bitiş tarihi (timestamp
 
     // 📱 Device bilgileri
     val deviceId: String? = null,                // Android Device ID (telefonu tanımlamak için)
+    val appVersion: String? = null,              // Uygulama versiyonu (versionName)
+    val buildNumber: Long = 0L,                  // Build numarası (versionCode)
+    val lastActiveAt: Long = 0L,                 // Son aktif olma tarihi
 
     // 🔕 DND (Do Not Disturb) ayarları
     val dndEnabled: Boolean = false,             // DND aktif mi?

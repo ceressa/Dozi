@@ -62,6 +62,31 @@ class UserRepository(
         }
     }
 
+    /**
+     * 📱 Uygulama versiyonu ve son aktif olma zamanını güncelle
+     * Her uygulama açılışında çağrılmalı
+     */
+    suspend fun updateAppVersionAndActivity(appVersion: String, buildNumber: Long) {
+        val currentUser = auth.currentUser ?: return
+        val docRef = db.collection("users").document(currentUser.uid)
+
+        try {
+            val snapshot = docRef.get().await()
+            if (snapshot.exists()) {
+                docRef.update(
+                    mapOf(
+                        "appVersion" to appVersion,
+                        "buildNumber" to buildNumber,
+                        "lastActiveAt" to System.currentTimeMillis()
+                    )
+                ).await()
+                android.util.Log.d("UserRepository", "✅ App version updated: $appVersion (Build $buildNumber)")
+            }
+        } catch (e: Exception) {
+            android.util.Log.e("UserRepository", "❌ Error updating app version: ${e.message}")
+        }
+    }
+
     fun signOut() {
         auth.signOut()
     }
