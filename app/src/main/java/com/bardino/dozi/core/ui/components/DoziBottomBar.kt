@@ -349,7 +349,7 @@ private fun MoreMenuItemCard(
         elevation = androidx.compose.material3.CardDefaults.cardElevation(
             defaultElevation = if (isSelected) 6.dp else 2.dp
         ),
-        onClick = { if (isEnabled) onClick() }
+        onClick = onClick
     ) {
         Row(
             modifier = Modifier

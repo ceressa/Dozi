@@ -117,9 +117,9 @@ fun AddReminderScreen(
     var showLimitDialog by remember { mutableStateOf(false) }
     var limitDialogType by remember { mutableStateOf("medicine") } // "medicine" veya "reminder"
     var currentMedicineCount by remember { mutableStateOf(0) }
-    var currentReminderCount by remember { mutableStateOf(0) }
+    var currentReminderCount by remember { mutableStateOf(0) } // Hatırlatması olan ilaç sayısı
     var medicineLimit by remember { mutableStateOf(Constants.FREE_MEDICINE_LIMIT) }
-    var reminderLimit by remember { mutableStateOf(Constants.FREE_REMINDER_LIMIT) }
+    var reminderLimit by remember { mutableStateOf(Constants.FREE_REMINDER_LIMIT) } // Her hatırlatma için max saat sayısı
 
     // 🔔 Bildirim izni kontrolü ve isteme
     var showPermissionDialog by remember { mutableStateOf(false) }
@@ -151,13 +151,14 @@ fun AddReminderScreen(
             // Mevcut sayıları al
             val allMedicines = medicineRepository.getAllMedicines()
             currentMedicineCount = allMedicines.size
-            currentReminderCount = allMedicines.sumOf { it.times.size }
+            // Hatırlatması olan ilaç sayısını say (times.isNotEmpty())
+            currentReminderCount = allMedicines.count { it.times.isNotEmpty() }
 
             // Limitleri al
             medicineLimit = premiumManager.getMedicineLimit()
             reminderLimit = premiumManager.getReminderLimit()
 
-            android.util.Log.d("AddReminder", "📊 Limits loaded - Medicines: $currentMedicineCount/$medicineLimit, Reminders: $currentReminderCount/$reminderLimit")
+            android.util.Log.d("AddReminder", "📊 Limits loaded - Medicines: $currentMedicineCount/$medicineLimit, MedicinesWithReminders: $currentReminderCount")
         } catch (e: Exception) {
             android.util.Log.e("AddReminder", "Error loading limits", e)
         }
@@ -453,16 +454,15 @@ fun AddReminderScreen(
                                 if (!isEditMode) {
                                     val newTimeSlotsCount = selectedTimes.size
 
-                                    // İlaç limiti kontrolü
-                                    if (medicineLimit != Constants.UNLIMITED && currentMedicineCount >= medicineLimit) {
-                                        limitDialogType = "medicine"
+                                    // Free kullanıcı zaten 1 hatırlatmaya sahipse yeni eklemeyi engelle
+                                    if (medicineLimit != Constants.UNLIMITED && currentReminderCount >= 1) {
+                                        limitDialogType = "reminder"
                                         showLimitDialog = true
                                         return@NavigationButtons
                                     }
 
-                                    // Hatırlatma (time slot) limiti kontrolü
-                                    if (reminderLimit != Constants.UNLIMITED &&
-                                        (currentReminderCount + newTimeSlotsCount) > reminderLimit) {
+                                    // Hatırlatma için saat limiti kontrolü (max 2 saat)
+                                    if (reminderLimit != Constants.UNLIMITED && newTimeSlotsCount > reminderLimit) {
                                         limitDialogType = "reminder"
                                         showLimitDialog = true
                                         return@NavigationButtons
@@ -523,23 +523,23 @@ fun AddReminderScreen(
 
     // 📊 Premium limit dialog'u
     if (showLimitDialog) {
-        val issMedicineLimit = limitDialogType == "medicine"
+        val isMedicineLimit = limitDialogType == "medicine"
         PremiumLimitDialog(
-            title = if (issMedicineLimit) "İlaç Limitine Ulaştınız" else "Hatırlatma Limitine Ulaştınız",
-            message = if (issMedicineLimit)
+            title = if (isMedicineLimit) "İlaç Limitine Ulaştınız" else "Hatırlatma Limitine Ulaştınız",
+            message = if (isMedicineLimit)
                 "Ücretsiz planda sadece 1 ilaç ekleyebilirsiniz. Sınırsız ilaç için Dozi Ekstra'ya yükseltin."
             else
-                "Ücretsiz planda sadece 2 hatırlatma saati ekleyebilirsiniz. Sınırsız hatırlatma için Dozi Ekstra'ya yükseltin.",
-            currentCount = if (issMedicineLimit) currentMedicineCount else currentReminderCount,
-            maxCount = if (issMedicineLimit) medicineLimit else reminderLimit,
+                "Ücretsiz planda 1 hatırlatma (max 2 saat) ekleyebilirsiniz. Sınırsız hatırlatma için Dozi Ekstra'ya yükseltin.",
+            currentCount = if (isMedicineLimit) currentMedicineCount else currentReminderCount,
+            maxCount = if (isMedicineLimit) medicineLimit else 1,
             requiredPlan = "Dozi Ekstra",
             onDismiss = {
                 showLimitDialog = false
             },
             onUpgrade = {
                 showLimitDialog = false
-                // Premium ekranına yönlendir
-                navController.navigate(Screen.Premium.route)
+                // Premium tanıtım ekranına yönlendir
+                navController.navigate(Screen.PremiumIntro.route)
             }
         )
     }

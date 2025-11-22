@@ -152,6 +152,7 @@ fun MedicineEditScreen(
     medicineId: String,
     onNavigateBack: () -> Unit,
     onNavigateToReminder: ((String) -> Unit)? = null,
+    onNavigateToPremium: () -> Unit = {},
     savedStateHandle: androidx.lifecycle.SavedStateHandle? = null
 ) {
     val context = LocalContext.current
@@ -196,7 +197,10 @@ fun MedicineEditScreen(
             maxCount = medicineLimit,
             requiredPlan = "Dozi Ekstra",
             onDismiss = { showLimitDialog = false },
-            onUpgrade = { showLimitDialog = false }
+            onUpgrade = {
+                showLimitDialog = false
+                onNavigateToPremium()
+            }
         )
     }
 
