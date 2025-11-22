@@ -14,13 +14,16 @@ data class Achievement(
     @ServerTimestamp
     val unlockedAt: Timestamp? = null,
     val progress: Int = 0,              // Mevcut ilerleme
-    val target: Int = 0,                // Hedef (örn: 7 gün, 10 ilaç)
+    val target: Int = 0,                // Hedef (örn: 7 gün, 10 hatırlatma)
     @ServerTimestamp
     val createdAt: Timestamp? = null
 )
 
 /**
  * 🎖️ Başarı Tipleri
+ *
+ * NOT: Başarımlar ilaç ALMAYA değil, DÜZENLİ OLMAYA teşvik eder.
+ * Toplam doz/ilaç sayısı gibi başarımlar tehlikeli olduğu için kaldırıldı.
  */
 enum class AchievementType(
     val displayName: String,
@@ -29,47 +32,47 @@ enum class AchievementType(
     val target: Int,
     val color: String
 ) {
-    // 🔥 Streak Başarıları
+    // 🔥 Streak Başarıları (Düzenlilik)
     STREAK_7_DAYS(
         "Ateşli Başlangıç",
-        "7 gün üst üste ilaç al",
+        "7 gün üst üste hatırlatmalarını kaçırma",
         "🔥",
         7,
         "#FF5722"
     ),
     STREAK_30_DAYS(
         "Kararlı",
-        "30 gün üst üste ilaç al",
+        "30 gün üst üste hatırlatmalarını kaçırma",
         "💪",
         30,
         "#FF9800"
     ),
     STREAK_100_DAYS(
         "Efsane",
-        "100 gün üst üste ilaç al",
+        "100 gün üst üste hatırlatmalarını kaçırma",
         "🌟",
         100,
         "#FFC107"
     ),
     STREAK_365_DAYS(
         "Yılın Kralı",
-        "365 gün üst üste ilaç al",
+        "365 gün üst üste hatırlatmalarını kaçırma",
         "👑",
         365,
         "#FFD700"
     ),
 
-    // 🎯 Uyum Başarıları
+    // 🎯 Mükemmel Hafta/Ay (Düzenlilik)
     PERFECT_WEEK(
         "Mükemmel Hafta",
-        "Bir hafta boyunca %100 uyum sağla",
+        "Bir hafta boyunca hiç hatırlatma kaçırma",
         "⭐",
         7,
         "#4CAF50"
     ),
     PERFECT_MONTH(
         "Mükemmel Ay",
-        "Bir ay boyunca %100 uyum sağla",
+        "Bir ay boyunca hiç hatırlatma kaçırma",
         "🏅",
         30,
         "#2196F3"
@@ -85,56 +88,72 @@ enum class AchievementType(
     ),
     FIRST_DOSE_TAKEN(
         "Başlangıç",
-        "İlk dozunu al",
+        "İlk hatırlatmana cevap ver",
         "✅",
         1,
         "#00BCD4"
     ),
-
-    // 📚 Koleksiyon Başarıları
-    MEDICINE_COLLECTOR_5(
-        "Yeni Başlayan",
-        "5 farklı ilaç ekle",
-        "📦",
-        5,
-        "#795548"
+    FIRST_BUDDY(
+        "Badi Var",
+        "İlk badini ekle",
+        "👥",
+        1,
+        "#3F51B5"
     ),
-    MEDICINE_COLLECTOR_10(
-        "Uzman",
-        "10 farklı ilaç ekle",
-        "📚",
-        10,
-        "#607D8B"
-    ),
-
-    // 📊 Toplam Doz Başarıları
-    TOTAL_DOSES_50(
-        "Yarım Yüzyıl",
-        "Toplam 50 doz al",
-        "🎯",
-        50,
-        "#E91E63"
-    ),
-    TOTAL_DOSES_100(
-        "Yüzüncü Doz",
-        "Toplam 100 doz al",
-        "💯",
-        100,
-        "#F44336"
-    ),
-    TOTAL_DOSES_365(
-        "Yıllık Başarı",
-        "Toplam 365 doz al",
-        "🎊",
-        365,
+    FIRST_PREMIUM(
+        "Premium Üye",
+        "Premium'a geç",
+        "💎",
+        1,
         "#9C27B0"
     ),
-    TOTAL_DOSES_1000(
-        "Binyıl",
-        "Toplam 1000 doz al",
-        "🏆",
-        1000,
-        "#FFD700"
+
+    // ⏰ Hatırlatma Kurulum Başarıları
+    REMINDERS_5(
+        "Düzenli Kullanıcı",
+        "5 hatırlatma kur",
+        "⏰",
+        5,
+        "#FF9800"
+    ),
+    REMINDERS_10(
+        "Organize",
+        "10 hatırlatma kur",
+        "📋",
+        10,
+        "#795548"
+    ),
+
+    // 🚀 Hızlı Yanıt Başarıları
+    QUICK_RESPONDER(
+        "Hızlı Cevap",
+        "10 hatırlatmayı eskalasyona gerek kalmadan al",
+        "⚡",
+        10,
+        "#00BCD4"
+    ),
+    SUPER_QUICK_RESPONDER(
+        "Şimşek Hızı",
+        "50 hatırlatmayı eskalasyona gerek kalmadan al",
+        "🚀",
+        50,
+        "#2196F3"
+    ),
+
+    // 👨‍👩‍👧‍👦 Aile/Sosyal Başarıları
+    FAMILY_MEMBER(
+        "Aile Üyesi",
+        "Birinin badisi ol",
+        "👨‍👩‍👧",
+        1,
+        "#E91E63"
+    ),
+    CARING_BUDDY(
+        "İlgili Badi",
+        "5 kez badine bildirim gönder",
+        "💝",
+        5,
+        "#F44336"
     );
 
     fun getProgressPercentage(current: Int): Float {
@@ -142,12 +161,3 @@ enum class AchievementType(
         return (current.toFloat() / target * 100).coerceIn(0f, 100f)
     }
 }
-
-/**
- * Note: UserStats model is defined in UserStats.kt
- * Fields used for achievements:
- * - currentStreak: Int
- * - longestStreak: Int
- * - totalMedicationsTaken: Int (total doses)
- * - achievements: List<String>
- */

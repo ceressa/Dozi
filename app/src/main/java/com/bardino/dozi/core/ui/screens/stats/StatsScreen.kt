@@ -101,48 +101,52 @@ fun StatsScreen(
 
 @Composable
 private fun InsightsSection(stats: UserStats?) {
-    val complianceRate = stats?.complianceRate ?: 0f
     val currentStreak = stats?.currentStreak ?: 0
+    val longestStreak = stats?.longestStreak ?: 0
+    val totalTaken = stats?.totalMedicationsTaken ?: 0
 
-    // Basit insight'lar oluştur (gerçek uygulamada GenerateInsightsUseCase kullanılır)
+    // Streak ve düzenlilik odaklı insight'lar
     val insights = remember(stats) {
         mutableListOf<Triple<String, String, String>>().apply {
-            // Trend analizi
+            // Seri analizi
             when {
-                complianceRate >= 90f -> add(Triple(
-                    "Mükemmel Performans!",
-                    "%${complianceRate.toInt()} uyumluluk oranı ile harikasınız",
+                currentStreak >= 30 -> add(Triple(
+                    "Muhteşem Seri!",
+                    "$currentStreak gündür hatırlatmalarınızı kaçırmıyorsunuz. Harika!",
                     "INFO"
                 ))
-                complianceRate >= 70f -> add(Triple(
-                    "İyi İlerleme",
-                    "Uyumluluğunuz %${complianceRate.toInt()}. Biraz daha dikkat ile mükemmel olabilirsiniz",
+                currentStreak >= 7 -> add(Triple(
+                    "Seri Başarısı!",
+                    "$currentStreak gündür düzenli devam ediyorsunuz. Devam edin!",
                     "INFO"
                 ))
-                complianceRate >= 50f -> add(Triple(
-                    "Dikkat Gerekli",
-                    "Uyumluluğunuz %${complianceRate.toInt()}. Hatırlatma saatlerinizi gözden geçirin",
+                currentStreak >= 3 -> add(Triple(
+                    "İyi Gidiyorsunuz",
+                    "$currentStreak günlük seriniz var. Böyle devam!",
+                    "INFO"
+                ))
+                currentStreak == 0 && totalTaken > 0 -> add(Triple(
+                    "Yeni Seri Başlatın",
+                    "Bugün hatırlatmalarınızı alarak yeni bir seri başlatın",
                     "WARNING"
-                ))
-                complianceRate > 0f -> add(Triple(
-                    "Uyumluluk Düşük",
-                    "Uyumluluğunuz %${complianceRate.toInt()}. İlaçlarınızı almayı unutmayın",
-                    "CRITICAL"
                 ))
             }
 
-            // Seri analizi
-            if (currentStreak >= 7) {
+            // Rekor analizi
+            if (longestStreak > currentStreak && longestStreak >= 7) {
                 add(Triple(
-                    "Seri Başarısı!",
-                    "$currentStreak gündür hiç aksatmadınız. Harika!",
+                    "Rekorunuza Yaklaşın",
+                    "En uzun seriniz $longestStreak gündü. Hedef bu!",
                     "INFO"
                 ))
-            } else if (currentStreak == 0 && complianceRate > 0) {
+            }
+
+            // Başlangıç teşviki
+            if (totalTaken == 0) {
                 add(Triple(
-                    "Seriyi Başlatın",
-                    "Bugün ilaçlarınızı alarak yeni bir seri başlatın",
-                    "WARNING"
+                    "Haydi Başlayalım!",
+                    "İlk hatırlatmanızı alarak yolculuğunuza başlayın",
+                    "INFO"
                 ))
             }
         }
@@ -676,18 +680,21 @@ private fun AchievementItem(
 
 @Composable
 private fun ComplianceCard(stats: UserStats?) {
-    val complianceRate = stats?.complianceRate ?: 0f
+    val currentStreak = stats?.currentStreak ?: 0
+    val longestStreak = stats?.longestStreak ?: 0
+
     val color = when {
-        complianceRate >= 90f -> SuccessGreen
-        complianceRate >= 70f -> WarningOrange
-        else -> ErrorRed
+        currentStreak >= 30 -> SuccessGreen
+        currentStreak >= 7 -> Color(0xFF4CAF50)
+        currentStreak >= 3 -> WarningOrange
+        else -> Color(0xFF9E9E9E)
     }
 
     val encouragementText = when {
-        complianceRate >= 90f -> "Mükemmel! 🌟"
-        complianceRate >= 70f -> "İyi gidiyorsun! 💪"
-        complianceRate >= 50f -> "Devam et! 🎯"
-        complianceRate > 0f -> "Başlangıç güzel! 🚀"
+        currentStreak >= 30 -> "Muhteşem! 🌟"
+        currentStreak >= 7 -> "Harika gidiyorsun! 💪"
+        currentStreak >= 3 -> "Devam et! 🎯"
+        currentStreak > 0 -> "Başlangıç güzel! 🚀"
         else -> "Haydi başla! 🌱"
     }
 
@@ -704,20 +711,21 @@ private fun ComplianceCard(stats: UserStats?) {
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
             Text(
-                "📈 Uyumluluk Oranı",
+                "🔥 Mevcut Seri",
                 style = MaterialTheme.typography.titleLarge,
                 fontWeight = FontWeight.Bold,
                 color = MaterialTheme.colorScheme.onSurface
             )
             Spacer(Modifier.height(24.dp))
 
-            // Circular Progress
+            // Streak display
             Box(
                 contentAlignment = Alignment.Center,
                 modifier = Modifier.size(140.dp)
             ) {
+                // Background circle
                 CircularProgressIndicator(
-                    progress = { complianceRate / 100f },
+                    progress = { if (longestStreak > 0) (currentStreak.toFloat() / longestStreak).coerceIn(0f, 1f) else 0f },
                     modifier = Modifier.fillMaxSize(),
                     color = color,
                     strokeWidth = 14.dp,
@@ -727,9 +735,14 @@ private fun ComplianceCard(stats: UserStats?) {
                     horizontalAlignment = Alignment.CenterHorizontally
                 ) {
                     Text(
-                        "${complianceRate.toInt()}%",
+                        "$currentStreak",
                         style = MaterialTheme.typography.displayMedium,
                         fontWeight = FontWeight.ExtraBold,
+                        color = color
+                    )
+                    Text(
+                        "gün",
+                        style = MaterialTheme.typography.bodyMedium,
                         color = color
                     )
                 }
@@ -744,7 +757,7 @@ private fun ComplianceCard(stats: UserStats?) {
             )
             Spacer(Modifier.height(8.dp))
             Text(
-                "Son 30 günlük ortalama",
+                "Rekor: $longestStreak gün",
                 style = MaterialTheme.typography.bodyMedium,
                 color = MaterialTheme.colorScheme.onSurfaceVariant
             )

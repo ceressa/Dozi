@@ -21,6 +21,8 @@ import javax.inject.Singleton
 
 /**
  * 🏆 Achievement Repository - Rozet sistemi yönetimi
+ *
+ * Başarımlar düzenli olmayı teşvik eder, daha fazla ilaç almayı değil.
  */
 @Singleton
 class AchievementRepository @Inject constructor() {
@@ -132,6 +134,11 @@ class AchievementRepository @Inject constructor() {
                 )
                 collection.document(achievementId).set(newAchievement).await()
                 Log.d(TAG, "Achievement created: ${achievementType.displayName}")
+
+                // Yeni oluşturulan ve hemen kilidi açılan
+                if (newAchievement.isUnlocked) {
+                    sendAchievementUnlockedNotification(newAchievement)
+                }
             } else {
                 val achievement = doc.toObject(Achievement::class.java)
                 if (achievement != null && !achievement.isUnlocked) {
@@ -216,6 +223,10 @@ class AchievementRepository @Inject constructor() {
         return Pair(unlocked, total)
     }
 
+    // ============================================================
+    // STREAK BAŞARILARI
+    // ============================================================
+
     /**
      * Streak başarılarını kontrol et ve güncelle
      */
@@ -226,9 +237,7 @@ class AchievementRepository @Inject constructor() {
             AchievementType.STREAK_100_DAYS,
             AchievementType.STREAK_365_DAYS
         ).forEach { type ->
-            if (currentStreak >= type.target) {
-                updateAchievementProgress(type, currentStreak)
-            }
+            updateAchievementProgress(type, currentStreak)
         }
     }
 
@@ -236,15 +245,13 @@ class AchievementRepository @Inject constructor() {
      * Perfect week/month başarılarını kontrol et
      */
     suspend fun checkPerfectComplianceAchievements(consecutivePerfectDays: Int) {
-        when {
-            consecutivePerfectDays >= 30 -> {
-                updateAchievementProgress(AchievementType.PERFECT_MONTH, consecutivePerfectDays)
-            }
-            consecutivePerfectDays >= 7 -> {
-                updateAchievementProgress(AchievementType.PERFECT_WEEK, consecutivePerfectDays)
-            }
-        }
+        updateAchievementProgress(AchievementType.PERFECT_WEEK, consecutivePerfectDays)
+        updateAchievementProgress(AchievementType.PERFECT_MONTH, consecutivePerfectDays)
     }
+
+    // ============================================================
+    // İLK ADIM BAŞARILARI
+    // ============================================================
 
     /**
      * İlk adım başarılarını kontrol et
@@ -262,55 +269,91 @@ class AchievementRepository @Inject constructor() {
     }
 
     /**
-     * Koleksiyon başarılarını kontrol et (ilaç sayısı)
+     * İlk badi eklendi
      */
-    suspend fun checkMedicineCollectorAchievements(totalMedicines: Int) {
-        if (totalMedicines >= 5) {
-            updateAchievementProgress(AchievementType.MEDICINE_COLLECTOR_5, totalMedicines)
-        }
-        if (totalMedicines >= 10) {
-            updateAchievementProgress(AchievementType.MEDICINE_COLLECTOR_10, totalMedicines)
+    suspend fun checkFirstBuddyAchievement(hasBuddy: Boolean) {
+        if (hasBuddy) {
+            updateAchievementProgress(AchievementType.FIRST_BUDDY, 1)
         }
     }
 
     /**
-     * Toplam doz başarılarını kontrol et
+     * Premium oldu
      */
-    suspend fun checkTotalDosesAchievements(totalDoses: Int) {
-        listOf(
-            AchievementType.TOTAL_DOSES_50,
-            AchievementType.TOTAL_DOSES_100,
-            AchievementType.TOTAL_DOSES_365,
-            AchievementType.TOTAL_DOSES_1000
-        ).forEach { type ->
-            if (totalDoses >= type.target) {
-                updateAchievementProgress(type, totalDoses)
-            }
+    suspend fun checkPremiumAchievement(isPremium: Boolean) {
+        if (isPremium) {
+            updateAchievementProgress(AchievementType.FIRST_PREMIUM, 1)
         }
     }
+
+    // ============================================================
+    // HATIRLATA KURULUM BAŞARILARI
+    // ============================================================
+
+    /**
+     * Hatırlatma kurulum başarılarını kontrol et
+     */
+    suspend fun checkReminderSetupAchievements(totalReminders: Int) {
+        updateAchievementProgress(AchievementType.REMINDERS_5, totalReminders)
+        updateAchievementProgress(AchievementType.REMINDERS_10, totalReminders)
+    }
+
+    // ============================================================
+    // HIZLI YANIT BAŞARILARI
+    // ============================================================
+
+    /**
+     * Hızlı yanıt başarılarını kontrol et (eskalasyonsuz alınan)
+     */
+    suspend fun checkQuickResponseAchievements(quickResponseCount: Int) {
+        updateAchievementProgress(AchievementType.QUICK_RESPONDER, quickResponseCount)
+        updateAchievementProgress(AchievementType.SUPER_QUICK_RESPONDER, quickResponseCount)
+    }
+
+    // ============================================================
+    // SOSYAL BAŞARILAR
+    // ============================================================
+
+    /**
+     * Aile üyesi oldu (birinin badisi oldu)
+     */
+    suspend fun checkFamilyMemberAchievement(isBuddyOfSomeone: Boolean) {
+        if (isBuddyOfSomeone) {
+            updateAchievementProgress(AchievementType.FAMILY_MEMBER, 1)
+        }
+    }
+
+    /**
+     * Badi bildirimi gönderdi
+     */
+    suspend fun checkCaringBuddyAchievement(buddyNotificationsSent: Int) {
+        updateAchievementProgress(AchievementType.CARING_BUDDY, buddyNotificationsSent)
+    }
+
+    // ============================================================
+    // TOPLU KONTROL
+    // ============================================================
 
     /**
      * Tüm başarıları kontrol et ve güncelle
-     * (İlaç alındığında, ilaç eklendiğinde, vb. çağrılır)
+     * (İlaç alındığında, hatırlatma kurulduğunda, vb. çağrılır)
      */
     suspend fun checkAllAchievements(userStats: UserStats) {
         // Streak başarıları
         checkStreakAchievements(userStats.currentStreak)
 
-        // Perfect compliance başarıları
-        // TODO: consecutivePerfectDays hesapla
-
         // First step başarıları
         checkFirstStepAchievements(
-            hasMedicine = userStats.totalMedicines > 0,
-            hasTakenDose = userStats.totalDosesTaken > 0
+            hasMedicine = userStats.totalMedicationsTaken > 0,
+            hasTakenDose = userStats.totalMedicationsTaken > 0
         )
 
-        // Koleksiyon başarıları
-        checkMedicineCollectorAchievements(userStats.totalMedicines)
+        // Hızlı yanıt başarıları
+        checkQuickResponseAchievements(userStats.quickResponseCount)
 
-        // Toplam doz başarıları
-        checkTotalDosesAchievements(userStats.totalDosesTaken)
+        // Sosyal başarılar
+        checkFirstBuddyAchievement(userStats.buddyCount > 0)
+        checkCaringBuddyAchievement(userStats.buddyNotificationsSent)
     }
 
     /**

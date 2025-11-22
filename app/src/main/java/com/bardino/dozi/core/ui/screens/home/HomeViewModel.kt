@@ -833,30 +833,26 @@ class HomeViewModel @Inject constructor(
                 // UserStats'ı getir
                 val userStats = userStatsRepository.getUserStats() ?: return@launch
 
-                // Tüm ilaçları ve logları al
+                // Tüm ilaçları al
                 val allMedicines = medicineRepository.getAllMedicines()
-                val totalMedicines = allMedicines.size
+                val totalReminders = allMedicines.sumOf { it.reminderTimes.size }
 
-                Log.d(TAG, "🏆 Checking achievements: streak=${userStats.currentStreak}, totalDoses=${userStats.totalMedicationsTaken}, medicines=$totalMedicines")
+                Log.d(TAG, "🏆 Checking achievements: streak=${userStats.currentStreak}, reminders=$totalReminders")
 
                 // 🔥 Streak achievements
                 achievementRepository.checkStreakAchievements(userStats.currentStreak)
 
                 // 🏅 First step achievements
-                // Note: hasTakenDose = true because we just took a dose (stats not yet updated)
                 achievementRepository.checkFirstStepAchievements(
-                    hasMedicine = totalMedicines > 0,
+                    hasMedicine = allMedicines.isNotEmpty(),
                     hasTakenDose = true
                 )
 
-                // 📚 Medicine collector achievements
-                achievementRepository.checkMedicineCollectorAchievements(totalMedicines)
+                // ⏰ Reminder setup achievements
+                achievementRepository.checkReminderSetupAchievements(totalReminders)
 
-                // 💯 Total doses achievements
-                achievementRepository.checkTotalDosesAchievements(userStats.totalMedicationsTaken)
-
-                // 🎯 Perfect compliance achievements (TODO: calculate consecutive perfect days)
-                // achievementRepository.checkPerfectComplianceAchievements(consecutivePerfectDays)
+                // ⚡ Quick response achievements
+                achievementRepository.checkQuickResponseAchievements(userStats.quickResponseCount)
 
                 Log.d(TAG, "✅ Achievement check completed")
             } catch (e: Exception) {

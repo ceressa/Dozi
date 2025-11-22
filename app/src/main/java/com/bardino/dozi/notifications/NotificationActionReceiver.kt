@@ -770,15 +770,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
     /**
      * 🚫 Tüm escalation alarmlarını iptal et
-     * IMPORTANT: Intent extras dahil tamamen eşleşmeli, yoksa iptal edilmez!
+     * FLAG_UPDATE_CURRENT kullanarak aynı PendingIntent'i alıp iptal ediyoruz
      */
     private fun cancelAllEscalations(context: Context, medicineId: String, time: String) {
         val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
-        // RequestCode ile iptal etmek için FLAG_NO_CREATE kullan
-        // Bu sayede Intent extras'a bakılmaz, sadece requestCode eşleşir
+        android.util.Log.d("NotificationActionReceiver", "🔕 Escalation iptal ediliyor: $medicineId @ $time")
 
-        // Escalation 1 iptal
+        // Escalation 1 iptal - Aynı intent ve requestCode ile
         val esc1Intent = Intent(context, NotificationActionReceiver::class.java).apply {
             action = "ACTION_ESCALATION_1"
         }
@@ -788,16 +787,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
             esc1RequestCode,
             esc1Intent,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             } else {
-                PendingIntent.FLAG_NO_CREATE
+                PendingIntent.FLAG_UPDATE_CURRENT
             }
         )
-        if (esc1PendingIntent != null) {
-            alarmManager.cancel(esc1PendingIntent)
-            esc1PendingIntent.cancel()
-            android.util.Log.d("NotificationActionReceiver", "✅ Escalation 1 iptal edildi: $medicineId")
-        }
+        alarmManager.cancel(esc1PendingIntent)
+        esc1PendingIntent.cancel()
+        android.util.Log.d("NotificationActionReceiver", "✅ Escalation 1 iptal edildi: $medicineId (requestCode: $esc1RequestCode)")
 
         // Escalation 2 iptal
         val esc2Intent = Intent(context, NotificationActionReceiver::class.java).apply {
@@ -809,16 +806,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
             esc2RequestCode,
             esc2Intent,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             } else {
-                PendingIntent.FLAG_NO_CREATE
+                PendingIntent.FLAG_UPDATE_CURRENT
             }
         )
-        if (esc2PendingIntent != null) {
-            alarmManager.cancel(esc2PendingIntent)
-            esc2PendingIntent.cancel()
-            android.util.Log.d("NotificationActionReceiver", "✅ Escalation 2 iptal edildi: $medicineId")
-        }
+        alarmManager.cancel(esc2PendingIntent)
+        esc2PendingIntent.cancel()
+        android.util.Log.d("NotificationActionReceiver", "✅ Escalation 2 iptal edildi: $medicineId (requestCode: $esc2RequestCode)")
 
         // Escalation 3 iptal
         val esc3Intent = Intent(context, NotificationActionReceiver::class.java).apply {
@@ -830,16 +825,14 @@ class NotificationActionReceiver : BroadcastReceiver() {
             esc3RequestCode,
             esc3Intent,
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                PendingIntent.FLAG_NO_CREATE or PendingIntent.FLAG_IMMUTABLE
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             } else {
-                PendingIntent.FLAG_NO_CREATE
+                PendingIntent.FLAG_UPDATE_CURRENT
             }
         )
-        if (esc3PendingIntent != null) {
-            alarmManager.cancel(esc3PendingIntent)
-            esc3PendingIntent.cancel()
-            android.util.Log.d("NotificationActionReceiver", "✅ Escalation 3 iptal edildi: $medicineId")
-        }
+        alarmManager.cancel(esc3PendingIntent)
+        esc3PendingIntent.cancel()
+        android.util.Log.d("NotificationActionReceiver", "✅ Escalation 3 iptal edildi: $medicineId (requestCode: $esc3RequestCode)")
 
         // 📝 Log: Tüm escalation'lar iptal edildi
         ReminderLogger.logEscalationCancelled(context, medicineId, "", time, null)
