@@ -66,6 +66,7 @@ fun DoziBottomBar(
     val auth = remember { FirebaseAuth.getInstance() }
     var isLoggedIn by remember { mutableStateOf(auth.currentUser != null) }
     var showMoreMenu by remember { mutableStateOf(false) }
+    var showBadiPremiumDialog by remember { mutableStateOf(false) }
 
     // Premium Manager için EntryPoint erişimi
     val premiumManager = remember {
@@ -92,6 +93,17 @@ fun DoziBottomBar(
         }
         auth.addAuthStateListener(listener)
         onDispose { auth.removeAuthStateListener(listener) }
+    }
+
+    // Badi Premium Dialog
+    if (showBadiPremiumDialog) {
+        BadiPremiumDialog(
+            onDismiss = { showBadiPremiumDialog = false },
+            onUpgrade = {
+                showBadiPremiumDialog = false
+                onPremiumRequired()
+            }
+        )
     }
 
     val mainItems = listOf(
@@ -204,9 +216,9 @@ fun DoziBottomBar(
                     showMoreMenu = false
                     onLoginRequired()
                 },
-                onPremiumRequired = {
+                onBadiPremiumRequired = {
                     showMoreMenu = false
-                    onPremiumRequired()
+                    showBadiPremiumDialog = true
                 }
             )
         }
@@ -222,7 +234,7 @@ private fun MoreMenuBottomSheet(
     onDismiss: () -> Unit,
     onNavigate: (String) -> Unit,
     onLoginRequired: () -> Unit,
-    onPremiumRequired: () -> Unit
+    onBadiPremiumRequired: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -304,7 +316,7 @@ private fun MoreMenuBottomSheet(
                     onClick = {
                         when {
                             requiresLogin && !isLoggedIn -> onLoginRequired()
-                            requiresPremium && !isPremium -> onPremiumRequired()
+                            requiresPremium && !isPremium -> onBadiPremiumRequired()
                             else -> onNavigate(item.route)
                         }
                     }
