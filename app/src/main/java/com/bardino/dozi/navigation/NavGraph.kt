@@ -161,6 +161,9 @@ fun NavGraph(
                             popUpTo(Screen.MedicineList.route)
                         }
                     },
+                    onNavigateToPremium = {
+                        navController.navigate(Screen.PremiumIntro.route)
+                    },
                     savedStateHandle = navController.previousBackStackEntry?.savedStateHandle
                 )
             }

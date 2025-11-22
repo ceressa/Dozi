@@ -62,6 +62,7 @@ import com.bardino.dozi.core.data.repository.MedicineRepository
 import com.bardino.dozi.core.data.repository.UserRepository
 import com.bardino.dozi.core.ui.screens.home.MedicineStatus
 import com.bardino.dozi.core.ui.theme.*
+import com.bardino.dozi.core.ui.components.BadiPremiumDialog
 import com.bardino.dozi.core.utils.SoundHelper
 import com.bardino.dozi.navigation.Screen
 import kotlinx.coroutines.CoroutineScope
@@ -263,6 +264,10 @@ fun HomeScreen(
     // Local UI state'leri (sadece UI için)
     var timelineExpanded by remember { mutableStateOf(false) }
     var selectedDate by remember { mutableStateOf<LocalDate?>(null) }
+    var showBadiPremiumDialog by remember { mutableStateOf(false) }
+
+    // Premium durumunu hesapla
+    val isPremium = uiState.user?.planType != "free"
 
     val scrollState = rememberScrollState()
     val coroutineScope = rememberCoroutineScope()
@@ -291,6 +296,17 @@ fun HomeScreen(
     // 🎨 Tema renklerini al
     val backgroundColor = MaterialTheme.colorScheme.background
     val surfaceColor = MaterialTheme.colorScheme.surface
+
+    // 🎁 Badi Premium Dialog
+    if (showBadiPremiumDialog) {
+        BadiPremiumDialog(
+            onDismiss = { showBadiPremiumDialog = false },
+            onUpgrade = {
+                showBadiPremiumDialog = false
+                navController.navigate(Screen.PremiumIntro.route)
+            }
+        )
+    }
 
     Box(modifier = Modifier.fillMaxSize()) {
         Column(
@@ -402,7 +418,9 @@ fun HomeScreen(
 
                         // Badi Promotion - Kompakt
                         CompactBadiPromotionCard(
+                            isPremium = isPremium,
                             onNavigateToBadi = { navController.navigate(Screen.BadiList.route) },
+                            onPremiumRequired = { showBadiPremiumDialog = true },
                             modifier = Modifier.weight(1f)
                         )
                     }
@@ -2898,14 +2916,22 @@ private fun CompactStreakCard(
  */
 @Composable
 private fun CompactBadiPromotionCard(
+    isPremium: Boolean,
     onNavigateToBadi: () -> Unit,
+    onPremiumRequired: () -> Unit,
     modifier: Modifier = Modifier
 ) {
     Card(
         modifier = modifier
             .fillMaxWidth()
             .padding(horizontal = 12.dp)
-            .clickable { onNavigateToBadi() }
+            .clickable {
+                if (isPremium) {
+                    onNavigateToBadi()
+                } else {
+                    onPremiumRequired()
+                }
+            }
             .border(1.dp, DoziPrimaryLight, RoundedCornerShape(16.dp)),
         shape = RoundedCornerShape(16.dp),
         elevation = CardDefaults.cardElevation(defaultElevation = 0.dp),
