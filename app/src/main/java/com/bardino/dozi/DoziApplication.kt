@@ -26,9 +26,17 @@ import kotlinx.coroutines.launch
 @HiltAndroidApp
 class DoziApplication : Application() {
 
+    companion object {
+        var instance: DoziApplication? = null
+            private set
+    }
+
     @OptIn(ExperimentalFoundationApi::class)
     override fun onCreate() {
         super.onCreate()
+
+        // Instance'ı kaydet
+        instance = this
 
         if (!Places.isInitialized()) {
             Places.initialize(this, getString(R.string.google_maps_key))

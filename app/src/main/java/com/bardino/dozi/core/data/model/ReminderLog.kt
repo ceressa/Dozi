@@ -77,6 +77,21 @@ enum class ReminderEventType {
     DOSE_SNOOZED,               // İlaç ertelendi
     DOSE_MISSED,                // İlaç kaçırıldı (otomatik)
 
+    // Snooze işlemleri
+    SNOOZE_TRIGGERED,           // Erteleme süresi doldu
+
+    // Escalation işlemleri
+    ESCALATION_SCHEDULED,       // Escalation planlandı
+    ESCALATION_CANCELLED,       // Escalation iptal edildi
+    ESCALATION_1_TRIGGERED,     // 10 dk escalation tetiklendi
+    ESCALATION_2_TRIGGERED,     // 30 dk escalation tetiklendi
+    ESCALATION_3_TRIGGERED,     // 60 dk escalation tetiklendi
+
+    // Badi (Buddy) işlemleri
+    BUDDY_REQUEST_ACCEPTED,     // Badi isteği kabul edildi
+    BUDDY_REQUEST_REJECTED,     // Badi isteği reddedildi
+    BUDDY_NOTIFICATION_SENT,    // Badi'ye kritik ilaç bildirimi gönderildi
+
     // Sistem olayları
     BOOT_COMPLETED,             // Cihaz yeniden başlatıldı
     ALL_ALARMS_RESCHEDULED,     // Tüm alarmlar yeniden planlandı
@@ -118,6 +133,15 @@ fun ReminderEventType.toEmoji(): String = when (this) {
     ReminderEventType.DOSE_SKIPPED -> "⏭️"
     ReminderEventType.DOSE_SNOOZED -> "😴"
     ReminderEventType.DOSE_MISSED -> "❌"
+    ReminderEventType.SNOOZE_TRIGGERED -> "⏰"
+    ReminderEventType.ESCALATION_SCHEDULED -> "📈"
+    ReminderEventType.ESCALATION_CANCELLED -> "📉"
+    ReminderEventType.ESCALATION_1_TRIGGERED -> "🔔1️⃣"
+    ReminderEventType.ESCALATION_2_TRIGGERED -> "🚨2️⃣"
+    ReminderEventType.ESCALATION_3_TRIGGERED -> "🔴3️⃣"
+    ReminderEventType.BUDDY_REQUEST_ACCEPTED -> "✅👥"
+    ReminderEventType.BUDDY_REQUEST_REJECTED -> "❌👥"
+    ReminderEventType.BUDDY_NOTIFICATION_SENT -> "📤👥"
     ReminderEventType.BOOT_COMPLETED -> "🔌"
     ReminderEventType.ALL_ALARMS_RESCHEDULED -> "📅"
     ReminderEventType.APP_OPENED -> "📱"
@@ -148,6 +172,15 @@ fun ReminderEventType.toTurkish(): String = when (this) {
     ReminderEventType.DOSE_SKIPPED -> "İlaç Atlandı"
     ReminderEventType.DOSE_SNOOZED -> "İlaç Ertelendi"
     ReminderEventType.DOSE_MISSED -> "İlaç Kaçırıldı"
+    ReminderEventType.SNOOZE_TRIGGERED -> "Erteleme Tetiklendi"
+    ReminderEventType.ESCALATION_SCHEDULED -> "Escalation Planlandı"
+    ReminderEventType.ESCALATION_CANCELLED -> "Escalation İptal Edildi"
+    ReminderEventType.ESCALATION_1_TRIGGERED -> "Escalation 1 Tetiklendi"
+    ReminderEventType.ESCALATION_2_TRIGGERED -> "Escalation 2 Tetiklendi"
+    ReminderEventType.ESCALATION_3_TRIGGERED -> "Escalation 3 Tetiklendi"
+    ReminderEventType.BUDDY_REQUEST_ACCEPTED -> "Badi İsteği Kabul Edildi"
+    ReminderEventType.BUDDY_REQUEST_REJECTED -> "Badi İsteği Reddedildi"
+    ReminderEventType.BUDDY_NOTIFICATION_SENT -> "Badi Bildirimi Gönderildi"
     ReminderEventType.BOOT_COMPLETED -> "Cihaz Başlatıldı"
     ReminderEventType.ALL_ALARMS_RESCHEDULED -> "Tüm Alarmlar Planlandı"
     ReminderEventType.APP_OPENED -> "Uygulama Açıldı"

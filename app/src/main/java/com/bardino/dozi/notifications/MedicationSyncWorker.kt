@@ -11,8 +11,10 @@ import androidx.work.WorkManager
 import androidx.work.WorkRequest
 import androidx.work.WorkerParameters
 import androidx.work.workDataOf
+import com.bardino.dozi.core.data.repository.AchievementRepository
 import com.bardino.dozi.core.data.repository.BadiRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
+import com.bardino.dozi.core.data.repository.UserStatsRepository
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Dispatchers
@@ -228,6 +230,16 @@ class MedicationSyncWorker(
             scheduledTime = scheduledTime,
             takenTime = takenTime
         )
+
+        // 🏆 Başarı kontrolü yap
+        try {
+            val achievementRepository = AchievementRepository()
+            val userStatsRepository = UserStatsRepository(achievementRepository)
+            userStatsRepository.onMedicationTaken(medicationLogRepository)
+            Log.d(TAG, "🏆 Achievement check completed for: $medicineName")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Achievement check failed", e)
+        }
 
         Log.d(TAG, "✅ Medication TAKEN logged: $medicineName")
         return Result.success()
