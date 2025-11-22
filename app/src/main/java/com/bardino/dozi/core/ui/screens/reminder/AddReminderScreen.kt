@@ -404,7 +404,8 @@ fun AddReminderScreen(
                                     limitDialogType = "reminder"
                                 }
                             },
-                            context = context
+                            context = context,
+                            reminderLimit = reminderLimit
                         )
 
                         4 -> SummaryStep(
@@ -1726,12 +1727,56 @@ private fun showEndDatePicker(context: Context, startDate: Long, currentEndDate:
 private fun TimeStep(
     selectedTimes: List<TimeEntry>,
     onTimesChange: (List<TimeEntry>) -> Unit,
-    context: Context
+    context: Context,
+    reminderLimit: Int = -1 // -1 = sınırsız
 ) {
     Column(
         modifier = Modifier.fillMaxWidth(),
         verticalArrangement = Arrangement.spacedBy(16.dp)
     ) {
+        // 📊 Free kullanıcı için zaman limiti bilgisi
+        if (reminderLimit > 0) {
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(
+                    containerColor = if (selectedTimes.size >= reminderLimit)
+                        Color(0xFFFFEBEE) // Kırmızı arka plan
+                    else
+                        Color(0xFFE3F2FD) // Mavi arka plan
+                )
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = if (selectedTimes.size >= reminderLimit)
+                            Color(0xFFE53935)
+                        else
+                            DoziTurquoise,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Text(
+                        text = if (selectedTimes.size >= reminderLimit)
+                            "Zaman limitine ulaştınız (${selectedTimes.size}/$reminderLimit). Daha fazla saat için Dozi Ekstra'ya geçin."
+                        else
+                            "Ücretsiz planda $reminderLimit saat ekleyebilirsiniz. (${selectedTimes.size}/$reminderLimit kullanıldı)",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = if (selectedTimes.size >= reminderLimit)
+                            Color(0xFFE53935)
+                        else
+                            Color(0xFF1565C0)
+                    )
+                }
+            }
+        }
+
         // Preset saatler
         Text(
             text = "⚡ Hızlı Seçim",
