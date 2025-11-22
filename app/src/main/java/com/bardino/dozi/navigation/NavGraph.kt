@@ -65,6 +65,7 @@ fun NavGraph(
                 DoziBottomBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
+                        android.util.Log.d("NavGraph", "🧭 onNavigate called with route: $route, currentRoute: $currentRoute")
                         navController.navigate(route) {
                             popUpTo(Screen.Home.route) {
                                 saveState = true // ✅ State'i koru

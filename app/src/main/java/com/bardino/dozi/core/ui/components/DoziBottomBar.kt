@@ -1,5 +1,6 @@
 package com.bardino.dozi.core.ui.components
 
+import android.util.Log
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.*
@@ -167,6 +168,7 @@ fun DoziBottomBar(
                             }
                             is BottomNavItem.Home -> {
                                 // Ana Sayfa'ya her zaman navigate et
+                                Log.d("DoziBottomBar", "🏠 Home clicked, currentRoute: $currentRoute, navigating to: ${item.route}")
                                 onNavigate(item.route)
                             }
                             else -> {
