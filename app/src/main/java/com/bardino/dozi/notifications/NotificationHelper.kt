@@ -793,4 +793,48 @@ object NotificationHelper {
             else -> NotificationCompat.PRIORITY_DEFAULT
         }
     }
+
+    /**
+     * 📊 Haftalık rapor bildirimi göster
+     */
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    fun showWeeklyReportNotification(
+        context: Context,
+        compliance: Int,
+        takenCount: Int,
+        missedCount: Int
+    ) {
+        createDoziChannel(context)
+        val nm = NotificationManagerCompat.from(context)
+
+        val contentIntent = PendingIntent.getActivity(
+            context, 0,
+            Intent(context, MainActivity::class.java).apply {
+                addFlags(Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP)
+                putExtra("navigation_route", "stats")
+            },
+            PendingIntent.FLAG_UPDATE_CURRENT or mutableFlag()
+        )
+
+        val title = "📊 Haftalık Raporunuz Hazır!"
+        val content = when {
+            compliance >= 90 -> "Harika! %$compliance uyumluluk. $takenCount doz aldınız."
+            compliance >= 70 -> "İyi gidiyorsunuz! %$compliance uyumluluk. Biraz daha dikkatli olabilirsiniz."
+            else -> "Dikkat! %$compliance uyumluluk. $missedCount doz kaçırdınız."
+        }
+
+        val notification = NotificationCompat.Builder(context, CHANNEL_ID)
+            .setSmallIcon(R.drawable.ic_notification_pill)
+            .setColor(Color.parseColor("#26C6DA"))
+            .setContentTitle(title)
+            .setContentText(content)
+            .setStyle(NotificationCompat.BigTextStyle().bigText(content))
+            .setAutoCancel(true)
+            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setCategory(NotificationCompat.CATEGORY_STATUS)
+            .setContentIntent(contentIntent)
+            .build()
+
+        nm.notify(NOTIF_ID + 100, notification)
+    }
 }
