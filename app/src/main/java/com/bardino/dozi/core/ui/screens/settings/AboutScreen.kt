@@ -96,7 +96,7 @@ fun AboutScreen(
                     fontWeight = FontWeight.Medium
                 )
                 Text(
-                    text = "Versiyon $versionName",
+                    text = "Versiyon $versionName (Build $versionCode)",
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant
                 )
