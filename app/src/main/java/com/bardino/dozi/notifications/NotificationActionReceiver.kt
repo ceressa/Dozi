@@ -428,9 +428,13 @@ class NotificationActionReceiver : BroadcastReceiver() {
     ) {
         android.util.Log.d("NotificationActionReceiver", "🔔 Hatırlatma tetiklendi: $medicineName ($time)")
 
+        // 📝 Alarm tetiklenme logu
+        ReminderLogger.logAlarmTriggered(context, medicineId, medicineName, time)
+
         // Bildirim izni kontrolü
         if (!hasNotificationPermission(context)) {
             android.util.Log.w("NotificationActionReceiver", "⚠️ Bildirim izni yok")
+            ReminderLogger.logNotificationFailed(context, medicineId, medicineName, time, "Bildirim izni yok")
             return
         }
 
@@ -484,6 +488,10 @@ class NotificationActionReceiver : BroadcastReceiver() {
                             reminderName = medicine.reminderName,
                             isCritical = isCritical
                         )
+
+                        // 📝 Bildirim gönderildi logu
+                        val notificationId = "${medicine.id}_$time".hashCode()
+                        ReminderLogger.logNotificationSent(context, medicine.id, medicine.name, time, notificationId)
                     }
 
                     // 🔄 Sonraki alarmı planla (frequency'ye göre)
