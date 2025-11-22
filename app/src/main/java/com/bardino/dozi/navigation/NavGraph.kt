@@ -84,6 +84,12 @@ fun NavGraph(
                             launchSingleTop = true
                             restoreState = true
                         }
+                    },
+                    onPremiumRequired = {
+                        // Premium olmayan kullanıcılar PremiumIntro'ya yönlendir
+                        navController.navigate(Screen.PremiumIntro.route) {
+                            launchSingleTop = true
+                        }
                     }
                 )
             }

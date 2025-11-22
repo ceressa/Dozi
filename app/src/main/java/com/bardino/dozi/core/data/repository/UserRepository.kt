@@ -91,6 +91,7 @@ class UserRepository(
 
     /**
      * 🎁 Yeni kullanıcıya 3 günlük ücretsiz trial başlat
+     * NOT: Trial sadece bir kez verilebilir! trialUsedAt ile kontrol edilir.
      */
     suspend fun activateTrialForNewUser() {
         val user = auth.currentUser ?: return
@@ -98,15 +99,29 @@ class UserRepository(
         val snapshot = docRef.get().await()
         val userData = snapshot.toObject(User::class.java) ?: return
 
-        // Eğer kullanıcı zaten premium veya trial almışsa, tekrar verme
-        if (userData.isPremium || userData.premiumExpiryDate > 0) {
+        // 1. Trial daha önce kullanıldıysa, tekrar verme
+        if (userData.trialUsedAt != null) {
+            android.util.Log.d("PREMIUM_TRIAL", "❌ Kullanıcı daha önce trial kullanmış: ${userData.trialUsedAt}")
             return
         }
 
-        // 3 günlük trial ver
+        // 2. Eğer kullanıcı zaten aktif premium'a sahipse, trial verme
+        if (userData.premiumStatus().isActive) {
+            android.util.Log.d("PREMIUM_TRIAL", "❌ Kullanıcı zaten aktif premium'a sahip")
+            return
+        }
+
+        // 3. Eğer kullanıcı daha önce premium satın almışsa (premiumExpiryDate > 0), trial verme
+        if (userData.premiumExpiryDate > 0) {
+            android.util.Log.d("PREMIUM_TRIAL", "❌ Kullanıcı daha önce premium kullanmış")
+            return
+        }
+
+        // ✅ 3 günlük trial ver
         val now = System.currentTimeMillis()
         val expiryDate = now + (3 * 24 * 60 * 60 * 1000L) // 3 gün
 
+        android.util.Log.d("PREMIUM_TRIAL", "✅ Yeni kullanıcıya 3 günlük trial veriliyor")
         docRef.update(PremiumFields.activePlan(PremiumPlanType.TRIAL, now, expiryDate, isTrial = true)).await()
     }
 

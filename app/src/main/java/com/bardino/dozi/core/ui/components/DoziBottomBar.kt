@@ -18,6 +18,19 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.bardino.dozi.core.ui.theme.*
 import com.google.firebase.auth.FirebaseAuth
+import com.bardino.dozi.core.premium.PremiumManager
+import dagger.hilt.EntryPoint
+import dagger.hilt.InstallIn
+import dagger.hilt.android.EntryPointAccessors
+import dagger.hilt.components.SingletonComponent
+import kotlinx.coroutines.runBlocking
+
+// EntryPoint for accessing PremiumManager in Composable
+@EntryPoint
+@InstallIn(SingletonComponent::class)
+interface DoziBottomBarEntryPoint {
+    fun premiumManager(): PremiumManager
+}
 
 sealed class BottomNavItem(
     val route: String,
@@ -46,11 +59,31 @@ sealed class MoreMenuItem(
 fun DoziBottomBar(
     currentRoute: String?,
     onNavigate: (String) -> Unit,
-    onLoginRequired: () -> Unit = {}
+    onLoginRequired: () -> Unit = {},
+    onPremiumRequired: () -> Unit = {}
 ) {
+    val context = androidx.compose.ui.platform.LocalContext.current
     val auth = remember { FirebaseAuth.getInstance() }
     var isLoggedIn by remember { mutableStateOf(auth.currentUser != null) }
     var showMoreMenu by remember { mutableStateOf(false) }
+
+    // Premium Manager için EntryPoint erişimi
+    val premiumManager = remember {
+        EntryPointAccessors.fromApplication(
+            context.applicationContext,
+            DoziBottomBarEntryPoint::class.java
+        ).premiumManager()
+    }
+
+    // Premium durumunu kontrol et
+    var isPremium by remember { mutableStateOf(false) }
+    LaunchedEffect(isLoggedIn) {
+        if (isLoggedIn) {
+            isPremium = premiumManager.isPremium()
+        } else {
+            isPremium = false
+        }
+    }
 
     // Auth durumu değiştiğinde otomatik güncelle
     DisposableEffect(Unit) {
@@ -160,6 +193,7 @@ fun DoziBottomBar(
         if (showMoreMenu) {
             MoreMenuBottomSheet(
                 isLoggedIn = isLoggedIn,
+                isPremium = isPremium,
                 currentRoute = currentRoute,
                 onDismiss = { showMoreMenu = false },
                 onNavigate = { route ->
@@ -169,6 +203,10 @@ fun DoziBottomBar(
                 onLoginRequired = {
                     showMoreMenu = false
                     onLoginRequired()
+                },
+                onPremiumRequired = {
+                    showMoreMenu = false
+                    onPremiumRequired()
                 }
             )
         }
@@ -179,10 +217,12 @@ fun DoziBottomBar(
 @Composable
 private fun MoreMenuBottomSheet(
     isLoggedIn: Boolean,
+    isPremium: Boolean,
     currentRoute: String?,
     onDismiss: () -> Unit,
     onNavigate: (String) -> Unit,
-    onLoginRequired: () -> Unit
+    onLoginRequired: () -> Unit,
+    onPremiumRequired: () -> Unit
 ) {
     val sheetState = rememberModalBottomSheetState(skipPartiallyExpanded = true)
 
@@ -239,17 +279,30 @@ private fun MoreMenuBottomSheet(
 
             menuItems.forEach { item ->
                 val requiresLogin = item is MoreMenuItem.Badis || item is MoreMenuItem.Reminders
+                val requiresPremium = item is MoreMenuItem.Badis // Badi sistemi premium özellik
                 val isSelected = currentRoute == item.route
+
+                // Enabled durumu: login ve premium kontrolü
+                val isEnabled = when {
+                    requiresLogin && !isLoggedIn -> false
+                    requiresPremium && !isPremium -> false
+                    else -> true
+                }
+
+                // Icon durumu: login yoksa kilit, premium yoksa taç
+                val showLock = requiresLogin && !isLoggedIn
+                val showCrown = requiresPremium && !isPremium && isLoggedIn
 
                 MoreMenuItemCard(
                     item = item,
                     isSelected = isSelected,
-                    isEnabled = !requiresLogin || isLoggedIn,
+                    isEnabled = isEnabled,
+                    showPremiumBadge = showCrown,
                     onClick = {
-                        if (requiresLogin && !isLoggedIn) {
-                            onLoginRequired()
-                        } else {
-                            onNavigate(item.route)
+                        when {
+                            requiresLogin && !isLoggedIn -> onLoginRequired()
+                            requiresPremium && !isPremium -> onPremiumRequired()
+                            else -> onNavigate(item.route)
                         }
                     }
                 )
@@ -263,6 +316,7 @@ private fun MoreMenuItemCard(
     item: MoreMenuItem,
     isSelected: Boolean,
     isEnabled: Boolean,
+    showPremiumBadge: Boolean = false,
     onClick: () -> Unit
 ) {
     androidx.compose.material3.Card(
@@ -337,21 +391,34 @@ private fun MoreMenuItemCard(
                 )
             }
 
-            // Arrow or lock icon
-            if (isEnabled) {
-                Icon(
-                    imageVector = Icons.Default.ChevronRight,
-                    contentDescription = null,
-                    tint = if (isSelected) DoziTurquoise else Color(0xFF90A4AE),
-                    modifier = Modifier.size(26.dp)
-                )
-            } else {
-                Icon(
-                    imageVector = Icons.Default.Lock,
-                    contentDescription = "Giriş gerekli",
-                    tint = Color.Gray,
-                    modifier = Modifier.size(22.dp)
-                )
+            // Arrow, lock, or crown icon
+            when {
+                isEnabled -> {
+                    Icon(
+                        imageVector = Icons.Default.ChevronRight,
+                        contentDescription = null,
+                        tint = if (isSelected) DoziTurquoise else Color(0xFF90A4AE),
+                        modifier = Modifier.size(26.dp)
+                    )
+                }
+                showPremiumBadge -> {
+                    // Premium required - show star/crown icon
+                    Icon(
+                        imageVector = Icons.Default.Star,
+                        contentDescription = "Premium gerekli",
+                        tint = Color(0xFFFFD700), // Gold color
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
+                else -> {
+                    // Login required - show lock icon
+                    Icon(
+                        imageVector = Icons.Default.Lock,
+                        contentDescription = "Giriş gerekli",
+                        tint = Color.Gray,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
         }
     }
