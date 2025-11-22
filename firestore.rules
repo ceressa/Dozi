@@ -302,6 +302,25 @@ service cloud.firestore {
         // 🗑️ SİLME: Kullanıcı kendi başarısını silebilir
         allow delete: if isAuthenticated() && isOwner(userId);
       }
+
+
+      // ═══════════════════════════════════════════════════════════════════════
+      // 📋 HATIRLITMA LOGLARI SUBCOLLECTION (users/{userId}/reminderLogs)
+      // ═══════════════════════════════════════════════════════════════════════
+      // Hatırlatma sistemi için detaylı loglar (alarm scheduled, triggered, etc.)
+      match /reminderLogs/{logId} {
+        // 📖 OKUMA: Kullanıcı kendi loglarını okuyabilir
+        allow read: if isAuthenticated() && isOwner(userId);
+
+        // ✏️ OLUŞTURMA: Kullanıcı kendi loğunu oluşturabilir
+        allow create: if isAuthenticated() && isOwner(userId);
+
+        // 🔄 GÜNCELLEME: Kullanıcı kendi loğunu güncelleyebilir
+        allow update: if isAuthenticated() && isOwner(userId);
+
+        // 🗑️ SİLME: Kullanıcı kendi loğunu silebilir
+        allow delete: if isAuthenticated() && isOwner(userId);
+      }
     }
 
 

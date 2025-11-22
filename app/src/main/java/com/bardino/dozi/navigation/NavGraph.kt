@@ -68,10 +68,12 @@ fun NavGraph(
                         android.util.Log.d("NavGraph", "🧭 onNavigate called with route: $route, currentRoute: $currentRoute")
                         navController.navigate(route) {
                             popUpTo(Screen.Home.route) {
-                                saveState = true // ✅ State'i koru
+                                // Home'a giderken inclusive=true, diğerlerinde false
+                                inclusive = (route == Screen.Home.route)
+                                saveState = route != Screen.Home.route
                             }
                             launchSingleTop = true
-                            restoreState = true // ✅ State'i geri yükle
+                            restoreState = route != Screen.Home.route
                         }
                     },
                     onLoginRequired = {
