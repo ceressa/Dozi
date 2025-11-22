@@ -167,9 +167,7 @@ fun DoziBottomBar(
                             }
                             is BottomNavItem.Home -> {
                                 // Ana Sayfa'ya her zaman navigate et
-                                if (currentRoute != item.route) {
-                                    onNavigate(item.route)
-                                }
+                                onNavigate(item.route)
                             }
                             else -> {
                                 if (currentRoute != item.route) {

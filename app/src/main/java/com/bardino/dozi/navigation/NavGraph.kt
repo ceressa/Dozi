@@ -65,14 +65,12 @@ fun NavGraph(
                 DoziBottomBar(
                     currentRoute = currentRoute,
                     onNavigate = { route ->
-                        if (route != currentRoute) {
-                            navController.navigate(route) {
-                                popUpTo(Screen.Home.route) {
-                                    saveState = true // ✅ State'i koru
-                                }
-                                launchSingleTop = true
-                                restoreState = true // ✅ State'i geri yükle
+                        navController.navigate(route) {
+                            popUpTo(Screen.Home.route) {
+                                saveState = true // ✅ State'i koru
                             }
+                            launchSingleTop = true
+                            restoreState = true // ✅ State'i geri yükle
                         }
                     },
                     onLoginRequired = {
