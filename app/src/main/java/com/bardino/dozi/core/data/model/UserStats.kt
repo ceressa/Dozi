@@ -6,6 +6,8 @@ import com.google.firebase.firestore.ServerTimestamp
 
 /**
  * 📊 Kullanıcı istatistikleri ve gamification verileri
+ *
+ * Basitleştirilmiş versiyon - sadece streak ve temel sayaçlar
  */
 data class UserStats(
     @DocumentId
@@ -13,27 +15,24 @@ data class UserStats(
     val userId: String = "",
 
     // 🔥 Streak (düzenli kullanım)
-    val currentStreak: Int = 0,          // Şu anki ardışık gün sayısı
-    val longestStreak: Int = 0,          // En uzun ardışık gün sayısı
-    val lastStreakDate: Timestamp? = null, // Son streak tarihi
+    val currentStreak: Int = 0,              // Şu anki ardışık gün sayısı
+    val longestStreak: Int = 0,              // En uzun ardışık gün sayısı
+    val lastStreakDate: Timestamp? = null,   // Son streak tarihi
 
-    // 📈 Genel istatistikler
-    val totalMedicationsTaken: Int = 0,   // Toplam alınan ilaç sayısı
-    val totalMedicationsMissed: Int = 0,  // Toplam kaçırılan ilaç sayısı
-    val totalMedicationsSkipped: Int = 0, // Toplam atlanan ilaç sayısı
-    val complianceRate: Float = 0f,       // Uyumluluk oranı (0-100)
+    // 📈 Temel sayaçlar
+    val totalMedicationsTaken: Int = 0,      // Toplam alınan hatırlatma sayısı
+    val totalMedicationsMissed: Int = 0,     // Toplam kaçırılan hatırlatma sayısı
+    val totalMedicationsSkipped: Int = 0,    // Toplam atlanan hatırlatma sayısı
 
-    // 💊 İlaç koleksiyonu
-    val totalMedicines: Int = 0,          // Kullanıcının eklediği toplam ilaç sayısı
-    val totalDosesTaken: Int = 0,         // Toplam alınan doz sayısı (totalMedicationsTaken ile aynı)
+    // ⚡ Hızlı yanıt sayacı (eskalasyonsuz alınan)
+    val quickResponseCount: Int = 0,         // Eskalasyona gerek kalmadan alınan sayısı
+
+    // 👥 Sosyal sayaçlar
+    val buddyCount: Int = 0,                 // Eklenen badi sayısı
+    val buddyNotificationsSent: Int = 0,     // Gönderilen badi bildirimi sayısı
 
     // 🏆 Achievement rozetleri
     val achievements: List<String> = emptyList(), // Kazanılan achievement ID'leri
-
-    // ⏰ En iyi/en kötü saatler
-    val bestComplianceHour: Int = 9,      // En iyi uyumluluk saati (0-23)
-    val worstComplianceHour: Int = 21,    // En kötü uyumluluk saati (0-23)
-    val hourlyCompliance: Map<String, Float> = emptyMap(), // Saatlik uyumluluk ("0"-"23" -> 0-100)
 
     @ServerTimestamp
     val createdAt: Timestamp? = null,
@@ -42,32 +41,14 @@ data class UserStats(
 )
 
 /**
- * Note: Achievement model is defined in Achievement.kt
- * This file only contains UserStats and ComplianceTrend models
+ * 📊 Günlük özet verisi (grafikler için)
  */
-
-/**
- * 📊 Uyumluluk trend verisi (grafikler için)
- */
-data class ComplianceTrend(
+data class DailySummary(
     val date: String,                    // "2025-11-14"
-    val complianceRate: Float,           // 0-100
     val takenCount: Int,
     val totalCount: Int,
     val missedCount: Int
-)
-
-/**
- * 📈 30 günlük trend hesapla
- */
-fun List<DailyMedicationLogs>.toComplianceTrend(): List<ComplianceTrend> {
-    return this.map { daily ->
-        ComplianceTrend(
-            date = daily.date,
-            complianceRate = daily.completionRate * 100,
-            takenCount = daily.takenCount,
-            totalCount = daily.totalCount,
-            missedCount = daily.missedCount
-        )
-    }
+) {
+    val completionRate: Float
+        get() = if (totalCount > 0) takenCount.toFloat() / totalCount else 0f
 }

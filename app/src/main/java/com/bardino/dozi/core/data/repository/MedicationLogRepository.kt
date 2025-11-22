@@ -349,10 +349,12 @@ class MedicationLogRepository(
                 userId = userId
             )
 
+            // SNOOZED hariç - erteleme ilacın alındığı anlamına gelmez
+            // Sadece TAKEN, SKIPPED veya MISSED kontrol edilir
             if (localLog != null && localLog.status in listOf(
                     MedicationStatus.TAKEN.name,
                     MedicationStatus.SKIPPED.name,
-                    MedicationStatus.SNOOZED.name
+                    MedicationStatus.MISSED.name
                 )
             ) {
                 Log.d(TAG, "✅ Local DB'de log bulundu: $medicineId - ${localLog.status}")
@@ -373,10 +375,11 @@ class MedicationLogRepository(
 
             val hasLog = snapshot.documents.any { doc ->
                 val status = doc.getString("status")
+                // SNOOZED hariç - erteleme ilacın alındığı anlamına gelmez
                 status in listOf(
                     MedicationStatus.TAKEN.name,
                     MedicationStatus.SKIPPED.name,
-                    MedicationStatus.SNOOZED.name
+                    MedicationStatus.MISSED.name
                 )
             }
 
