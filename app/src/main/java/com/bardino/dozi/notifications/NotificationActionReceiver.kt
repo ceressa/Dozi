@@ -25,6 +25,7 @@ import com.bardino.dozi.core.utils.EscalationManager
 import com.bardino.dozi.core.data.repository.BadiRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.bardino.dozi.core.logging.ReminderLogger
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.CoroutineScope
@@ -286,6 +287,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         // ✅ Kullanıcının ses seçimine göre başarı sesi
         SoundHelper.playSound(context, SoundHelper.SoundType.HERSEY_TAMAM)
+
+        // 📝 Log kaydı
+        ReminderLogger.logDoseTaken(context, medicineId, medicineName, time)
     }
 
 
@@ -331,6 +335,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
 
         // ✅ Kullanıcının ses seçimine göre atla sesi
         SoundHelper.playSound(context, SoundHelper.SoundType.PEKALA)
+
+        // 📝 Log kaydı
+        ReminderLogger.logDoseSkipped(context, medicineId, medicineName, time, "Kullanıcı atladı")
     }
 
 
@@ -375,6 +382,9 @@ class NotificationActionReceiver : BroadcastReceiver() {
             addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
         }
         context.startActivity(intent)
+
+        // 📝 Log kaydı
+        ReminderLogger.logDoseSnoozed(context, medicineId, medicineName, time, 10)
     }
 
 

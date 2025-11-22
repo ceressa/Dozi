@@ -8,6 +8,7 @@ import android.os.Build
 import android.util.Log
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.bardino.dozi.core.logging.ReminderLogger
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -59,6 +60,7 @@ class ReminderScheduler {
             if (!PermissionHandler.hasExactAlarmPermission(context)) {
                 Log.w(TAG, "⚠️ SCHEDULE_EXACT_ALARM izni yok! ${medicine.name} için alarmlar kurulamıyor.")
                 Log.w(TAG, "⚠️ Kullanıcının Settings > Apps > Dozi > Alarms & reminders'dan izni vermesi gerekiyor.")
+                ReminderLogger.logAlarmPermissionDenied(context)
                 return
             }
 
@@ -182,8 +184,16 @@ class ReminderScheduler {
                 val dateFormat = java.text.SimpleDateFormat("dd/MM/yyyy HH:mm", java.util.Locale.getDefault())
                 Log.d(TAG, "⏰ ${medicine.name} - $time için alarm kuruldu: ${dateFormat.format(calendar.time)} (requestCode: $requestCode)")
 
+                // 📝 Log kaydı
+                if (isRescheduling) {
+                    ReminderLogger.logAlarmRescheduled(context, medicine, time, calendar.timeInMillis, requestCode)
+                } else {
+                    ReminderLogger.logAlarmScheduled(context, medicine, time, calendar.timeInMillis, requestCode)
+                }
+
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Alarm kurulurken hata: ${medicine.name} - $time", e)
+                ReminderLogger.logScheduleError(context, medicine, time, e.message ?: "Bilinmeyen hata", e)
             }
         }
 
@@ -301,6 +311,9 @@ class ReminderScheduler {
                 pendingIntent.cancel()
 
                 Log.d(TAG, "🚫 Alarm iptal edildi: $medicineId - $time (requestCode: $requestCode)")
+
+                // 📝 Log kaydı
+                ReminderLogger.logAlarmCancelled(context, medicineId, "Unknown", time, requestCode)
             }
         }
 
@@ -318,13 +331,19 @@ class ReminderScheduler {
                     val allMedicines = medicineRepository.getAllMedicines()
                     Log.d(TAG, "📦 ${allMedicines.size} ilaç bulundu")
 
+                    var totalAlarms = 0
                     allMedicines.forEach { medicine ->
                         scheduleReminders(context, medicine)
+                        totalAlarms += medicine.times.size
                     }
 
                     Log.d(TAG, "✅ Tüm hatırlatmalar başarıyla yeniden planlandı")
+
+                    // 📝 Log kaydı
+                    ReminderLogger.logAllAlarmsRescheduled(context, allMedicines.size, totalAlarms)
                 } catch (e: Exception) {
                     Log.e(TAG, "❌ Hatırlatmalar yeniden planlanırken hata", e)
+                    ReminderLogger.logError(context, "Tüm alarmlar yeniden planlanırken hata", e)
                 }
             }
         }
