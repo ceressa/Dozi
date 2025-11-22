@@ -46,29 +46,57 @@ fun StatsScreen(
     val viewModel: StatsViewModel = viewModel()
     val uiState by viewModel.uiState.collectAsStateWithLifecycle()
 
-    Scaffold(
-        topBar = {
-            DoziTopBar(
-                title = "İstatistikler",
-                canNavigateBack = false,
-                onNavigateBack = onNavigateBack
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .background(
+                Brush.verticalGradient(
+                    listOf(
+                        Color(0xFF1A237E),
+                        Color(0xFF0D47A1),
+                        DoziCharacterLight
+                    ),
+                    startY = 0f,
+                    endY = 600f
+                )
             )
-        },
-        containerColor = DoziCharacterLight
-    ) { padding ->
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(padding)
-                .padding(contentPadding)
+            .padding(contentPadding)
+    ) {
+        Column(
+            modifier = Modifier.fillMaxSize()
         ) {
+            // Custom Header
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 20.dp, vertical = 16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(12.dp)
+                ) {
+                    Icon(
+                        Icons.Default.BarChart,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        "İstatistikler",
+                        style = MaterialTheme.typography.headlineMedium.copy(
+                            fontWeight = FontWeight.Bold
+                        ),
+                        color = Color.White
+                    )
+                }
+            }
+
             if (uiState.isLoading) {
-                // Yükleniyor göstergesi
                 Box(
                     modifier = Modifier.fillMaxSize(),
                     contentAlignment = Alignment.Center
                 ) {
-                    CircularProgressIndicator(color = DoziRed)
+                    CircularProgressIndicator(color = DoziTurquoise)
                 }
             } else {
                 Column(
@@ -76,7 +104,7 @@ fun StatsScreen(
                         .fillMaxSize()
                         .verticalScroll(rememberScrollState())
                         .padding(horizontal = 16.dp)
-                        .padding(top = 16.dp, bottom = 24.dp),
+                        .padding(bottom = 24.dp),
                     verticalArrangement = Arrangement.spacedBy(16.dp)
                 ) {
                     // 🔥 Streak Kartı
@@ -91,7 +119,7 @@ fun StatsScreen(
                     // 🏆 Başarımlar
                     AchievementsCard(achievements = uiState.achievements)
 
-                    // 📈 Uyumluluk Oranı
+                    // 📈 Seri Durumu
                     ComplianceCard(stats = uiState.stats)
                 }
             }
@@ -156,19 +184,35 @@ private fun InsightsSection(stats: UserStats?) {
         Card(
             modifier = Modifier.fillMaxWidth(),
             colors = CardDefaults.cardColors(containerColor = Color.White),
-            shape = RoundedCornerShape(20.dp),
-            elevation = CardDefaults.cardElevation(4.dp)
+            shape = RoundedCornerShape(24.dp),
+            elevation = CardDefaults.cardElevation(6.dp)
         ) {
             Column(
                 modifier = Modifier.padding(20.dp),
                 verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-                Text(
-                    "💡 Öngörüler",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                DoziPurple.copy(alpha = 0.15f),
+                                RoundedCornerShape(10.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("💡", fontSize = 18.sp)
+                    }
+                    Text(
+                        "Öngörüler",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A237E)
+                    )
+                }
 
                 Spacer(Modifier.height(4.dp))
 
@@ -194,14 +238,15 @@ private fun StreakCard(stats: UserStats?) {
     val currentStreak = stats?.currentStreak ?: 0
     val longestStreak = stats?.longestStreak ?: 0
     val totalMedications = stats?.totalMedicationsTaken ?: 0
+    val quickResponses = stats?.quickResponseCount ?: 0
 
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(
             containerColor = Color.White
         ),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(8.dp)
     ) {
         Box(
             modifier = Modifier
@@ -209,8 +254,8 @@ private fun StreakCard(stats: UserStats?) {
                 .background(
                     Brush.verticalGradient(
                         listOf(
-                            DoziRed.copy(alpha = 0.08f),
-                            WarningOrange.copy(alpha = 0.08f)
+                            DoziTurquoise.copy(alpha = 0.1f),
+                            DoziPurple.copy(alpha = 0.05f)
                         )
                     )
                 )
@@ -220,40 +265,61 @@ private fun StreakCard(stats: UserStats?) {
                 horizontalAlignment = Alignment.CenterHorizontally,
                 modifier = Modifier.fillMaxWidth()
             ) {
-                // Flame Icon
-                Text(
-                    "🔥",
-                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp)
-                )
-                Spacer(Modifier.height(8.dp))
+                // Flame Icon with glow effect
+                Box(
+                    modifier = Modifier
+                        .size(80.dp)
+                        .background(
+                            Brush.radialGradient(
+                                listOf(
+                                    WarningOrange.copy(alpha = 0.3f),
+                                    Color.Transparent
+                                )
+                            ),
+                            CircleShape
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text(
+                        "🔥",
+                        style = MaterialTheme.typography.displayLarge.copy(fontSize = 48.sp)
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
 
                 // Current Streak
                 Text(
                     "$currentStreak",
-                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 56.sp),
+                    style = MaterialTheme.typography.displayLarge.copy(fontSize = 64.sp),
                     fontWeight = FontWeight.ExtraBold,
-                    color = if (currentStreak > 0) DoziRed else MaterialTheme.colorScheme.onSurfaceVariant
+                    color = if (currentStreak > 0) DoziTurquoise else MaterialTheme.colorScheme.onSurfaceVariant
                 )
                 Text(
                     "Günlük Seri",
                     style = MaterialTheme.typography.titleMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    fontWeight = FontWeight.Medium
+                    fontWeight = FontWeight.SemiBold
                 )
 
                 if (currentStreak > 0) {
                     Spacer(Modifier.height(8.dp))
-                    Text(
-                        "Harika gidiyorsun! 🎉",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = DoziTurquoise,
-                        fontWeight = FontWeight.SemiBold
-                    )
+                    Surface(
+                        color = DoziTurquoise.copy(alpha = 0.15f),
+                        shape = RoundedCornerShape(20.dp)
+                    ) {
+                        Text(
+                            "Harika gidiyorsun! 🎉",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = DoziTurquoise,
+                            fontWeight = FontWeight.Bold,
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 6.dp)
+                        )
+                    }
                 }
 
-                Spacer(Modifier.height(20.dp))
+                Spacer(Modifier.height(24.dp))
                 HorizontalDivider(
-                    color = Gray200,
+                    color = DoziTurquoise.copy(alpha = 0.2f),
                     thickness = 1.dp,
                     modifier = Modifier.padding(horizontal = 16.dp)
                 )
@@ -265,14 +331,19 @@ private fun StreakCard(stats: UserStats?) {
                     horizontalArrangement = Arrangement.SpaceEvenly
                 ) {
                     StatItem(
-                        label = "En Uzun Seri",
+                        label = "Rekor Seri",
                         value = "$longestStreak",
-                        icon = Icons.Default.TrendingUp
+                        icon = Icons.Default.EmojiEvents
                     )
                     StatItem(
-                        label = "Toplam Doz",
+                        label = "Hızlı Yanıt",
+                        value = "$quickResponses",
+                        icon = Icons.Default.Bolt
+                    )
+                    StatItem(
+                        label = "Toplam",
                         value = "$totalMedications",
-                        icon = Icons.Default.Medication
+                        icon = Icons.Default.CheckCircle
                     )
                 }
             }
@@ -286,23 +357,33 @@ private fun WeeklySummaryCard(weeklyData: List<DayLog>) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
             verticalArrangement = Arrangement.spacedBy(12.dp)
         ) {
             Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(8.dp)
             ) {
+                Box(
+                    modifier = Modifier
+                        .size(36.dp)
+                        .background(
+                            DoziTurquoise.copy(alpha = 0.15f),
+                            RoundedCornerShape(10.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Text("📊", fontSize = 18.sp)
+                }
                 Text(
-                    "📊 Son 7 Gün",
+                    "Son 7 Gün",
                     style = MaterialTheme.typography.titleLarge,
                     fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
+                    color = Color(0xFF1A237E)
                 )
             }
             Spacer(Modifier.height(8.dp))
@@ -401,8 +482,8 @@ private fun AchievementsCard(achievements: List<com.bardino.dozi.core.data.model
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
         Column(
             modifier = Modifier.padding(20.dp),
@@ -413,18 +494,40 @@ private fun AchievementsCard(achievements: List<com.bardino.dozi.core.data.model
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    "🏆 Başarımlar",
-                    style = MaterialTheme.typography.titleLarge,
-                    fontWeight = FontWeight.Bold,
-                    color = MaterialTheme.colorScheme.onSurface
-                )
-                Text(
-                    "$unlockedCount/$totalCount",
-                    style = MaterialTheme.typography.titleMedium,
-                    fontWeight = FontWeight.Bold,
-                    color = DoziTurquoise
-                )
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                WarningOrange.copy(alpha = 0.15f),
+                                RoundedCornerShape(10.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🏆", fontSize = 18.sp)
+                    }
+                    Text(
+                        "Başarımlar",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A237E)
+                    )
+                }
+                Surface(
+                    color = DoziTurquoise.copy(alpha = 0.15f),
+                    shape = RoundedCornerShape(12.dp)
+                ) {
+                    Text(
+                        "$unlockedCount/$totalCount",
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = DoziTurquoise,
+                        modifier = Modifier.padding(horizontal = 12.dp, vertical = 4.dp)
+                    )
+                }
             }
 
             Spacer(Modifier.height(8.dp))
@@ -448,59 +551,67 @@ private fun AchievementsCard(achievements: List<com.bardino.dozi.core.data.model
             } else {
                 // Kategorilere göre grupla
                 val streakAchievements = achievements.filter {
-                    it.type.name.startsWith("STREAK_")
-                }
-                val perfectAchievements = achievements.filter {
-                    it.type.name.startsWith("PERFECT_")
+                    it.type.name.startsWith("STREAK_") || it.type.name.startsWith("PERFECT_")
                 }
                 val firstStepAchievements = achievements.filter {
                     it.type.name.startsWith("FIRST_")
                 }
-                val collectorAchievements = achievements.filter {
-                    it.type.name.startsWith("MEDICINE_COLLECTOR")
+                val reminderAchievements = achievements.filter {
+                    it.type.name.startsWith("REMINDERS_")
                 }
-                val doseAchievements = achievements.filter {
-                    it.type.name.startsWith("TOTAL_DOSES")
+                val quickResponseAchievements = achievements.filter {
+                    it.type.name.startsWith("QUICK_") || it.type.name.startsWith("SUPER_QUICK")
+                }
+                val socialAchievements = achievements.filter {
+                    it.type.name in listOf("FAMILY_MEMBER", "CARING_BUDDY")
                 }
 
-                // 🔥 Streak Başarıları
+                // 🔥 Streak & Düzenlilik Başarıları
                 if (streakAchievements.isNotEmpty()) {
-                    AchievementCategory("🔥 Streak Başarıları", streakAchievements)
-                    Spacer(Modifier.height(8.dp))
-                }
-
-                // 🎯 Mükemmel Uyum
-                if (perfectAchievements.isNotEmpty()) {
-                    AchievementCategory("🎯 Mükemmel Uyum", perfectAchievements)
-                    Spacer(Modifier.height(8.dp))
+                    AchievementCategory("🔥 Düzenlilik", streakAchievements)
+                    Spacer(Modifier.height(12.dp))
                 }
 
                 // 🏅 İlk Adımlar
                 if (firstStepAchievements.isNotEmpty()) {
                     AchievementCategory("🏅 İlk Adımlar", firstStepAchievements)
-                    Spacer(Modifier.height(8.dp))
+                    Spacer(Modifier.height(12.dp))
                 }
 
-                // 📚 Koleksiyoncu
-                if (collectorAchievements.isNotEmpty()) {
-                    AchievementCategory("📚 Koleksiyoncu", collectorAchievements)
-                    Spacer(Modifier.height(8.dp))
+                // ⏰ Hatırlatma Kurulum
+                if (reminderAchievements.isNotEmpty()) {
+                    AchievementCategory("⏰ Hatırlatmalar", reminderAchievements)
+                    Spacer(Modifier.height(12.dp))
                 }
 
-                // 💯 Toplam Doz
-                if (doseAchievements.isNotEmpty()) {
-                    AchievementCategory("💯 Toplam Doz", doseAchievements)
+                // ⚡ Hızlı Yanıt
+                if (quickResponseAchievements.isNotEmpty()) {
+                    AchievementCategory("⚡ Hızlı Yanıt", quickResponseAchievements)
+                    Spacer(Modifier.height(12.dp))
+                }
+
+                // 👨‍👩‍👧 Sosyal
+                if (socialAchievements.isNotEmpty()) {
+                    AchievementCategory("👨‍👩‍👧 Sosyal", socialAchievements)
                 }
 
                 if (unlockedCount == 0) {
-                    Spacer(Modifier.height(8.dp))
-                    Text(
-                        "💪 Düzenli ilaç kullanımını sürdürerek başarım kazanabilirsin!",
-                        style = MaterialTheme.typography.bodySmall,
-                        color = DoziTurquoise,
-                        textAlign = TextAlign.Center,
-                        modifier = Modifier.fillMaxWidth()
-                    )
+                    Spacer(Modifier.height(12.dp))
+                    Surface(
+                        color = DoziTurquoise.copy(alpha = 0.1f),
+                        shape = RoundedCornerShape(12.dp)
+                    ) {
+                        Text(
+                            "💪 Düzenli olmaya devam ederek başarım kazanabilirsin!",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = DoziTurquoise,
+                            textAlign = TextAlign.Center,
+                            fontWeight = FontWeight.Medium,
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp)
+                        )
+                    }
                 }
             }
         }
@@ -684,10 +795,10 @@ private fun ComplianceCard(stats: UserStats?) {
     val longestStreak = stats?.longestStreak ?: 0
 
     val color = when {
-        currentStreak >= 30 -> SuccessGreen
-        currentStreak >= 7 -> Color(0xFF4CAF50)
+        currentStreak >= 30 -> DoziTurquoise
+        currentStreak >= 7 -> Color(0xFF00ACC1)
         currentStreak >= 3 -> WarningOrange
-        else -> Color(0xFF9E9E9E)
+        else -> Color(0xFF78909C)
     }
 
     val encouragementText = when {
@@ -701,66 +812,103 @@ private fun ComplianceCard(stats: UserStats?) {
     Card(
         modifier = Modifier.fillMaxWidth(),
         colors = CardDefaults.cardColors(containerColor = Color.White),
-        shape = RoundedCornerShape(20.dp),
-        elevation = CardDefaults.cardElevation(4.dp)
+        shape = RoundedCornerShape(24.dp),
+        elevation = CardDefaults.cardElevation(6.dp)
     ) {
-        Column(
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(24.dp),
-            horizontalAlignment = Alignment.CenterHorizontally
-        ) {
-            Text(
-                "🔥 Mevcut Seri",
-                style = MaterialTheme.typography.titleLarge,
-                fontWeight = FontWeight.Bold,
-                color = MaterialTheme.colorScheme.onSurface
-            )
-            Spacer(Modifier.height(24.dp))
-
-            // Streak display
-            Box(
-                contentAlignment = Alignment.Center,
-                modifier = Modifier.size(140.dp)
-            ) {
-                // Background circle
-                CircularProgressIndicator(
-                    progress = { if (longestStreak > 0) (currentStreak.toFloat() / longestStreak).coerceIn(0f, 1f) else 0f },
-                    modifier = Modifier.fillMaxSize(),
-                    color = color,
-                    strokeWidth = 14.dp,
-                    trackColor = color.copy(alpha = 0.15f)
-                )
-                Column(
-                    horizontalAlignment = Alignment.CenterHorizontally
-                ) {
-                    Text(
-                        "$currentStreak",
-                        style = MaterialTheme.typography.displayMedium,
-                        fontWeight = FontWeight.ExtraBold,
-                        color = color
+                .background(
+                    Brush.verticalGradient(
+                        listOf(
+                            color.copy(alpha = 0.08f),
+                            Color.White
+                        )
                     )
+                )
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                horizontalAlignment = Alignment.CenterHorizontally
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .size(36.dp)
+                            .background(
+                                color.copy(alpha = 0.15f),
+                                RoundedCornerShape(10.dp)
+                            ),
+                        contentAlignment = Alignment.Center
+                    ) {
+                        Text("🔥", fontSize = 18.sp)
+                    }
                     Text(
-                        "gün",
-                        style = MaterialTheme.typography.bodyMedium,
-                        color = color
+                        "Seri Durumu",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = Color(0xFF1A237E)
                     )
                 }
-            }
+                Spacer(Modifier.height(24.dp))
 
-            Spacer(Modifier.height(16.dp))
-            Text(
-                encouragementText,
-                style = MaterialTheme.typography.titleMedium,
-                fontWeight = FontWeight.SemiBold,
-                color = color
-            )
-            Spacer(Modifier.height(8.dp))
-            Text(
-                "Rekor: $longestStreak gün",
-                style = MaterialTheme.typography.bodyMedium,
-                color = MaterialTheme.colorScheme.onSurfaceVariant
-            )
+                // Streak display
+                Box(
+                    contentAlignment = Alignment.Center,
+                    modifier = Modifier.size(160.dp)
+                ) {
+                    // Background circle
+                    CircularProgressIndicator(
+                        progress = { if (longestStreak > 0) (currentStreak.toFloat() / longestStreak).coerceIn(0f, 1f) else 0f },
+                        modifier = Modifier.fillMaxSize(),
+                        color = color,
+                        strokeWidth = 16.dp,
+                        trackColor = color.copy(alpha = 0.12f)
+                    )
+                    Column(
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        Text(
+                            "$currentStreak",
+                            style = MaterialTheme.typography.displayMedium.copy(fontSize = 48.sp),
+                            fontWeight = FontWeight.ExtraBold,
+                            color = color
+                        )
+                        Text(
+                            "gün",
+                            style = MaterialTheme.typography.bodyLarge,
+                            color = color,
+                            fontWeight = FontWeight.Medium
+                        )
+                    }
+                }
+
+                Spacer(Modifier.height(16.dp))
+                Surface(
+                    color = color.copy(alpha = 0.12f),
+                    shape = RoundedCornerShape(20.dp)
+                ) {
+                    Text(
+                        encouragementText,
+                        style = MaterialTheme.typography.titleMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = color,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp)
+                    )
+                }
+                Spacer(Modifier.height(12.dp))
+                Text(
+                    "Rekor: $longestStreak gün",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    fontWeight = FontWeight.Medium
+                )
+            }
         }
     }
 }
