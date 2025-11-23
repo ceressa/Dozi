@@ -161,11 +161,11 @@ object NotificationHelper {
             .addAction(R.drawable.ic_notification_pill, "Ertele ⏰", snoozePending)
             .addAction(R.drawable.ic_notification_pill, "Atla ✕", skipPending)
 
-        // 🔥 Kritik ilaç için alarm sesi ekle
+        // 🔥 Kritik ilaç için alarm sesi, normal ilaç için varsayılan bildirim sesi
         if (isCritical) {
             notificationBuilder.setSound(android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_ALARM))
         } else {
-            notificationBuilder.setSound(null)
+            notificationBuilder.setSound(android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION))
         }
 
         val notification = notificationBuilder.build()
@@ -538,6 +538,8 @@ object NotificationHelper {
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setCategory(NotificationCompat.CATEGORY_REMINDER)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+            .setVibrate(longArrayOf(0, 300, 150, 300))
+            .setSound(android.media.RingtoneManager.getDefaultUri(android.media.RingtoneManager.TYPE_NOTIFICATION))
             .setContentIntent(contentIntent)
             .addAction(R.drawable.ic_notification_pill, "Aldım ✓", takenPending)
             .addAction(R.drawable.ic_notification_pill, "Ertele ⏰", snoozePending)

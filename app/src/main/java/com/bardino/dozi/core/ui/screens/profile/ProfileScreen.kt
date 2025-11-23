@@ -208,9 +208,11 @@ private fun ProfileContent(
                             .border(3.dp, Color.White, CircleShape),
                         contentAlignment = Alignment.Center
                     ) {
+                        // Öncelik sırası: Firestore name > Firebase displayName > "U"
+                        // Email kullanılmıyor - kullanıcı adı bazlı avatar
                         Text(
                             text = (firestoreUser?.name?.firstOrNull()?.uppercase()
-                                ?: user?.email?.firstOrNull()?.uppercase()
+                                ?: user?.displayName?.firstOrNull()?.uppercase()
                                 ?: "U").toString(),
                             fontSize = 32.sp,
                             fontWeight = FontWeight.Bold,

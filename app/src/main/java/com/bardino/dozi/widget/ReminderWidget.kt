@@ -30,9 +30,14 @@ import androidx.glance.text.TextAlign
 import androidx.glance.text.TextStyle
 import androidx.glance.unit.ColorProvider
 import com.bardino.dozi.MainActivity
+import android.app.AlarmManager
+import android.app.PendingIntent
 import com.bardino.dozi.core.data.model.Medicine
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
 import com.bardino.dozi.core.data.repository.MedicineRepository
+import com.bardino.dozi.notifications.NotificationActionReceiver
+import com.bardino.dozi.notifications.NotificationHelper
+import com.bardino.dozi.notifications.ReminderScheduler
 import com.google.gson.Gson
 import com.google.gson.reflect.TypeToken
 import kotlinx.coroutines.Dispatchers
@@ -409,18 +414,67 @@ class TakeMedicineAction : ActionCallback {
 
         val scheduledTime = parseTimeToMillis(time)
         val repository = MedicationLogRepository(context)
+        val medicineRepository = MedicineRepository()
 
         withContext(Dispatchers.IO) {
+            // 1. Log medication taken
             repository.logMedicationTaken(
                 medicineId = medicineId,
                 medicineName = medicineName,
                 dosage = dosage,
                 scheduledTime = scheduledTime
             )
+
+            // 2. Get medicine for stock management
+            val medicine = medicineRepository.getMedicineById(medicineId)
+
+            // 3. Decrement stock if auto-decrement enabled
+            if (medicine != null && medicine.autoDecrementEnabled && medicine.stockCount > 0) {
+                val newStockCount = medicine.stockCount - 1
+                medicineRepository.updateMedicineField(medicineId, "stockCount", newStockCount)
+                android.util.Log.d("ReminderWidget", "Stock decreased: $medicineName -> $newStockCount")
+            }
         }
+
+        // 4. Cancel all escalation alarms
+        cancelAllEscalations(context, medicineId, time)
+
+        // 5. Cancel main reminder alarm
+        ReminderScheduler.cancelReminders(context, medicineId, listOf(time))
+
+        // 6. Cancel all notifications for this medicine
+        NotificationHelper.cancelAllNotificationsForMedicine(context, medicineId, time)
 
         saveMedicineStatus(context, medicineId, time, "taken")
         ReminderWidgetUpdater.updateWidgets(context)
+
+        android.util.Log.d("ReminderWidget", "Medicine taken from widget: $medicineName @ $time")
+    }
+
+    private fun cancelAllEscalations(context: Context, medicineId: String, time: String) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        // Cancel escalation 1, 2, 3
+        listOf("escalation1", "escalation2", "escalation3").forEachIndexed { index, prefix ->
+            val action = "ACTION_ESCALATION_${index + 1}"
+            val intent = Intent(context, NotificationActionReceiver::class.java).apply {
+                this.action = action
+            }
+            val requestCode = "${prefix}_${medicineId}_$time".hashCode()
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                } else {
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                }
+            )
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+        }
+        android.util.Log.d("ReminderWidget", "All escalations cancelled: $medicineId @ $time")
     }
 
     private fun parseTimeToMillis(time: String): Long {
@@ -466,9 +520,44 @@ class SkipMedicineAction : ActionCallback {
             )
         }
 
+        // Cancel all escalation alarms
+        cancelAllEscalations(context, medicineId, time)
+
+        // Cancel main reminder alarm
+        ReminderScheduler.cancelReminders(context, medicineId, listOf(time))
+
+        // Cancel all notifications for this medicine
+        NotificationHelper.cancelAllNotificationsForMedicine(context, medicineId, time)
+
         saveMedicineStatus(context, medicineId, time, "skipped")
 
         ReminderWidgetUpdater.updateWidgets(context)
+
+        android.util.Log.d("ReminderWidget", "Medicine skipped from widget: $medicineName @ $time")
+    }
+
+    private fun cancelAllEscalations(context: Context, medicineId: String, time: String) {
+        val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+
+        listOf("escalation1", "escalation2", "escalation3").forEachIndexed { index, prefix ->
+            val action = "ACTION_ESCALATION_${index + 1}"
+            val intent = Intent(context, NotificationActionReceiver::class.java).apply {
+                this.action = action
+            }
+            val requestCode = "${prefix}_${medicineId}_$time".hashCode()
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                requestCode,
+                intent,
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+                } else {
+                    PendingIntent.FLAG_UPDATE_CURRENT
+                }
+            )
+            alarmManager.cancel(pendingIntent)
+            pendingIntent.cancel()
+        }
     }
 
     private fun parseTimeToMillis(time: String): Long {
