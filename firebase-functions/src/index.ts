@@ -91,6 +91,7 @@ export const onBadiRequestCreated = onDocumentCreated(
 /**
  * ✅ İlaç alındığında tetiklenir
  * Badilere bildirim gönderir
+ * Badi tarafından işaretlendiyse kullanıcıya da bildirim gönderir
  */
 export const onMedicationTaken = onDocumentCreated(
   {
@@ -116,6 +117,7 @@ export const onMedicationTaken = onDocumentCreated(
 
     try {
       const userId = log.userId;
+      const markedByBuddyId = log.markedByBuddyId;
 
       // Kullanıcının bilgilerini al
       const userDoc = await db.collection("users").doc(userId).get();
@@ -124,6 +126,57 @@ export const onMedicationTaken = onDocumentCreated(
       if (!user) {
         console.warn("⚠️ Kullanıcı bulunamadı:", userId);
         return;
+      }
+
+      const promises: Promise<unknown>[] = [];
+
+      // 🔔 Badi tarafından işaretlendiyse kullanıcıya bildirim gönder
+      if (markedByBuddyId) {
+        const buddyUserDoc = await db.collection("users").doc(markedByBuddyId).get();
+        const buddyUser = buddyUserDoc.data();
+        const buddyName = buddyUser?.name || "Badin";
+
+        if (user.fcmToken) {
+          const userMessage = {
+            token: user.fcmToken,
+            notification: {
+              title: "✅ İlaç Badi Tarafından İşaretlendi",
+              body: `${buddyName} senin için ${log.medicineName} ilacını aldı olarak işaretledi`,
+            },
+            data: {
+              type: "medication_marked_by_buddy",
+              medicineId: log.medicineId || "",
+              medicineName: log.medicineName,
+              markedByBuddyId: markedByBuddyId,
+              markedByBuddyName: buddyName,
+            },
+            android: {
+              priority: "high" as const,
+              notification: {
+                sound: "default",
+                channelId: "dozi_med_channel",
+              },
+            },
+          };
+
+          promises.push(
+            messaging.send(userMessage).then(async () => {
+              console.log(`✅ Kullanıcıya badi işaretleme bildirimi gönderildi`);
+              await db.collection("notifications").add({
+                userId: userId,
+                type: "MEDICATION_MARKED_BY_BUDDY",
+                title: userMessage.notification.title,
+                body: userMessage.notification.body,
+                data: userMessage.data,
+                isRead: false,
+                isSent: true,
+                sentAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                priority: "NORMAL",
+              });
+            })
+          );
+        }
       }
 
       // Kullanıcının aktif badilerini al
@@ -135,26 +188,36 @@ export const onMedicationTaken = onDocumentCreated(
 
       console.log(`👥 ${badisSnapshot.size} aktif badi bulundu`);
 
-      if (badisSnapshot.empty) {
+      if (badisSnapshot.empty && promises.length === 0) {
         console.log("ℹ️ Aktif badi yok, bildirim gönderilmeyecek");
         return;
       }
 
-      const promises: Promise<unknown>[] = [];
-
       for (const badiDoc of badisSnapshot.docs) {
         const badi = badiDoc.data();
+        const badiUid = badi.buddyUserId;
+
+        // Badi kendisi işaretlediyse ona bildirim gönderme
+        if (badiUid === markedByBuddyId) {
+          console.log(`⏭️ Badi kendisi işaretledi, atlıyorum: ${badiUid}`);
+          continue;
+        }
+
+        // 🔐 Rol bazlı izin kontrolü - canReceiveNotifications
+        const permissions = badi.permissions;
+        if (permissions && !permissions.canReceiveNotifications) {
+          console.log(`⏭️ Badi bildirim alma izni yok: ${badiUid}`);
+          continue;
+        }
 
         // Badinin bildirim tercihini kontrol et
         const prefs = badi.notificationPreferences;
         if (!prefs?.onMedicationTaken) {
-          const badiUid = badi.buddyUserId;
           console.log(`⏭️ Badi bildirim almak istemiyor: ${badiUid}`);
           continue;
         }
 
         // Badinin FCM token'ını al
-        const badiUid = badi.buddyUserId;
         const badiUserDoc = await db.collection("users").doc(badiUid).get();
         const badiUser = badiUserDoc.data();
 
@@ -163,22 +226,22 @@ export const onMedicationTaken = onDocumentCreated(
           continue;
         }
 
-        // Push notification gönder
+        // Push notification gönder - kullanıcı adı ön planda
         const userName = user.name || "Badin";
         const medName = log.medicineName;
-        const notifBody = `${userName} ${medName} ilacını aldı`;
+        const notifBody = `${medName} ilacını aldı`;
         const message = {
           token: badiUser.fcmToken,
           notification: {
-            title: "✅ İlaç Alındı",
+            title: `✅ ${userName} İlacını Aldı`,
             body: notifBody,
           },
           data: {
             type: "medication_taken",
             userId: userId,
+            userName: userName,
             logId: logId,
             medicineName: log.medicineName,
-            badiName: user.name || "",
           },
           android: {
             priority: "normal" as const,
@@ -193,8 +256,7 @@ export const onMedicationTaken = onDocumentCreated(
           messaging
             .send(message)
             .then(async () => {
-              const uid = badi.buddyUserId;
-              console.log(`✅ Bildirim gönderildi: ${uid}`);
+              console.log(`✅ Bildirim gönderildi: ${badiUid}`);
 
               // Notification kaydı oluştur
               await db.collection("notifications").add({
@@ -211,15 +273,14 @@ export const onMedicationTaken = onDocumentCreated(
               });
             })
             .catch((error) => {
-              const uid = badi.buddyUserId;
-              console.error(`❌ Bildirim hatası (${uid}):`, error);
+              console.error(`❌ Bildirim hatası (${badiUid}):`, error);
             })
         );
       }
 
       await Promise.all(promises);
       const count = promises.length;
-      console.log(`✅ ${count} badiye bildirim gönderildi`);
+      console.log(`✅ ${count} bildirim gönderildi`);
     } catch (error) {
       console.error("❌ onMedicationTaken hatası:", error);
     }
@@ -229,6 +290,7 @@ export const onMedicationTaken = onDocumentCreated(
 /**
  * 💊 İlaç hatırlatması badilere gönder
  * Android app'ten callable function olarak çağrılır
+ * Rol bazlı izin kontrolü yapar
  */
 export const sendMedicationReminderToBadis = onCall(
   {region: REGION},
@@ -241,10 +303,10 @@ export const sendMedicationReminderToBadis = onCall(
       );
     }
 
-    const {medicineId, medicineName, dosage, time} = request.data;
+    const {medicineId, medicineName, dosage, time, escalationLevel} = request.data;
     const userId = request.auth.uid;
 
-    console.log(`💊 İlaç hatırlatması: ${medicineName} - ${userId}`);
+    console.log(`💊 İlaç hatırlatması: ${medicineName} - ${userId} (Eskalasyon: ${escalationLevel || 0})`);
 
     try {
       // Kullanıcının bilgilerini al
@@ -272,17 +334,23 @@ export const sendMedicationReminderToBadis = onCall(
 
       for (const badiDoc of badisSnapshot.docs) {
         const badi = badiDoc.data();
+        const badiUid = badi.buddyUserId;
+
+        // 🔐 Rol bazlı izin kontrolü - canReceiveNotifications
+        const permissions = badi.permissions;
+        if (permissions && !permissions.canReceiveNotifications) {
+          console.log(`⏭️ Badi bildirim alma izni yok: ${badiUid}`);
+          continue;
+        }
 
         // Badinin bildirim tercihini kontrol et
         const prefs = badi.notificationPreferences;
         if (!prefs?.onMedicationTime) {
-          const badiUid = badi.buddyUserId;
           console.log(`⏭️ Badi bildirim almak istemiyor: ${badiUid}`);
           continue;
         }
 
         // Badinin FCM token'ını al
-        const badiUid = badi.buddyUserId;
         const badiUserDoc = await db.collection("users").doc(badiUid).get();
         const badiUser = badiUserDoc.data();
 
@@ -291,25 +359,37 @@ export const sendMedicationReminderToBadis = onCall(
           continue;
         }
 
-        // Push notification gönder
+        // Push notification gönder - kullanıcı adı ön planda
         const userName = user.name || "Badin";
-        const body = `${userName} - ${medicineName} ${dosage} (${time})`;
+        const body = `${medicineName} ${dosage} - Saat ${time}`;
+
+        // Eskalasyon seviyesine göre başlık ayarla
+        let title = `💊 ${userName} - İlaç Hatırlatması`;
+        let priority: "high" | "normal" = "high";
+
+        if (escalationLevel && escalationLevel >= 2) {
+          title = `⚠️ ${userName} - İlaç Hatırlatması (${escalationLevel}. uyarı)`;
+        } else if (escalationLevel && escalationLevel >= 3) {
+          title = `🚨 ${userName} - ACİL İlaç Hatırlatması`;
+        }
+
         const message = {
           token: badiUser.fcmToken,
           notification: {
-            title: "💊 Badi İlaç Hatırlatması",
+            title: title,
             body: body,
           },
           data: {
             type: "badi_medication_reminder",
             userId: userId,
+            userName: userName,
             medicineId: medicineId || "",
             medicineName: medicineName,
             time: time,
-            badiName: user.name || "",
+            escalationLevel: String(escalationLevel || 0),
           },
           android: {
-            priority: "high" as const,
+            priority: priority,
             notification: {
               sound: "default",
               channelId: "dozi_med_channel",
@@ -321,8 +401,7 @@ export const sendMedicationReminderToBadis = onCall(
           messaging
             .send(message)
             .then(async () => {
-              const uid = badi.buddyUserId;
-              console.log(`✅ Hatırlatma gönderildi: ${uid}`);
+              console.log(`✅ Hatırlatma gönderildi: ${badiUid}`);
 
               // Notification kaydı oluştur
               await db.collection("notifications").add({
@@ -339,8 +418,7 @@ export const sendMedicationReminderToBadis = onCall(
               });
             })
             .catch((error) => {
-              const uid = badi.buddyUserId;
-              console.error(`❌ Hatırlatma hatası (${uid}):`, error);
+              console.error(`❌ Hatırlatma hatası (${badiUid}):`, error);
             })
         );
       }
@@ -446,6 +524,7 @@ export const sendBadiNudge = onCall(
 /**
  * ⚠️ İlaç kaçırma kontrolü
  * Her 15 dakikada bir çalışır
+ * Rol bazlı izin kontrolü yapar
  */
 export const checkMissedMedications = onSchedule(
   {
@@ -494,6 +573,14 @@ export const checkMissedMedications = onSchedule(
 
         for (const badiDoc of badisSnapshot.docs) {
           const badi = badiDoc.data();
+          const badiUid = badi.buddyUserId;
+
+          // 🔐 Rol bazlı izin kontrolü - canReceiveNotifications
+          const permissions = badi.permissions;
+          if (permissions && !permissions.canReceiveNotifications) {
+            console.log(`⏭️ Badi bildirim alma izni yok: ${badiUid}`);
+            continue;
+          }
 
           // Badinin bildirim tercihini kontrol et
           if (!badi.notificationPreferences?.onMedicationMissed) {
@@ -503,25 +590,26 @@ export const checkMissedMedications = onSchedule(
           // Badinin FCM token'ını al
           const badiUserDoc = await db
             .collection("users")
-            .doc(badi.buddyUserId)
+            .doc(badiUid)
             .get();
           const badiUser = badiUserDoc.data();
 
           if (!badiUser || !badiUser.fcmToken) continue;
 
-          // Push notification gönder
+          // Push notification gönder - kullanıcı adı ön planda
+          const userName = user.name || "Badin";
           const message = {
             token: badiUser.fcmToken,
             notification: {
-              title: "⚠️ İlaç Kaçırıldı",
-              body: `${user.name || "Badin"} ${log.medicineName} ilacını kaçırdı`,
+              title: `⚠️ ${userName} - İlaç Kaçırıldı`,
+              body: `${log.medicineName} ilacını almadı`,
             },
             data: {
               type: "medication_missed",
               userId: userId,
+              userName: userName,
               logId: logDoc.id,
               medicineName: log.medicineName,
-              badiName: user.name || "",
             },
             android: {
               priority: "high" as const,
@@ -534,6 +622,7 @@ export const checkMissedMedications = onSchedule(
 
           promises.push(
             messaging.send(message).then(async () => {
+              console.log(`✅ Kaçırma bildirimi gönderildi: ${badiUid}`);
               await db.collection("notifications").add({
                 userId: badi.buddyUserId,
                 type: "MEDICATION_MISSED",
@@ -556,6 +645,162 @@ export const checkMissedMedications = onSchedule(
       console.log(`✅ ${count} kaçırma bildirimi gönderildi`);
     } catch (error) {
       console.error("❌ checkMissedMedications hatası:", error);
+    }
+  }
+);
+
+/**
+ * 📦 Stok uyarısı badilere gönder
+ * Android app'ten callable function olarak çağrılır
+ * Rol bazlı izin kontrolü yapar
+ */
+export const sendStockWarningToBadis = onCall(
+  {region: REGION},
+  async (request) => {
+    // Auth kontrolü
+    if (!request.auth) {
+      throw new HttpsError(
+        "unauthenticated",
+        "Kullanıcı giriş yapmamış"
+      );
+    }
+
+    const {medicineId, medicineName, stockCount, daysRemaining, stockPercentage, warningLevel} = request.data;
+    const userId = request.auth.uid;
+
+    console.log(`📦 Stok uyarısı: ${medicineName} - ${userId} (Stok: ${stockCount}, Kalan gün: ${daysRemaining})`);
+
+    try {
+      // Kullanıcının bilgilerini al
+      const userDoc = await db.collection("users").doc(userId).get();
+      const user = userDoc.data();
+
+      if (!user) {
+        throw new HttpsError("not-found", "Kullanıcı bulunamadı");
+      }
+
+      // Kullanıcının aktif badilerini al
+      const badisSnapshot = await db
+        .collection("buddies")
+        .where("userId", "==", userId)
+        .where("status", "==", "ACTIVE")
+        .get();
+
+      console.log(`👥 ${badisSnapshot.size} aktif badi bulundu`);
+
+      if (badisSnapshot.empty) {
+        return {success: true, sentCount: 0, message: "Aktif badi yok"};
+      }
+
+      const promises: Promise<unknown>[] = [];
+
+      for (const badiDoc of badisSnapshot.docs) {
+        const badi = badiDoc.data();
+        const badiUid = badi.buddyUserId;
+
+        // 🔐 Rol bazlı izin kontrolü - canReceiveNotifications
+        const permissions = badi.permissions;
+        if (permissions && !permissions.canReceiveNotifications) {
+          console.log(`⏭️ Badi bildirim alma izni yok: ${badiUid}`);
+          continue;
+        }
+
+        // Badinin FCM token'ını al
+        const badiUserDoc = await db.collection("users").doc(badiUid).get();
+        const badiUser = badiUserDoc.data();
+
+        if (!badiUser || !badiUser.fcmToken) {
+          console.warn(`⚠️ Badi kullanıcı/token yok: ${badiUid}`);
+          continue;
+        }
+
+        // Push notification gönder - kullanıcı adı ön planda
+        const userName = user.name || "Badin";
+
+        // Uyarı seviyesine göre mesaj oluştur
+        let title: string;
+        let body: string;
+        let priority: "high" | "normal" = "normal";
+
+        if (warningLevel === "empty") {
+          title = `🚨 ${userName} - İlaç Stoğu Bitti`;
+          body = `${medicineName} stoğu tamamen bitti! Yenilemeyi hatırlat.`;
+          priority = "high";
+        } else if (warningLevel === "critical") {
+          const percentMsg = stockPercentage ? ` (%${stockPercentage})` : "";
+          title = `🔴 ${userName} - Kritik Stok Uyarısı`;
+          body = `${medicineName} stoğu kritik${percentMsg} - ${daysRemaining} gün kaldı`;
+          priority = "high";
+        } else {
+          const percentMsg = stockPercentage ? ` (%${stockPercentage})` : "";
+          title = `🟡 ${userName} - Stok Uyarısı`;
+          body = `${medicineName} stoğu azaldı${percentMsg} - ${daysRemaining} gün kaldı`;
+        }
+
+        const message = {
+          token: badiUser.fcmToken,
+          notification: {
+            title: title,
+            body: body,
+          },
+          data: {
+            type: "stock_warning",
+            userId: userId,
+            userName: userName,
+            medicineId: medicineId || "",
+            medicineName: medicineName,
+            stockCount: String(stockCount || 0),
+            daysRemaining: String(daysRemaining || 0),
+            warningLevel: warningLevel || "low",
+          },
+          android: {
+            priority: priority,
+            notification: {
+              sound: "default",
+              channelId: "dozi_med_channel",
+            },
+          },
+        };
+
+        promises.push(
+          messaging
+            .send(message)
+            .then(async () => {
+              console.log(`✅ Stok uyarısı gönderildi: ${badiUid}`);
+
+              // Notification kaydı oluştur
+              await db.collection("notifications").add({
+                userId: badi.buddyUserId,
+                type: "STOCK_WARNING",
+                title: message.notification.title,
+                body: message.notification.body,
+                data: message.data,
+                isRead: false,
+                isSent: true,
+                sentAt: admin.firestore.FieldValue.serverTimestamp(),
+                createdAt: admin.firestore.FieldValue.serverTimestamp(),
+                priority: priority === "high" ? "HIGH" : "NORMAL",
+              });
+            })
+            .catch((error) => {
+              console.error(`❌ Stok uyarısı hatası (${badiUid}):`, error);
+            })
+        );
+      }
+
+      await Promise.all(promises);
+      const sentCount = promises.length;
+
+      console.log(`✅ ${sentCount} badiye stok uyarısı gönderildi`);
+
+      return {
+        success: true,
+        sentCount: sentCount,
+        message: `${sentCount} badiye stok uyarısı gönderildi`,
+      };
+    } catch (error) {
+      console.error("❌ sendStockWarningToBadis hatası:", error);
+      throw new HttpsError("internal", "Stok uyarısı gönderilemedi");
     }
   }
 );
