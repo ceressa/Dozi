@@ -363,16 +363,32 @@ fun HomeScreen(
                         val sameTimeMedicines = uiState.allUpcomingMedicines.filter { it.second == uiState.upcomingMedicine!!.second }
 
                         if (sameTimeMedicines.size == 1) {
+                            // 🆕 Vakti geçmiş mi kontrol et
+                            val currentTime = java.time.LocalTime.now()
+                            val (hour, minute) = uiState.upcomingMedicine!!.second.split(":").map { it.toInt() }
+                            val medicineTime = java.time.LocalTime.of(hour, minute)
+                            val isOverdue = currentTime.isAfter(medicineTime)
+
                             CurrentMedicineCard(
                                 medicine = uiState.upcomingMedicine!!.first,
                                 time = uiState.upcomingMedicine!!.second,
                                 snoozeMinutes = uiState.snoozeMinutes,
                                 onTaken = {
                                     SoundHelper.playSound(context, SoundHelper.SoundType.HERSEY_TAMAM)
-                                    viewModel.onMedicineTaken(context, uiState.upcomingMedicine!!.first, uiState.upcomingMedicine!!.second)
+                                    // 🆕 Vakti geçmişse zaman seçimi dialogunu göster
+                                    if (isOverdue) {
+                                        viewModel.showTakenTimeDialogFor(uiState.upcomingMedicine!!.first, uiState.upcomingMedicine!!.second)
+                                    } else {
+                                        viewModel.onMedicineTaken(context, uiState.upcomingMedicine!!.first, uiState.upcomingMedicine!!.second)
+                                    }
                                 },
                                 onSnooze = { viewModel.setShowSnoozeDialog(true) },
-                                onSkip = { viewModel.setShowSkipDialog(true) }
+                                onSkip = { viewModel.setShowSkipDialog(true) },
+                                // 🆕 Navigasyon parametreleri
+                                currentIndex = uiState.currentDoseIndex,
+                                totalDoses = uiState.allTodayDoses.size,
+                                onPrevious = { viewModel.navigateToPreviousDose() },
+                                onNext = { viewModel.navigateToNextDose() }
                             )
                         } else {
                             MultiMedicineCard(
@@ -503,6 +519,17 @@ fun HomeScreen(
                 currentMedicine?.let {
                     viewModel.onMedicineSnoozed(context, it.first, it.second, minutes)
                 }
+            }
+        )
+    }
+
+    // 🆕 Zaman seçimi dialogu (kaçırılmış ilaçlar için)
+    if (uiState.showTakenTimeDialog && uiState.pendingTakenMedicine != null) {
+        TakenTimeDialog(
+            scheduledTime = uiState.pendingTakenMedicine!!.second,
+            onDismiss = { viewModel.hideTakenTimeDialog() },
+            onConfirm = { useScheduledTime ->
+                viewModel.confirmMedicineTakenAtTime(context, useScheduledTime)
             }
         )
     }
@@ -1092,7 +1119,12 @@ private fun CurrentMedicineCard(
     snoozeMinutes: Int,
     onTaken: () -> Unit,
     onSnooze: () -> Unit,
-    onSkip: () -> Unit
+    onSkip: () -> Unit,
+    // 🆕 Navigasyon parametreleri
+    currentIndex: Int = 0,
+    totalDoses: Int = 1,
+    onPrevious: () -> Unit = {},
+    onNext: () -> Unit = {}
 ) {
     val context = LocalContext.current
     var remainingSeconds by remember { mutableStateOf(0) }
@@ -1388,38 +1420,122 @@ private fun CurrentMedicineCard(
                 Spacer(Modifier.height(8.dp))
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.spacedBy(10.dp)
-            ) {
-                ActionButton(
-                    text = "AL",
-                    icon = Icons.Default.Check,
-                    color = if (canTakeMedicine) SuccessGreen else Gray200,
-                    modifier = Modifier.weight(1f),
-                    enabled = canTakeMedicine,
-                    onClick = onTaken
-                )
-
-                ActionButton(
-                    text = "ERTELE",
-                    icon = Icons.Default.AccessTime,
-                    color = if (canSnooze) WarningOrange else Gray200,
-                    modifier = Modifier.weight(1f),
-                    enabled = canSnooze,
-                    onClick = {
-                        SoundHelper.playSound(context, SoundHelper.SoundType.ERTELE)
-                        onSnooze()
+            // 🆕 Navigasyon okları (birden fazla doz varsa)
+            if (totalDoses > 1) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 8.dp),
+                    horizontalArrangement = Arrangement.SpaceBetween,
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    // Sol ok
+                    IconButton(
+                        onClick = onPrevious,
+                        enabled = currentIndex > 0,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                if (currentIndex > 0) DoziTurquoise.copy(alpha = 0.1f) else Gray200.copy(alpha = 0.3f),
+                                RoundedCornerShape(12.dp)
+                            )
+                    ) {
+                        Icon(
+                            Icons.Default.KeyboardArrowLeft,
+                            contentDescription = "Önceki",
+                            tint = if (currentIndex > 0) DoziTurquoise else Gray200,
+                            modifier = Modifier.size(24.dp)
+                        )
                     }
-                )
 
-                ActionButton(
-                    text = "ATLA",
-                    icon = Icons.Default.Close,
-                    color = ErrorRed,
-                    modifier = Modifier.weight(1f),
-                    onClick = onSkip
-                )
+                    // Sayfa göstergesi
+                    Text(
+                        "${currentIndex + 1} / $totalDoses",
+                        style = MaterialTheme.typography.labelMedium,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant
+                    )
+
+                    // Sağ ok
+                    IconButton(
+                        onClick = onNext,
+                        enabled = currentIndex < totalDoses - 1,
+                        modifier = Modifier
+                            .size(40.dp)
+                            .background(
+                                if (currentIndex < totalDoses - 1) DoziTurquoise.copy(alpha = 0.1f) else Gray200.copy(alpha = 0.3f),
+                                RoundedCornerShape(12.dp)
+                            )
+                    ) {
+                        Icon(
+                            Icons.Default.KeyboardArrowRight,
+                            contentDescription = "Sonraki",
+                            tint = if (currentIndex < totalDoses - 1) DoziTurquoise else Gray200,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+            }
+
+            // 🆕 Kaçırılmış ilaçlar için sadece AL ve ATLA göster
+            if (isOverdue && minutesUntilMedicine < -30) {
+                // Çok geç - sadece AL ve ATLA
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    ActionButton(
+                        text = "AL",
+                        icon = Icons.Default.Check,
+                        color = SuccessGreen,
+                        modifier = Modifier.weight(1f),
+                        enabled = true, // Her zaman aktif
+                        onClick = onTaken
+                    )
+
+                    ActionButton(
+                        text = "ATLA",
+                        icon = Icons.Default.Close,
+                        color = ErrorRed,
+                        modifier = Modifier.weight(1f),
+                        onClick = onSkip
+                    )
+                }
+            } else {
+                // Normal durum - AL, ERTELE, ATLA
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(10.dp)
+                ) {
+                    ActionButton(
+                        text = "AL",
+                        icon = Icons.Default.Check,
+                        color = if (canTakeMedicine) SuccessGreen else Gray200,
+                        modifier = Modifier.weight(1f),
+                        enabled = canTakeMedicine,
+                        onClick = onTaken
+                    )
+
+                    ActionButton(
+                        text = "ERTELE",
+                        icon = Icons.Default.AccessTime,
+                        color = if (canSnooze) WarningOrange else Gray200,
+                        modifier = Modifier.weight(1f),
+                        enabled = canSnooze,
+                        onClick = {
+                            SoundHelper.playSound(context, SoundHelper.SoundType.ERTELE)
+                            onSnooze()
+                        }
+                    )
+
+                    ActionButton(
+                        text = "ATLA",
+                        icon = Icons.Default.Close,
+                        color = ErrorRed,
+                        modifier = Modifier.weight(1f),
+                        onClick = onSkip
+                    )
+                }
             }
                 }
             }
@@ -2238,6 +2354,142 @@ private fun SkipReasonDialog(
                         Spacer(Modifier.width(4.dp))
                         Text("Atla", fontWeight = FontWeight.Bold)
                     }
+                }
+            }
+        }
+    }
+}
+
+// ═══════════════════════════════════════════════════════════════════════
+// 🆕 ZAMAN SEÇİMİ DIALOG
+// ═══════════════════════════════════════════════════════════════════════
+
+@RequiresApi(Build.VERSION_CODES.O)
+@Composable
+private fun TakenTimeDialog(
+    scheduledTime: String,
+    onDismiss: () -> Unit,
+    onConfirm: (Boolean) -> Unit // true = scheduled time, false = current time
+) {
+    val currentTime = java.time.LocalTime.now()
+    val currentTimeFormatted = String.format("%02d:%02d", currentTime.hour, currentTime.minute)
+
+    Dialog(onDismissRequest = onDismiss) {
+        Card(
+            shape = RoundedCornerShape(24.dp),
+            colors = CardDefaults.cardColors(containerColor = MaterialTheme.colorScheme.surface),
+            elevation = CardDefaults.cardElevation(8.dp)
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(24.dp),
+                verticalArrangement = Arrangement.spacedBy(16.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    Icon(
+                        Icons.Default.Schedule,
+                        contentDescription = null,
+                        tint = DoziPrimary,
+                        modifier = Modifier.size(28.dp)
+                    )
+                    Text(
+                        "Ne Zaman Aldınız?",
+                        style = MaterialTheme.typography.titleLarge,
+                        fontWeight = FontWeight.Bold,
+                        color = MaterialTheme.colorScheme.onSurface
+                    )
+                }
+
+                Text(
+                    "İlacınızı planlanan saatte mi yoksa şu anda mı aldınız?",
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant
+                )
+
+                // Planlanan saat seçeneği
+                Surface(
+                    onClick = { onConfirm(true) },
+                    shape = RoundedCornerShape(12.dp),
+                    color = DoziTurquoise.copy(alpha = 0.1f),
+                    border = BorderStroke(2.dp, DoziTurquoise)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                "Planlanan Saatte",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = DoziTurquoise
+                            )
+                            Text(
+                                "Saat $scheduledTime",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = DoziTurquoise.copy(alpha = 0.8f)
+                            )
+                        }
+                        Icon(
+                            Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            tint = DoziTurquoise,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                // Şu anki saat seçeneği
+                Surface(
+                    onClick = { onConfirm(false) },
+                    shape = RoundedCornerShape(12.dp),
+                    color = WarningOrange.copy(alpha = 0.1f),
+                    border = BorderStroke(2.dp, WarningOrange)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                        horizontalArrangement = Arrangement.SpaceBetween
+                    ) {
+                        Column {
+                            Text(
+                                "Şu Anda Aldım",
+                                style = MaterialTheme.typography.titleMedium,
+                                fontWeight = FontWeight.Bold,
+                                color = WarningOrange
+                            )
+                            Text(
+                                "Saat $currentTimeFormatted",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = WarningOrange.copy(alpha = 0.8f)
+                            )
+                        }
+                        Icon(
+                            Icons.Default.AccessTime,
+                            contentDescription = null,
+                            tint = WarningOrange,
+                            modifier = Modifier.size(24.dp)
+                        )
+                    }
+                }
+
+                // İptal butonu
+                OutlinedButton(
+                    onClick = onDismiss,
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(12.dp),
+                    border = BorderStroke(2.dp, Gray200)
+                ) {
+                    Text("İptal", color = MaterialTheme.colorScheme.onSurfaceVariant)
                 }
             }
         }

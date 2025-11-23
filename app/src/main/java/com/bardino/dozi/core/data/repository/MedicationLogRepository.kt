@@ -104,6 +104,7 @@ class MedicationLogRepository(
         medicineName: String,
         dosage: String,
         scheduledTime: Long,
+        takenAt: Long? = null, // 🆕 Özel alım zamanı (null ise şu anki zaman)
         notes: String? = null
     ): Result<String> {
         val log = MedicationLog(
@@ -111,7 +112,7 @@ class MedicationLogRepository(
             medicineName = medicineName,
             dosage = dosage,
             scheduledTime = Timestamp(Date(scheduledTime)),
-            takenAt = Timestamp(Date()),
+            takenAt = Timestamp(Date(takenAt ?: System.currentTimeMillis())),
             status = MedicationStatus.TAKEN.name,
             notes = notes
         )
