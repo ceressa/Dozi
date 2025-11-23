@@ -324,6 +324,21 @@ class NotificationActionReceiver : BroadcastReceiver() {
             // 🔥 FIX: Bu saat için planlanmış reminder alarmını iptal et
             ReminderScheduler.cancelReminders(context, medicineId, listOf(time))
             android.util.Log.d("NotificationActionReceiver", "🔕 Reminder alarm iptal edildi: $medicineId @ $time")
+
+            // 📦 Stok azalt (tutarlılık için - Home screen ve Widget ile aynı davranış)
+            CoroutineScope(Dispatchers.IO).launch {
+                try {
+                    val medicineRepository = MedicineRepository()
+                    val medicine = medicineRepository.getMedicineById(medicineId)
+                    if (medicine != null && medicine.autoDecrementEnabled && medicine.stockCount > 0) {
+                        val newStockCount = medicine.stockCount - 1
+                        medicineRepository.updateMedicineField(medicineId, "stockCount", newStockCount)
+                        android.util.Log.d("NotificationActionReceiver", "📦 Stok azaltıldı: $medicineName -> $newStockCount")
+                    }
+                } catch (e: Exception) {
+                    android.util.Log.e("NotificationActionReceiver", "❌ Stok azaltma hatası", e)
+                }
+            }
         }
 
         showToast(context, "$medicineName alındı olarak işaretlendi ✅")

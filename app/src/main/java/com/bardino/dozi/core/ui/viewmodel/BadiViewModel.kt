@@ -5,6 +5,7 @@ import androidx.lifecycle.viewModelScope
 import com.bardino.dozi.core.data.model.*
 import com.bardino.dozi.core.data.repository.BadiRepository
 import com.bardino.dozi.core.data.repository.MedicationLogRepository
+import com.bardino.dozi.core.data.repository.MedicineRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.flow.*
 import kotlinx.coroutines.launch
@@ -37,7 +38,8 @@ data class BadiSearchState(
 @HiltViewModel
 class BadiViewModel @Inject constructor(
     private val badiRepository: BadiRepository,
-    private val medicationLogRepository: MedicationLogRepository
+    private val medicationLogRepository: MedicationLogRepository,
+    private val medicineRepository: MedicineRepository
 ) : ViewModel() {
 
     private val _uiState = MutableStateFlow(BadiUiState())
@@ -316,6 +318,115 @@ class BadiViewModel @Inject constructor(
             val logs = medicationLogRepository.getBuddyMedicationLogs(badiUserId)
             _selectedBadiLogs.value = logs
             _uiState.update { it.copy(isLoading = false) }
+        }
+    }
+
+    /**
+     * Badi olarak kullanıcının ilacını alındı olarak işaretle
+     * Tutarlılık için: stok azalt, escalation iptal et, kullanıcıya bildir
+     */
+    fun markMedicationTakenForUser(
+        badiId: String,
+        userId: String,
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        scheduledTime: Long,
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            // İzin kontrolü
+            val badi = _uiState.value.badis.find { it.badi.id == badiId }
+            if (badi == null || !badi.badi.permissions.canMarkAsTaken) {
+                _uiState.update { it.copy(isLoading = false) }
+                onError("Bu işlem için yetkiniz yok")
+                return@launch
+            }
+
+            try {
+                // 1. İlaç logunu oluştur (badi olarak)
+                medicationLogRepository.logMedicationTakenByBuddy(
+                    medicineId = medicineId,
+                    medicineName = medicineName,
+                    dosage = dosage,
+                    scheduledTime = scheduledTime,
+                    userId = userId,
+                    markedByBuddyId = badi.badi.buddyUserId
+                ).onSuccess {
+                    android.util.Log.d("BadiViewModel", "✅ Medication marked as taken by buddy")
+
+                    // 2. Stok azalt (tutarlılık için)
+                    val medicine = medicineRepository.getMedicineByIdForUser(medicineId, userId)
+                    if (medicine != null && medicine.autoDecrementEnabled && medicine.stockCount > 0) {
+                        val newStockCount = medicine.stockCount - 1
+                        medicineRepository.updateMedicineFieldForUser(userId, medicineId, "stockCount", newStockCount)
+                        android.util.Log.d("BadiViewModel", "📦 Stock decreased by buddy: $medicineName -> $newStockCount")
+                    }
+
+                    _uiState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                }.onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    onError(error.message ?: "İşaretleme başarısız")
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
+                onError(e.message ?: "Bir hata oluştu")
+                android.util.Log.e("BadiViewModel", "❌ Error marking medication for user", e)
+            }
+        }
+    }
+
+    /**
+     * Badi olarak kullanıcının ilacını atlandı olarak işaretle
+     */
+    fun markMedicationSkippedForUser(
+        badiId: String,
+        userId: String,
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        scheduledTime: Long,
+        reason: String? = "Badi tarafından atlandı",
+        onSuccess: () -> Unit = {},
+        onError: (String) -> Unit = {}
+    ) {
+        viewModelScope.launch {
+            _uiState.update { it.copy(isLoading = true) }
+
+            // İzin kontrolü
+            val badi = _uiState.value.badis.find { it.badi.id == badiId }
+            if (badi == null || !badi.badi.permissions.canMarkAsTaken) {
+                _uiState.update { it.copy(isLoading = false) }
+                onError("Bu işlem için yetkiniz yok")
+                return@launch
+            }
+
+            try {
+                medicationLogRepository.logMedicationSkippedByBuddy(
+                    medicineId = medicineId,
+                    medicineName = medicineName,
+                    dosage = dosage,
+                    scheduledTime = scheduledTime,
+                    userId = userId,
+                    markedByBuddyId = badi.badi.buddyUserId,
+                    reason = reason
+                ).onSuccess {
+                    android.util.Log.d("BadiViewModel", "✅ Medication marked as skipped by buddy")
+                    _uiState.update { it.copy(isLoading = false) }
+                    onSuccess()
+                }.onFailure { error ->
+                    _uiState.update { it.copy(isLoading = false) }
+                    onError(error.message ?: "İşaretleme başarısız")
+                }
+            } catch (e: Exception) {
+                _uiState.update { it.copy(isLoading = false) }
+                onError(e.message ?: "Bir hata oluştu")
+                android.util.Log.e("BadiViewModel", "❌ Error marking medication skipped for user", e)
+            }
         }
     }
 
