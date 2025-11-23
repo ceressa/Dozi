@@ -64,6 +64,8 @@ import com.bardino.dozi.core.ui.screens.home.MedicineStatus
 import com.bardino.dozi.core.ui.theme.*
 import com.bardino.dozi.core.ui.components.BadiPremiumDialog
 import com.bardino.dozi.core.utils.SoundHelper
+import com.bardino.dozi.core.utils.getMedicineStatus
+import com.bardino.dozi.core.utils.getCurrentDateString
 import com.bardino.dozi.navigation.Screen
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
@@ -506,24 +508,6 @@ fun HomeScreen(
             }
         )
     }
-}
-
-
-// TODO: Bu helper fonksiyonlar (getMedicineStatus, shouldMedicineShowOnDate, getMedicineRecordsForDate)
-// ViewModel'e veya Repository'e taşınmalıdır. UI katmanında business logic bulunmamalı.
-
-fun getMedicineStatus(context: Context, medicineId: String, date: String, time: String): String? {
-    val prefs = context.getSharedPreferences("medicine_status", Context.MODE_PRIVATE)
-    val key = "dose_${medicineId}_${date}_${time}"
-    return prefs.getString(key, null)
-}
-
-fun getCurrentDateString(): String {
-    val calendar = java.util.Calendar.getInstance()
-    val day = calendar.get(java.util.Calendar.DAY_OF_MONTH)
-    val month = calendar.get(java.util.Calendar.MONTH) + 1
-    val year = calendar.get(java.util.Calendar.YEAR)
-    return "%02d/%02d/%d".format(day, month, year)
 }
 
 @RequiresApi(Build.VERSION_CODES.O)
