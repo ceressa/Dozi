@@ -326,6 +326,50 @@ class MedicineRepository @Inject constructor() {
     }
 
     /**
+     * Get medicine by ID for a specific user (for buddy operations)
+     */
+    suspend fun getMedicineByIdForUser(medicineId: String, userId: String): Medicine? {
+        return try {
+            val doc = db.collection("users")
+                .document(userId)
+                .collection("medicines")
+                .document(medicineId)
+                .get()
+                .await()
+
+            if (doc.exists()) {
+                doc.toObject(Medicine::class.java)?.copy(id = doc.id)
+            } else null
+        } catch (e: Exception) {
+            Log.e("MedicineRepository", "Error getting medicine for user", e)
+            null
+        }
+    }
+
+    /**
+     * Update a specific field of a medicine for a specific user (for buddy operations)
+     */
+    suspend fun updateMedicineFieldForUser(userId: String, medicineId: String, field: String, value: Any): Boolean {
+        return try {
+            db.collection("users")
+                .document(userId)
+                .collection("medicines")
+                .document(medicineId)
+                .update(
+                    mapOf(
+                        field to value,
+                        "updatedAt" to System.currentTimeMillis()
+                    )
+                )
+                .await()
+            true
+        } catch (e: Exception) {
+            Log.e("MedicineRepository", "Error updating medicine field for user", e)
+            false
+        }
+    }
+
+    /**
      * Delete a medicine
      * Uses offline-first approach: deletes from Firestore if online, queues if offline
      */

@@ -35,7 +35,10 @@ data class MedicationLog(
 
     // Timestamp değil Long (GenerateInsights / WeeklyReport için gerekli)
     val createdAt: Long? = null,
-    val updatedAt: Long? = null
+    val updatedAt: Long? = null,
+
+    // Badi tarafından işaretlendi mi? (audit trail için)
+    val markedByBuddyId: String? = null  // Null ise kullanıcı kendisi işaretlemiş
 ) {
     /**
      * Uygulama içinde ENUM olarak kullanılır.

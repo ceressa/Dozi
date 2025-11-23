@@ -154,6 +154,83 @@ class MedicationLogRepository(
         return createMedicationLog(log)
     }
 
+    /**
+     * Badi olarak kullanıcının ilacını alındı olarak işaretle
+     * @param userId Asıl kullanıcının ID'si (ilacın sahibi)
+     * @param markedByBuddyId İşaretleyen badi'nin ID'si
+     */
+    suspend fun logMedicationTakenByBuddy(
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        scheduledTime: Long,
+        userId: String,
+        markedByBuddyId: String,
+        notes: String? = null
+    ): Result<String> {
+        val log = MedicationLog(
+            id = "",
+            medicineId = medicineId,
+            medicineName = medicineName,
+            dosage = dosage,
+            scheduledTime = Timestamp(Date(scheduledTime)),
+            takenAt = Timestamp(Date()),
+            status = MedicationStatus.TAKEN.name,
+            notes = notes ?: "Badi tarafından işaretlendi",
+            userId = userId,
+            markedByBuddyId = markedByBuddyId
+        )
+        return createMedicationLogForUser(log, userId)
+    }
+
+    /**
+     * Badi olarak kullanıcının ilacını atlandı olarak işaretle
+     */
+    suspend fun logMedicationSkippedByBuddy(
+        medicineId: String,
+        medicineName: String,
+        dosage: String,
+        scheduledTime: Long,
+        userId: String,
+        markedByBuddyId: String,
+        reason: String? = null
+    ): Result<String> {
+        val log = MedicationLog(
+            id = "",
+            medicineId = medicineId,
+            medicineName = medicineName,
+            dosage = dosage,
+            scheduledTime = Timestamp(Date(scheduledTime)),
+            status = MedicationStatus.SKIPPED.name,
+            notes = reason ?: "Badi tarafından atlandı",
+            userId = userId,
+            markedByBuddyId = markedByBuddyId
+        )
+        return createMedicationLogForUser(log, userId)
+    }
+
+    /**
+     * Başka bir kullanıcı için medication log oluştur (badi işaretlemesi için)
+     */
+    private suspend fun createMedicationLogForUser(log: MedicationLog, userId: String): Result<String> {
+        return try {
+            val logId = db.collection("medication_logs").document().id
+            val logWithId = log.copy(id = logId, userId = userId)
+
+            // Direkt Firestore'a kaydet (başka kullanıcı için local DB kullanmıyoruz)
+            db.collection("medication_logs")
+                .document(logId)
+                .set(logWithId)
+                .await()
+
+            Log.d(TAG, "✅ Medication log created for user $userId by buddy: $logId")
+            Result.success(logId)
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Error creating medication log for user", e)
+            Result.failure(e)
+        }
+    }
+
     suspend fun logMedicationSnoozed(
         medicineId: String,
         medicineName: String,
