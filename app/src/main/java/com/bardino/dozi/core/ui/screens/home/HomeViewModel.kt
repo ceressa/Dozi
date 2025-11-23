@@ -72,7 +72,9 @@ class HomeViewModel @Inject constructor(
         val showSuccessPopup: Boolean = false,
         val showSkippedPopup: Boolean = false,
         val showSkipDialog: Boolean = false,
-        val showSnoozeDialog: Boolean = false
+        val showSnoozeDialog: Boolean = false,
+        // 📦 Stok uyarıları (kritik veya düşük stoklu ilaçlar)
+        val stockWarnings: List<Medicine> = emptyList()
     )
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -175,11 +177,24 @@ class HomeViewModel @Inject constructor(
                 medicineTime >= currentTime
             }.sortedBy { it.second }
 
+            // 📦 Stok uyarısı olan ilaçları filtrele (kritik veya düşük)
+            val stockWarningMeds = allMedicines.filter { medicine ->
+                medicine.isStockCritical() || medicine.isStockLow() || medicine.isStockEmpty()
+            }.sortedBy {
+                // Öncelik: Bitti > Kritik > Düşük
+                when {
+                    it.isStockEmpty() -> 0
+                    it.isStockCritical() -> 1
+                    else -> 2
+                }
+            }
+
             _uiState.update {
                 it.copy(
                     todaysMedicines = todaysMeds,
                     allUpcomingMedicines = upcoming,
-                    upcomingMedicine = upcoming.firstOrNull()
+                    upcomingMedicine = upcoming.firstOrNull(),
+                    stockWarnings = stockWarningMeds
                 )
             }
         } catch (e: Exception) {

@@ -77,13 +77,30 @@ enum class MedicineColor(val displayName: String, val hexColor: String, val emoj
 }
 
 // 📦 Stock Management Extensions
+
+/**
+ * Sayılabilir birim mi? (stok takibi için)
+ * Sadece bu birimler için stok yüzde hesabı mantıklı
+ */
+fun Medicine.isCountableUnit(): Boolean {
+    return unit.lowercase() in listOf("hap", "adet", "tablet", "kapsül", "doz")
+}
+
+/**
+ * Hacim/ağırlık birimi mi?
+ * Bu birimler için şişe/kutu kapasitesi gerekir
+ */
+fun Medicine.isVolumeUnit(): Boolean {
+    return unit.lowercase() in listOf("ml", "damla", "kaşık", "mg")
+}
+
 /**
  * Günlük kullanım miktarını hesapla
  */
 fun Medicine.dailyUsage(): Double {
     if (times.isEmpty()) return 0.0
     val dosageAmount = dosage.toDoubleOrNull() ?: 1.0
-    
+
     return when (frequency) {
         "Her gün" -> dosageAmount * times.size
         "Gün aşırı" -> (dosageAmount * times.size) / 2.0
@@ -100,22 +117,51 @@ fun Medicine.daysRemainingInStock(): Int {
     if (stockCount <= 0) return 0
     val daily = dailyUsage()
     if (daily <= 0) return Int.MAX_VALUE
-    
+
     return (stockCount / daily).toInt()
+}
+
+/**
+ * Stok yüzdesi (boxSize varsa ona göre, yoksa başlangıç stoğuna göre)
+ */
+fun Medicine.stockPercentage(): Int {
+    if (!isCountableUnit()) return 100 // Sayılamaz birimler için varsayılan
+    val totalCapacity = if (boxSize > 0) boxSize else stockCount
+    if (totalCapacity <= 0) return 0
+    return ((stockCount.toDouble() / totalCapacity) * 100).toInt().coerceIn(0, 100)
+}
+
+/**
+ * Stok yüzde bazlı düşük mü? (%5 veya altı)
+ */
+fun Medicine.isStockPercentageLow(threshold: Int = 5): Boolean {
+    if (!isCountableUnit() || boxSize <= 0) return false
+    return stockPercentage() <= threshold
 }
 
 /**
  * Stok azaldı mı? (threshold'a göre)
  */
 fun Medicine.isStockLow(): Boolean {
+    // Yüzde bazlı kontrol (sayılabilir birimler için)
+    if (isCountableUnit() && boxSize > 0 && isStockPercentageLow(10)) {
+        return true
+    }
+    // Gün bazlı kontrol (her zaman)
     return daysRemainingInStock() <= stockWarningThreshold
 }
 
 /**
- * Stok bitmek üzere mi?
+ * Stok bitmek üzere mi? (%5 veya 3 gün)
  */
 fun Medicine.isStockCritical(): Boolean {
-    return stockCount > 0 && daysRemainingInStock() <= 3
+    if (stockCount <= 0) return false
+    // Yüzde bazlı: %5 veya altı
+    if (isCountableUnit() && boxSize > 0 && isStockPercentageLow(5)) {
+        return true
+    }
+    // Gün bazlı: 3 gün veya altı
+    return daysRemainingInStock() <= 3
 }
 
 /**
@@ -129,10 +175,21 @@ fun Medicine.isStockEmpty(): Boolean {
  * Stok uyarı mesajı
  */
 fun Medicine.getStockWarningMessage(): String? {
+    // Hacim birimleri için özel mesaj
+    if (isVolumeUnit() && stockCount <= 0) {
+        return "⚠️ $name bitmiş olabilir! Kontrol et."
+    }
+
     return when {
         isStockEmpty() -> "⚠️ $name stoğu bitti! Yenilemeyi unutma."
-        isStockCritical() -> "🔴 $name stoğu ${daysRemainingInStock()} gün sonra bitecek!"
-        isStockLow() -> "🟡 $name stoğu ${daysRemainingInStock()} gün sonra bitecek."
+        isStockCritical() -> {
+            val percentMsg = if (isCountableUnit() && boxSize > 0) " (%${stockPercentage()})" else ""
+            "🔴 $name stoğu kritik seviyede$percentMsg - ${daysRemainingInStock()} gün kaldı!"
+        }
+        isStockLow() -> {
+            val percentMsg = if (isCountableUnit() && boxSize > 0) " (%${stockPercentage()})" else ""
+            "🟡 $name stoğu azaldı$percentMsg - ${daysRemainingInStock()} gün kaldı."
+        }
         else -> null
     }
 }
