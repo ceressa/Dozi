@@ -74,7 +74,13 @@ class HomeViewModel @Inject constructor(
         val showSkipDialog: Boolean = false,
         val showSnoozeDialog: Boolean = false,
         // 📦 Stok uyarıları (kritik veya düşük stoklu ilaçlar)
-        val stockWarnings: List<Medicine> = emptyList()
+        val stockWarnings: List<Medicine> = emptyList(),
+        // 🆕 Navigasyon için tüm bugünkü dozlar (alınmamış/atlanmamış)
+        val allTodayDoses: List<Pair<Medicine, String>> = emptyList(),
+        val currentDoseIndex: Int = 0,
+        // 🆕 Zaman seçimi dialogu
+        val showTakenTimeDialog: Boolean = false,
+        val pendingTakenMedicine: Pair<Medicine, String>? = null
     )
 
     private val _uiState = MutableStateFlow(HomeUiState())
@@ -154,6 +160,7 @@ class HomeViewModel @Inject constructor(
             // ✅ Bugünün tarihini al
             val today = java.time.LocalDate.now()
             val todayMillis = System.currentTimeMillis()
+            val dateString = getCurrentDateString()
 
             // ✅ Bugün için geçerli olan ilaçları filtrele
             val todaysMeds = allMedicines.filter { medicine ->
@@ -166,6 +173,28 @@ class HomeViewModel @Inject constructor(
                 shouldMedicineShowOnDate(medicine, today)
             }
 
+            // 🆕 Tüm bugünkü dozları al (alınmamış/atlanmamış olanları)
+            val allTodayDoses = todaysMeds.flatMap { medicine ->
+                medicine.times.map { time -> Pair(medicine, time) }
+            }.filter { (medicine, time) ->
+                // Status kontrolü - alınmış veya atlanmış mı?
+                val status = getMedicineStatusFromPrefs(medicine.id, dateString, time)
+                status != "taken" && !status.startsWith("skipped")
+            }.sortedBy { it.second }
+
+            // 🆕 Sırala: Önce vakti geçmişler (kaçırılanlar), sonra yaklaşanlar
+            val currentTime = java.time.LocalTime.now()
+            val sortedDoses = allTodayDoses.sortedWith(compareBy(
+                { pair ->
+                    val (hour, minute) = pair.second.split(":").map { it.toInt() }
+                    val medicineTime = java.time.LocalTime.of(hour, minute)
+                    // Vakti geçmişler önce (false = 0, true = 1)
+                    !currentTime.isAfter(medicineTime)
+                },
+                { it.second } // Sonra saate göre sırala
+            ))
+
+            // Eski upcoming mantığı (geriye uyumluluk için)
             val upcoming = todaysMeds.flatMap { medicine ->
                 medicine.times.map { time -> Pair(medicine, time) }
             }.filter { (medicine, time) ->
@@ -173,8 +202,8 @@ class HomeViewModel @Inject constructor(
                 val currentHour = java.time.LocalTime.now().hour
                 val currentMinute = java.time.LocalTime.now().minute
                 val medicineTime = hour * 60 + minute
-                val currentTime = currentHour * 60 + currentMinute
-                medicineTime >= currentTime
+                val currentTimeMinutes = currentHour * 60 + currentMinute
+                medicineTime >= currentTimeMinutes
             }.sortedBy { it.second }
 
             // 📦 Stok uyarısı olan ilaçları filtrele (kritik veya düşük)
@@ -193,13 +222,24 @@ class HomeViewModel @Inject constructor(
                 it.copy(
                     todaysMedicines = todaysMeds,
                     allUpcomingMedicines = upcoming,
-                    upcomingMedicine = upcoming.firstOrNull(),
-                    stockWarnings = stockWarningMeds
+                    upcomingMedicine = sortedDoses.firstOrNull(),
+                    stockWarnings = stockWarningMeds,
+                    allTodayDoses = sortedDoses,
+                    currentDoseIndex = 0
                 )
             }
         } catch (e: Exception) {
             android.util.Log.e(TAG, "Error updating medicines state: ${e.message}")
         }
+    }
+
+    /**
+     * SharedPreferences'tan ilaç durumunu al
+     */
+    private fun getMedicineStatusFromPrefs(medicineId: String, dateString: String, time: String): String {
+        val prefs = context.getSharedPreferences("dozi_prefs", Context.MODE_PRIVATE)
+        val key = "dose_${medicineId}_${dateString}_$time"
+        return prefs.getString(key, "") ?: ""
     }
 
     /**
@@ -446,27 +486,118 @@ class HomeViewModel @Inject constructor(
         }
     }
 
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 NAVİGASYON FONKSİYONLARI
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Önceki doza git
+     */
+    fun navigateToPreviousDose() {
+        val currentIndex = _uiState.value.currentDoseIndex
+        val allDoses = _uiState.value.allTodayDoses
+        if (currentIndex > 0 && allDoses.isNotEmpty()) {
+            val newIndex = currentIndex - 1
+            _uiState.update {
+                it.copy(
+                    currentDoseIndex = newIndex,
+                    upcomingMedicine = allDoses[newIndex]
+                )
+            }
+        }
+    }
+
+    /**
+     * Sonraki doza git
+     */
+    fun navigateToNextDose() {
+        val currentIndex = _uiState.value.currentDoseIndex
+        val allDoses = _uiState.value.allTodayDoses
+        if (currentIndex < allDoses.size - 1) {
+            val newIndex = currentIndex + 1
+            _uiState.update {
+                it.copy(
+                    currentDoseIndex = newIndex,
+                    upcomingMedicine = allDoses[newIndex]
+                )
+            }
+        }
+    }
+
+    // ═══════════════════════════════════════════════════════════════════════
+    // 🆕 ZAMAN SEÇİMİ DIALOG FONKSİYONLARI
+    // ═══════════════════════════════════════════════════════════════════════
+
+    /**
+     * Zaman seçimi dialogunu göster
+     */
+    fun showTakenTimeDialogFor(medicine: Medicine, time: String) {
+        _uiState.update {
+            it.copy(
+                showTakenTimeDialog = true,
+                pendingTakenMedicine = Pair(medicine, time)
+            )
+        }
+    }
+
+    /**
+     * Zaman seçimi dialogunu kapat
+     */
+    fun hideTakenTimeDialog() {
+        _uiState.update {
+            it.copy(
+                showTakenTimeDialog = false,
+                pendingTakenMedicine = null
+            )
+        }
+    }
+
+    /**
+     * Seçilen zamanda ilacı alındı olarak işaretle
+     * @param useScheduledTime true = planlanan saatte aldı, false = şu anki saatte aldı
+     */
+    @RequiresApi(Build.VERSION_CODES.O)
+    fun confirmMedicineTakenAtTime(context: Context, useScheduledTime: Boolean) {
+        val pending = _uiState.value.pendingTakenMedicine ?: return
+        val (medicine, time) = pending
+
+        // Dialog'u kapat
+        hideTakenTimeDialog()
+
+        // İlacı al (takenAt parametresi ile)
+        onMedicineTaken(context, medicine, time, useScheduledTime)
+    }
+
     /**
      * İlaç alındı (Offline-first)
      * 1. Local DB'ye kaydet
      * 2. Firestore'a sync et
      * 3. Stok azalt
+     * @param useScheduledTime true = planlanan saatte, false = şu anki saatte
      */
-    fun onMedicineTaken(context: Context, medicine: Medicine, time: String) {
+    fun onMedicineTaken(context: Context, medicine: Medicine, time: String, useScheduledTime: Boolean = true) {
         viewModelScope.launch {
             _uiState.update { it.copy(currentMedicineStatus = MedicineStatus.TAKEN) }
 
             // ✅ Offline-first: MedicationLogRepository kullan
             try {
+                // 🆕 Planlanan saat veya şu anki saat
                 val scheduledTime = getScheduledTimeInMillis(time)
+                val takenAtTime = if (useScheduledTime) {
+                    scheduledTime
+                } else {
+                    System.currentTimeMillis()
+                }
+
                 medicationLogRepository.logMedicationTaken(
                     medicineId = medicine.id,
                     medicineName = medicine.name,
                     dosage = medicine.dosage,
                     scheduledTime = scheduledTime,
-                    notes = null
+                    takenAt = takenAtTime, // 🆕 Gerçek alım zamanı
+                    notes = if (!useScheduledTime) "Şu anki saatte alındı" else null
                 ).onSuccess {
-                    Log.d(TAG, "✅ Medication logged to Room DB and queued for sync")
+                    Log.d(TAG, "✅ Medication logged to Room DB and queued for sync (takenAt: ${if (useScheduledTime) "scheduled" else "current"})")
                 }.onFailure {
                     Log.e(TAG, "❌ Failed to log medication", it)
                 }
@@ -518,11 +649,20 @@ class HomeViewModel @Inject constructor(
             // Listeyi güncelle
             delay(100)
             val updated = medicineRepository.getUpcomingMedicines(context)
+
+            // 🆕 allTodayDoses'dan alınan ilacı çıkar
+            val dateString = getCurrentDateString()
+            val currentDoses = _uiState.value.allTodayDoses.filter { (med, t) ->
+                !(med.id == medicine.id && t == time)
+            }
+
             _uiState.update {
                 it.copy(
                     allUpcomingMedicines = updated,
-                    upcomingMedicine = updated.firstOrNull(),
-                    currentMedicineStatus = if (updated.isNotEmpty()) MedicineStatus.UPCOMING else MedicineStatus.TAKEN
+                    upcomingMedicine = currentDoses.firstOrNull(),
+                    allTodayDoses = currentDoses,
+                    currentDoseIndex = 0,
+                    currentMedicineStatus = if (currentDoses.isNotEmpty()) MedicineStatus.UPCOMING else MedicineStatus.TAKEN
                 )
             }
 
@@ -577,11 +717,19 @@ class HomeViewModel @Inject constructor(
             // Listeyi güncelle
             delay(100)
             val updated = medicineRepository.getUpcomingMedicines(context)
+
+            // 🆕 allTodayDoses'dan atlanan ilacı çıkar
+            val currentDoses = _uiState.value.allTodayDoses.filter { (med, t) ->
+                !(med.id == medicine.id && t == time)
+            }
+
             _uiState.update {
                 it.copy(
                     allUpcomingMedicines = updated,
-                    upcomingMedicine = updated.firstOrNull(),
-                    currentMedicineStatus = if (updated.isNotEmpty()) MedicineStatus.UPCOMING else MedicineStatus.SKIPPED
+                    upcomingMedicine = currentDoses.firstOrNull(),
+                    allTodayDoses = currentDoses,
+                    currentDoseIndex = 0,
+                    currentMedicineStatus = if (currentDoses.isNotEmpty()) MedicineStatus.UPCOMING else MedicineStatus.SKIPPED
                 )
             }
 
