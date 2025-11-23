@@ -457,9 +457,9 @@ class BadiRepository(
             // Firestore batch işlemi
             val batch = db.batch()
 
-            // Badi ilişkilerini ekle
-            val badi1Ref = db.collection("buddies").document()
-            val badi2Ref = db.collection("buddies").document()
+            // Badi ilişkilerini ekle - ID formatı: userId_buddyUserId (Firestore kuralları için gerekli)
+            val badi1Ref = db.collection("buddies").document("${badi1.userId}_${badi1.buddyUserId}")
+            val badi2Ref = db.collection("buddies").document("${badi2.userId}_${badi2.buddyUserId}")
 
             batch.set(badi1Ref, badi1)
             batch.set(badi2Ref, badi2)
